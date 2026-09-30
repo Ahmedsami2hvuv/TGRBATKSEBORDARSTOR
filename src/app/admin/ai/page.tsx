@@ -76,6 +76,7 @@ type Message = {
       sample: Array<Record<string, unknown>>;
     };
   };
+  createDraftToken?: string;
 };
 
 type OrderCategory = "single" | "double" | "shop" | "prep";
@@ -103,6 +104,7 @@ export default function AdminAiPage() {
 
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [createDraftToken, setCreateDraftToken] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -279,12 +281,16 @@ export default function AdminAiPage() {
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage("");
     setIsLoading(true);
+    const draftToken = textToSend === undefined ? createDraftToken : null;
 
     try {
       const res = await fetch("/api/ai-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text })
+        body: JSON.stringify({
+          prompt: text,
+          ...(draftToken ? { createDraftToken: draftToken } : {}),
+        })
       });
 
       const data = await res.json();
@@ -300,10 +306,14 @@ export default function AdminAiPage() {
         needType: data.needType,
         selectedCategory: data.selectedCategory || "single",
         preparationDraft: data.preparationDraft,
-        pendingAction: data.pendingAction
+        pendingAction: data.pendingAction,
+        createDraftToken: data.createDraftToken,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
+      if (draftToken || data.createDraftToken) {
+        setCreateDraftToken(data.createDraftToken ?? null);
+      }
 
       // إذا كانت الرسالة تتطلب استمارة إدخال
       if (data.needType) {
@@ -371,6 +381,21 @@ export default function AdminAiPage() {
       previous.map((item) =>
         item.id === message.id
           ? { ...item, text: "تم إلغاء التغيير، وما انحفظت أي بيانات.", pendingAction: undefined }
+          : item,
+      ),
+    );
+  };
+
+  const cancelCreateDraft = (message: Message) => {
+    if (message.createDraftToken === createDraftToken) setCreateDraftToken(null);
+    setMessages((previous) =>
+      previous.map((item) =>
+        item.id === message.id
+          ? {
+              ...item,
+              text: "تم إلغاء طلب الإنشاء، وما انحفظ أي سجل.",
+              createDraftToken: undefined,
+            }
           : item,
       ),
     );
@@ -474,6 +499,7 @@ export default function AdminAiPage() {
   };
 
   const clearChat = () => {
+    setCreateDraftToken(null);
     setMessages([
       {
         id: "welcome_new",
@@ -560,6 +586,16 @@ export default function AdminAiPage() {
               }`}
             >
               {msg.text}
+
+              {msg.createDraftToken && (
+                <button
+                  type="button"
+                  onClick={() => cancelCreateDraft(msg)}
+                  className="mt-2 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
+                >
+                  إلغاء طلب الإنشاء
+                </button>
+              )}
 
               {msg.pendingAction && (
                 <div className="mt-3 rounded-xl border border-amber-500/40 bg-slate-950 p-3 text-xs">

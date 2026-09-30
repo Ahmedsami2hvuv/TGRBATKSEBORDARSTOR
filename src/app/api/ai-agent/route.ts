@@ -11,8 +11,10 @@ import {
   applyDatabaseChange,
   executeDatabaseQuery,
   getAiDatabaseSchema,
+  MissingRequiredCreateFieldsError,
   parseDatabasePlan,
   prepareDatabaseChange,
+  resolveEntityCreateIntent,
   type DatabaseAction,
 } from '@/lib/ai-database-agent'
 
@@ -104,7 +106,7 @@ function parsePreparationMessage(rawText: string) {
 
 async function getRelevantPeopleDirectory(prompt: string) {
   const normalizedPrompt = normalizeArabicSearchText(prompt)
-  const peopleWords = /موظف|مندوب|مجهز|عامل|الشغالين|الكادر|الفريق|الاسماء|اسمائهم|اضهر|اضهري|اظهر|اعرض|استعرض|اطلع|جيب|دور|ابحث|فتش|منو|اخفي|اخف|صفر|اسناد|اسند|تعيين|عين|حول/.test(normalizedPrompt)
+  const peopleWords = /موظف|مندوب|مجهز|مورد|عامل|الشغالين|الكادر|الفريق|الاسماء|اسمائهم|اضهر|اضهري|اظهر|اعرض|استعرض|اطلع|جيب|دور|ابحث|فتش|منو|اخفي|اخف|صفر|اسناد|اسند|تعيين|عين|حول/.test(normalizedPrompt)
   if (!peopleWords) return []
 
   const nameWords = normalizedPrompt
@@ -112,8 +114,8 @@ async function getRelevantPeopleDirectory(prompt: string) {
     .filter((word) =>
       word.length >= 3 &&
       !/^\d+$/u.test(word) &&
-      !/^(طلب|طلبه|رقم|اريد|منو|مين|شنو|وين|كل|سويلي|اضهرلي|اظهرلي|اظهر|اضهر|اضهري|اعرض|استعرض|اطلع|اطلعلي|جيب|جيبلي|دور|دورلي|ابحث|فتش|اخفيلي|اخفي|صفرلي|صفر|طلعلي|طلعي|الطلب|اسناد|اسند|لي|على|الى|من|في|بالموقع|الموقع|رجاء|ممكن|بالنظام|الشغالين|الكادر|الفريق|اسماء|اسمائهم)$/u.test(word) &&
-      !/(موظف|مندوب|مجهز|عامل|مورد|شغال|كادر|فريق|اسم)/u.test(word)
+      !/^(طلب|طلبه|رقم|اريد|منو|مين|شنو|وين|كل|سوي|سويلي|انشئ|انشاء|اضف|اضيف|اضيفلي|ضيف|ضيفلي|سجل|سجللي|اعمل|جديد|جديده|موظف|موظفين|مندوب|مندوبين|مجهز|مجهزين|مورد|موردين|اداره|اداري|محل|متجر|فرع|الاداره|الزبون|اسمه|اسمها|رقمه|رقمها|هاتفه|هاتفها|اضهرلي|اظهرلي|اظهر|اضهر|اضهري|اعرض|استعرض|اطلع|اطلعلي|جيب|جيبلي|دور|دورلي|ابحث|فتش|اخفيلي|اخفي|صفرلي|صفر|طلعلي|طلعي|الطلب|اسناد|اسند|لي|على|الى|من|في|بالموقع|الموقع|رجاء|ممكن|بالنظام|الشغالين|الكادر|الفريق|اسماء|اسمائهم)$/u.test(word) &&
+      !/(موظف|مندوب|مجهز|عامل|مورد|محل|متجر|فرع|اداره|اداري|جديد|شغال|كادر|فريق|اسم)/u.test(word)
     )
     .flatMap((word) => (word.length > 4 && /^[وفلب]/u.test(word) ? [word, word.slice(1)] : [word]))
   const nameWhere = nameWords.length > 0
@@ -1056,6 +1058,55 @@ export async function POST(req: Request) {
       return jsonError("اكتب طلباً واضحاً لا يتجاوز 4000 حرف.", 400)
     }
     const requestText = prompt.trim()
+    let pendingCreateDraft: { model: string; data: Record<string, unknown>; prompt: string } | null = null
+    if (typeof body.createDraftToken === "string") {
+      try {
+        const { payload } = await jwtVerify(body.createDraftToken, getAiSecret())
+        if (
+          payload.purpose !== "ai-database-create-draft" ||
+          typeof payload.model !== "string" ||
+          !payload.data ||
+          typeof payload.data !== "object" ||
+          Array.isArray(payload.data)
+        ) {
+          return jsonError("مسودة إنشاء السجل غير صالحة. أعد إرسال طلبك من البداية.", 400)
+        }
+        pendingCreateDraft = {
+          model: payload.model,
+          data: payload.data as Record<string, unknown>,
+          prompt: typeof payload.prompt === "string" ? payload.prompt : requestText,
+        }
+      } catch {
+        return jsonError("انتهت صلاحية مسودة الإنشاء أو أن رمزها غير صالح. أعد إرسال طلبك.", 400)
+      }
+    }
+    if (pendingCreateDraft && /^(?:الغاء|الغي|إلغاء|إلغي|الغيه|اتركه)[\s.!؟]*$/u.test(requestText)) {
+      return NextResponse.json({ done: true, message: "تم إلغاء طلب الإنشاء، وما انحفظ أي سجل." })
+    }
+    const entityCreateIntent = resolveEntityCreateIntent(requestText)
+    if (entityCreateIntent?.status === "ambiguous_employee") {
+      return NextResponse.json({
+        done: true,
+        message: "تقصد موظف إدارة لو موظف محل؟ اكتب مثلاً: «سوي موظف إدارة» أو «سوي موظف محل» حتى أحدد السجل الصحيح.",
+      })
+    }
+    if (entityCreateIntent?.status === "ambiguous_entity") {
+      return NextResponse.json({
+        done: true,
+        message: "أحدد نوع سجل واحد بكل مرة حتى ما أنشئ نوعاً غلط. اكتب أمر مستقل للمجهّز أو المندوب أو المورد أو الموظف المطلوب.",
+      })
+    }
+    if (entityCreateIntent?.status === "unavailable") {
+      return NextResponse.json({
+        done: true,
+        message: `ما لقيت نموذج ${entityCreateIntent.entity} في مخطط قاعدة البيانات الحالي، فما راح أبدأ إنشاء سجل غير مؤكد.`,
+      })
+    }
+    const createDraftToContinue = entityCreateIntent ? null : pendingCreateDraft
+    const forcedCreateModel =
+      createDraftToContinue?.model ??
+      (entityCreateIntent?.status === "resolved" ? entityCreateIntent.model : undefined)
+
     const preparationMessage = parsePreparationMessage(requestText)
     if (preparationMessage) {
       const choices = await getPreparationChoices(preparationMessage.regionName)
@@ -1098,8 +1149,10 @@ export async function POST(req: Request) {
       return jsonError("ماكو محرك ذكاء مفعّل أو مفاتيح صالحة. راجع إعدادات الذكاء الاصطناعي.", 503)
     }
 
-    const peopleDirectory = await getRelevantPeopleDirectory(requestText)
-    const systemPrompt = `أنت مساعد إدارة ذكي لنظام توصيل. تساعد المدير على فهم البيانات وتنفيذ طلبه على قاعدة البيانات.
+    const peopleDirectory = await getRelevantPeopleDirectory(
+      createDraftToContinue ? `${createDraftToContinue.prompt} ${requestText}` : requestText,
+    )
+    let systemPrompt = `أنت مساعد إدارة ذكي لنظام توصيل. تساعد المدير على فهم البيانات وتنفيذ طلبه على قاعدة البيانات.
 مخطط قاعدة البيانات المتاح (اسم الجدول والحقول المسموح قراءتها فقط):
 ${getAiDatabaseSchema()}
 
@@ -1117,6 +1170,7 @@ ${JSON.stringify(peopleDirectory)}
 - استخدم where دقيقاً لكل تغيير. لا تنفذ تغييراً جماعياً إلا إذا طلبه المدير بوضوح، وسيعرض النظام عدد السجلات عليه قبل التنفيذ.
 - لا تطلب أو تعرض مفاتيح أو كلمات مرور أو رموز دخول. هذه البيانات غير متاحة.
 - لا تدّعِ تنفيذ أي تغيير. النظام سيعرضه للمراجعة أولاً.
+- عند إنشاء سجل، اعتمد فقط الحقول التي يحددها المخطط بأنها requiredForCreate=true؛ الحقول غير المعلّمة ليست مطلوبة. حقول generated=true مثل updatedAt وid ينشئها النظام تلقائياً ولا تسأل المدير عنها ولا ترسلها.
 - للاستعلام عن عدد السجلات استخدم mode=count؛ وللبيانات اطلب أقل عدد من الحقول والصفوف اللازم للإجابة.
 - استخدم mode=aggregate للجمع والمتوسط وأقل/أعلى قيمة، ويمكنك طلب علاقات مرتبطة عبر include عندما تكون ظاهرة في المخطط.
 - للبحث عبر علاقة مفردة استخدم {"relation":{"is":{"field":"value"}}}، ولعلاقة متعددة استخدم {"relation":{"some":{"field":"value"}}}.
@@ -1128,7 +1182,25 @@ ${JSON.stringify(peopleDirectory)}
 - إذا كان الطلب غامضاً أو ينقصه اسم أو رقم أو وجهة، اسأل عن المعلومة الناقصة بدلاً من فتح استمارة طلب أو اختراع قيمة.
 - إذا نقصت معلومة لازمة للتغيير، اسأل عنها بدلاً من إنشاء قيم افتراضية.`
 
-    const plan = await generateDatabasePlan(providers, systemPrompt, requestText)
+    if (forcedCreateModel) {
+      systemPrompt += `
+الطلب الحالي إنشاء كيان جديد محدد مسبقاً بالنموذج "${forcedCreateModel}". أخرج kind=change وoperation=create واستخدم هذا الاسم الحرفي للنموذج، واستخرج فقط القيم التي ذكرها المدير. لا تبدل النموذج ولا تخترع حقولاً أو قيماً ولا تنفذ الحفظ. إذا كانت هذه متابعة لمسودة، فالقيم السابقة هي ${JSON.stringify(createDraftToContinue?.data ?? {})}؛ حافظ عليها وأضف القيم الجديدة فقط. استخدم دليل الأسماء الحي لتحديد معرّفات العلاقات مثل shopId، ولا تخمّن معرّفاً.`
+    }
+
+    let plan = await generateDatabasePlan(providers, systemPrompt, requestText)
+    if (forcedCreateModel) {
+      const additions =
+        plan.data && typeof plan.data === "object" && !Array.isArray(plan.data)
+          ? plan.data
+          : {}
+      plan = {
+        ...plan,
+        kind: "change",
+        model: forcedCreateModel,
+        operation: "create",
+        data: { ...(createDraftToContinue?.data ?? {}), ...additions },
+      }
+    }
 
     if (plan.kind === "order_form") {
       const selectedCategory =
@@ -1165,7 +1237,41 @@ ${JSON.stringify(peopleDirectory)}
       })
     }
 
-    const { action, preview } = await prepareDatabaseChange(plan)
+    let preparedChange
+    try {
+      preparedChange = await prepareDatabaseChange(plan)
+    } catch (error) {
+      if (!(error instanceof MissingRequiredCreateFieldsError)) throw error
+      const createDraftToken = await new SignJWT({
+        purpose: "ai-database-create-draft",
+        model: error.model,
+        data: error.data,
+        prompt: createDraftToContinue?.prompt ?? requestText,
+      })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("10m")
+        .sign(getAiSecret())
+      const fieldLabels: Record<string, string> = {
+        name: "الاسم",
+        phone: "رقم الهاتف",
+        shopId: "اسم المحل كما هو مسجل بالنظام",
+      }
+      const entityLabels: Record<string, string> = {
+        CompanyPreparer: "المجهّز",
+        Courier: "المندوب",
+        StoreSupplier: "المورد",
+        Employee: "موظف المحل",
+        StaffEmployee: "موظف الإدارة",
+      }
+      const missingLabels = error.fields.map((field) => fieldLabels[field.name] ?? field.name)
+      return NextResponse.json({
+        done: false,
+        createDraftToken,
+        message: `حتى أكمل إنشاء ${entityLabels[error.model] ?? "السجل"}، أحتاج ${missingLabels.join(" و")}. اكتب المعلومات الناقصة، أو اكتب «إلغاء» لإيقاف الطلب.`,
+      })
+    }
+    const { action, preview } = preparedChange
     const confirmationToken = await new SignJWT({
       purpose: "ai-database-action",
       action,
