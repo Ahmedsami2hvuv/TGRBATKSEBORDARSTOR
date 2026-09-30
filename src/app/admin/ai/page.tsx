@@ -505,12 +505,6 @@ export default function AdminAiPage() {
       {/* أزرار اقتراحات سريعة */}
       <div className="px-4 py-2 bg-slate-900/60 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
         <button
-          onClick={() => handleSendMessage("اخفيلي فارس")}
-          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
-        >
-          👁️ اخفيلي فارس
-        </button>
-        <button
           onClick={() => handleSendMessage("سويلي طلب")}
           className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
         >
@@ -518,15 +512,8 @@ export default function AdminAiPage() {
           سويلي طلب
         </button>
         <button
-          onClick={() => handleSendMessage("صفر حساب فارس")}
-          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
-        >
-          <Coins className="w-3.5 h-3.5 text-amber-400" />
-          صفر حساب فارس
-        </button>
-        <button
           onClick={() => handleSendMessage("شنو وضع الطلبات اليوم؟")}
-          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
+          className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
         >
           <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
           ملخص الطلبات
