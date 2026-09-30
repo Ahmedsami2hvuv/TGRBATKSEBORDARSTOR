@@ -19,12 +19,12 @@ interface CustomCategory {
 
 const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#64748b"];
 
-export function FloatingAdminMenu() {
+export function FloatingAdminMenu({ autoOpen = false }: { autoOpen?: boolean }) {
   const [position, setPosition] = useState({ x: 50, y: 300 });
   const [isDragging, setIsDragging] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(autoOpen);
   const [menuScale, setMenuScale] = useState(1);
   const [menuFontSize, setMenuFontSize] = useState(8);
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
@@ -53,6 +53,24 @@ export function FloatingAdminMenu() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const loadSaved = () => {
+      // قراءة معلمات الرابط إن وجدت (لفتح القائمة فوراً في الأندرويد)
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("autoOpen") === "true" || params.get("autoOpen") === "1") {
+          setIsHovered(true);
+        }
+        const qx = params.get("x");
+        const qy = params.get("y");
+        if (qx && qy) {
+          const px = parseFloat(qx);
+          const py = parseFloat(qy);
+          if (!isNaN(px) && !isNaN(py)) {
+            setPosition({ x: px, y: py });
+            positionRef.current = { x: px, y: py };
+          }
+        }
+      } catch (e) {}
+
       const savedData = localStorage.getItem("kse_admin_floating_data");
       if (savedData) {
         try { setCategories(JSON.parse(savedData)); } catch(e){}

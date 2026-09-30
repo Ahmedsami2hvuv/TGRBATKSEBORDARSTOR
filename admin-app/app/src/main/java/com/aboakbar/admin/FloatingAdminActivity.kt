@@ -129,6 +129,15 @@ class FloatingAdminActivity : AppCompatActivity() {
     }
 
     private fun loadMenuOverlay() {
+        val clickX = intent?.getIntExtra("CLICK_X", 60) ?: 60
+        val clickY = intent?.getIntExtra("CLICK_Y", 300) ?: 300
+
+        val density = resources.displayMetrics.density
+        val dpX = (clickX / density).toInt()
+        val dpY = (clickY / density).toInt()
+
+        val urlWithParams = "$MENU_OVERLAY_URL?x=$dpX&y=$dpY&autoOpen=true"
+
         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
         if (!savedToken.isNullOrEmpty()) {
@@ -139,7 +148,7 @@ class FloatingAdminActivity : AppCompatActivity() {
             cookieManager.setCookie(BACKEND_URL, cookieString)
             cookieManager.flush()
         }
-        floatingAiWebView.loadUrl(MENU_OVERLAY_URL)
+        floatingAiWebView.loadUrl(urlWithParams)
     }
 
     inner class AndroidFloatingMenuBridge {

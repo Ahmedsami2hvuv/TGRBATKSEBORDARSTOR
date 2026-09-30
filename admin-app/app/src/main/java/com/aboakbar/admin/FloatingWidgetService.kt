@@ -207,7 +207,12 @@ class FloatingWidgetService : Service() {
 
     private fun openFloatingAdminHub() {
         try {
+            val params = layoutParams
+            val clickX = params?.x ?: 80
+            val clickY = params?.y ?: 300
             val intent = Intent(this, FloatingAdminActivity::class.java).apply {
+                putExtra("CLICK_X", clickX)
+                putExtra("CLICK_Y", clickY)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
             startActivity(intent)
