@@ -192,10 +192,14 @@ class FloatingWidgetService : Service() {
     }
 
     private fun openFloatingAdminHub() {
-        val intent = Intent(this, FloatingAdminActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        try {
+            val intent = Intent(this, FloatingAdminActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        startActivity(intent)
     }
 
     private fun snapToEdge() {
@@ -206,10 +210,10 @@ class FloatingWidgetService : Service() {
 
         val screenWidth = screenSize.x
         val middleX = screenWidth / 2
-        val targetX = if (params.x + 80 < middleX) 16 else screenWidth - 190
+        val targetX = if (params.x + 40 < middleX) 16 else screenWidth - 170
 
         val animator = ValueAnimator.ofInt(params.x, targetX)
-        animator.duration = 200
+        animator.duration = 180
         animator.interpolator = DecelerateInterpolator()
         animator.addUpdateListener { animation ->
             params.x = animation.animatedValue as Int
@@ -221,6 +225,7 @@ class FloatingWidgetService : Service() {
         }
         animator.start()
     }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

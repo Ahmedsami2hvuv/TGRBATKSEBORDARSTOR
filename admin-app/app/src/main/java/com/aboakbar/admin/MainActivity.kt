@@ -215,6 +215,30 @@ class MainActivity : AppCompatActivity() {
         setupLongPressMenu()
     }
 
+    private fun startFloatingWidgetService() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (android.provider.Settings.canDrawOverlays(this)) {
+                    val intent = Intent(this, FloatingWidgetService::class.java).apply {
+                        action = FloatingWidgetService.ACTION_SHOW
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
+                }
+            } else {
+                val intent = Intent(this, FloatingWidgetService::class.java).apply {
+                    action = FloatingWidgetService.ACTION_SHOW
+                }
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun requestAppPermissions() {
         val permissions = mutableListOf(
             Manifest.permission.CAMERA,
@@ -246,11 +270,15 @@ class MainActivity : AppCompatActivity() {
                         Uri.parse("package:$packageName")
                     )
                     startActivityForResult(intent, 1234)
-                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي تظهر واجهة الذكاء الاصطناعي بنجاح", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي يظهر الزر العائم بنجاح", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     // تجاهل فشل التوجيه للأجهزة النادرة
                 }
+            } else {
+                startFloatingWidgetService()
             }
+        } else {
+            startFloatingWidgetService()
         }
     }
 
@@ -509,6 +537,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1234) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && android.provider.Settings.canDrawOverlays(this)) {
+                startFloatingWidgetService()
+                Toast.makeText(this, "تم تفعيل الزر العائم بنجاح 🔘", Toast.LENGTH_SHORT).show()
+            }
+        }
         if (requestCode == FILECHOOSER_RESULTCODE) {
             if (uploadMessage == null) return
             
@@ -847,6 +881,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        startFloatingWidgetService()
         // مزامنة التوكن فوراً عند العودة للتطبيق لضمان عمل QuickDraftActivity
         syncTokenFromCookies()
         
