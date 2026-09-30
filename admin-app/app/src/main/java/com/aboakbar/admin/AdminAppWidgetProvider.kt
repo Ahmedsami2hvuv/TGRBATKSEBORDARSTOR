@@ -31,24 +31,25 @@ class AdminAppWidgetProvider : AppWidgetProvider() {
             val mainPendingIntent = PendingIntent.getActivity(context, 101, mainIntent, flags)
             views.setOnClickPendingIntent(R.id.widgetBtnMainApp, mainPendingIntent)
 
-            // 2. تشغيل / إخفاء الزر العائم
-            val floatingIntent = Intent(context, FloatingWidgetActionActivity::class.java).apply {
+            // 2. تشغيل النافذة العائمة الشاملة
+            val floatingIntent = Intent(context, FloatingAdminActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val floatingPendingIntent = PendingIntent.getActivity(context, 102, floatingIntent, flags)
             views.setOnClickPendingIntent(R.id.widgetBtnFloating, floatingPendingIntent)
 
-            // 3. المساعد الذكي AI
-            val aiIntent = Intent(context, FloatingAiChatActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            // 3. المساعد الذكي AI في النافذة العائمة
+            val aiIntent = Intent(context, FloatingAdminActivity::class.java).apply {
+                putExtra(FloatingAdminActivity.EXTRA_TAB, FloatingAdminActivity.TAB_AI)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val aiPendingIntent = PendingIntent.getActivity(context, 103, aiIntent, flags)
             views.setOnClickPendingIntent(R.id.widgetBtnAi, aiPendingIntent)
 
-            // 4. إضافة طلب
-            val addOrderIntent = Intent(context, MainActivity::class.java).apply {
-                putExtra("OPEN_URL", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/new")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            // 4. إضافة طلب مباشر داخل النافذة العائمة بدون فتح أي صفحة
+            val addOrderIntent = Intent(context, FloatingAdminActivity::class.java).apply {
+                putExtra(FloatingAdminActivity.EXTRA_TAB, FloatingAdminActivity.TAB_ADD_ORDER)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val addOrderPendingIntent = PendingIntent.getActivity(context, 104, addOrderIntent, flags)
             views.setOnClickPendingIntent(R.id.widgetBtnAddOrder, addOrderPendingIntent)

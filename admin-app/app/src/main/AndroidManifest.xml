@@ -191,6 +191,20 @@
             android:resource="@drawable/ic_notification_small" />
 
         <activity
+            android:name="com.aboakbar.admin.FloatingAdminActivity"
+            android:theme="@style/Theme.TransparentVoiceAssistant"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:windowSoftInputMode="adjustResize"
+            android:label="الزر العائم"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.aboakbar.admin.ACTION_OPEN_FLOATING_HUB" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="com.aboakbar.admin.FloatingWidgetActionActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true"

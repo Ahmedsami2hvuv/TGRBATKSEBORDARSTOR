@@ -17,8 +17,6 @@ import android.provider.Settings
 import android.view.*
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import kotlin.math.abs
@@ -26,26 +24,15 @@ import kotlin.math.abs
 class FloatingWidgetService : Service() {
 
     private var windowManager: WindowManager? = null
-    private var floatingView: View? = null
+    private var floatingBubbleView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
 
-    private var layoutFloatingBubble: FrameLayout? = null
-    private var layoutFloatingMenu: LinearLayout? = null
-    private var btnDismissMenu: ImageView? = null
-    private var btnShortcutAi: LinearLayout? = null
-    private var btnShortcutAddOrder: LinearLayout? = null
-    private var btnShortcutOrders: LinearLayout? = null
-    private var btnShortcutHome: LinearLayout? = null
-    private var btnHideFloatingWidget: LinearLayout? = null
-
-    private var isMenuExpanded = false
     private val CHANNEL_ID = "floating_widget_channel"
     private val NOTIFICATION_ID = 2002
 
     companion object {
         const val ACTION_SHOW = "com.aboakbar.admin.ACTION_SHOW_FLOATING_WIDGET"
         const val ACTION_HIDE = "com.aboakbar.admin.ACTION_HIDE_FLOATING_WIDGET"
-        const val ACTION_TOGGLE = "com.aboakbar.admin.ACTION_TOGGLE_FLOATING_WIDGET"
         var isRunning = false
             private set
     }
@@ -65,15 +52,15 @@ class FloatingWidgetService : Service() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, getString(R.string.floating_widget_permission_required), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "يرجى تفعيل صلاحية الظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
             stopSelf()
             return START_NOT_STICKY
         }
 
         startForegroundNotification()
 
-        if (floatingView == null) {
-            initFloatingWidget()
+        if (floatingBubbleView == null) {
+            initFloatingBubble()
         }
 
         return START_STICKY
@@ -90,15 +77,17 @@ class FloatingWidgetService : Service() {
         }
         val stopPendingIntent = PendingIntent.getService(this, 1, stopIntent, pendingIntentFlags)
 
-        val openAppIntent = Intent(this, MainActivity::class.java)
-        val openAppPendingIntent = PendingIntent.getActivity(this, 0, openAppIntent, pendingIntentFlags)
+        val openFloatingHubIntent = Intent(this, FloatingAdminActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val openPendingIntent = PendingIntent.getActivity(this, 0, openFloatingHubIntent, pendingIntentFlags)
 
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("الزر العائم - أبو الأكبر")
-            .setContentText("الزر العائم متاح الآن على شاشتك للاختصارات السريعة")
+            .setContentText("اضغط هنا لفتح لوحة إضافة الطلب والمساعد الذكي فوراً")
             .setSmallIcon(R.drawable.ic_notification_small)
-            .setContentIntent(openAppPendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setContentIntent(openPendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(R.drawable.ic_close_floating, "إخفاء الزر", stopPendingIntent)
             .setOngoing(true)
             .build()
@@ -111,10 +100,10 @@ class FloatingWidgetService : Service() {
     }
 
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
-    private fun initFloatingWidget() {
+    private fun initFloatingBubble() {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val inflater = LayoutInflater.from(this)
-        floatingView = inflater.inflate(R.layout.layout_floating_widget, null)
+        floatingBubbleView = inflater.inflate(R.layout.layout_floating_widget, null)
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -135,23 +124,14 @@ class FloatingWidgetService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = screenSize.x - 180
-            y = screenSize.y / 2 - 100
+            x = screenSize.x - 200
+            y = screenSize.y / 3
         }
 
-        layoutFloatingBubble = floatingView?.findViewById(R.id.layoutFloatingBubble)
-        layoutFloatingMenu = floatingView?.findViewById(R.id.layoutFloatingMenu)
-        btnDismissMenu = floatingView?.findViewById(R.id.btnDismissMenu)
-        btnShortcutAi = floatingView?.findViewById(R.id.btnShortcutAi)
-        btnShortcutAddOrder = floatingView?.findViewById(R.id.btnShortcutAddOrder)
-        btnShortcutOrders = floatingView?.findViewById(R.id.btnShortcutOrders)
-        btnShortcutHome = floatingView?.findViewById(R.id.btnShortcutHome)
-        btnHideFloatingWidget = floatingView?.findViewById(R.id.btnHideFloatingWidget)
-
-        setupInteractions()
+        setupBubbleTouch()
 
         try {
-            windowManager?.addView(floatingView, layoutParams)
+            windowManager?.addView(floatingBubbleView, layoutParams)
         } catch (e: Exception) {
             e.printStackTrace()
             stopSelf()
@@ -159,14 +139,16 @@ class FloatingWidgetService : Service() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupInteractions() {
+    private fun setupBubbleTouch() {
+        val bubble = floatingBubbleView?.findViewById<FrameLayout>(R.id.layoutFloatingBubble) ?: return
+
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
         var isDragging = false
 
-        layoutFloatingBubble?.setOnTouchListener { _, event ->
+        bubble.setOnTouchListener { _, event ->
             val params = layoutParams ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -181,7 +163,7 @@ class FloatingWidgetService : Service() {
                     val deltaX = (event.rawX - initialTouchX).toInt()
                     val deltaY = (event.rawY - initialTouchY).toInt()
 
-                    if (abs(deltaX) > 10 || abs(deltaY) > 10) {
+                    if (abs(deltaX) > 12 || abs(deltaY) > 12) {
                         isDragging = true
                     }
 
@@ -189,7 +171,7 @@ class FloatingWidgetService : Service() {
                         params.x = initialX + deltaX
                         params.y = initialY + deltaY
                         try {
-                            windowManager?.updateViewLayout(floatingView, params)
+                            windowManager?.updateViewLayout(floatingBubbleView, params)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -198,7 +180,7 @@ class FloatingWidgetService : Service() {
                 }
                 MotionEvent.ACTION_UP -> {
                     if (!isDragging) {
-                        toggleMenu()
+                        openFloatingAdminHub()
                     } else {
                         snapToEdge()
                     }
@@ -207,74 +189,13 @@ class FloatingWidgetService : Service() {
                 else -> false
             }
         }
-
-        btnDismissMenu?.setOnClickListener {
-            collapseMenu()
-        }
-
-        // 1. زر المساعد الذكي
-        btnShortcutAi?.setOnClickListener {
-            collapseMenu()
-            val intent = Intent(this, FloatingAiChatActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
-            startActivity(intent)
-        }
-
-        // 2. زر إضافة طلب
-        btnShortcutAddOrder?.setOnClickListener {
-            collapseMenu()
-            val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("OPEN_URL", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/new")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-            startActivity(intent)
-        }
-
-        // 3. زر قائمة الطلبات
-        btnShortcutOrders?.setOnClickListener {
-            collapseMenu()
-            val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("OPEN_URL", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-            startActivity(intent)
-        }
-
-        // 4. زر الرئيسية
-        btnShortcutHome?.setOnClickListener {
-            collapseMenu()
-            val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("OPEN_URL", "https://aboakbr.com/abo1stor3hlaa2kbr8-47")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-            startActivity(intent)
-        }
-
-        // 5. زر إخفاء الزر العائم
-        btnHideFloatingWidget?.setOnClickListener {
-            collapseMenu()
-            Toast.makeText(this, getString(R.string.floating_widget_stopped), Toast.LENGTH_SHORT).show()
-            stopSelf()
-        }
     }
 
-    private fun toggleMenu() {
-        if (isMenuExpanded) {
-            collapseMenu()
-        } else {
-            expandMenu()
+    private fun openFloatingAdminHub() {
+        val intent = Intent(this, FloatingAdminActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-    }
-
-    private fun expandMenu() {
-        isMenuExpanded = true
-        layoutFloatingMenu?.visibility = View.VISIBLE
-    }
-
-    private fun collapseMenu() {
-        isMenuExpanded = false
-        layoutFloatingMenu?.visibility = View.GONE
+        startActivity(intent)
     }
 
     private fun snapToEdge() {
@@ -285,7 +206,7 @@ class FloatingWidgetService : Service() {
 
         val screenWidth = screenSize.x
         val middleX = screenWidth / 2
-        val targetX = if (params.x + 30 < middleX) 16 else screenWidth - 190
+        val targetX = if (params.x + 80 < middleX) 16 else screenWidth - 190
 
         val animator = ValueAnimator.ofInt(params.x, targetX)
         animator.duration = 200
@@ -293,7 +214,7 @@ class FloatingWidgetService : Service() {
         animator.addUpdateListener { animation ->
             params.x = animation.animatedValue as Int
             try {
-                windowManager?.updateViewLayout(floatingView, params)
+                windowManager?.updateViewLayout(floatingBubbleView, params)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -306,7 +227,7 @@ class FloatingWidgetService : Service() {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 "خدمة الزر العائم",
-                NotificationManager.IMPORTANCE_MIN
+                NotificationManager.IMPORTANCE_LOW
             )
             serviceChannel.description = "إبقاء الزر العائم نشطاً على الشاشة"
             val manager = getSystemService(NotificationManager::class.java)
@@ -317,13 +238,13 @@ class FloatingWidgetService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
-        if (floatingView != null) {
+        if (floatingBubbleView != null) {
             try {
-                windowManager?.removeView(floatingView)
+                windowManager?.removeView(floatingBubbleView)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            floatingView = null
+            floatingBubbleView = null
         }
     }
 }

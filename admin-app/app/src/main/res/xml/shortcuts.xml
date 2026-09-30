@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 1. اختصار الزر العائم (تشغيل / إخفاء) -->
+    <!-- 1. اختصار الزر العائم الشامل (إضافة طلب والذكاء الاصطناعي) -->
     <shortcut
         android:shortcutId="floating_widget_shortcut"
         android:enabled="true"
@@ -9,25 +9,12 @@
         android:shortcutShortLabel="@string/shortcut_floating_widget"
         android:shortcutLongLabel="@string/shortcut_floating_widget_long">
         <intent
-            android:action="com.aboakbar.admin.ACTION_TOGGLE_FLOATING_WIDGET"
+            android:action="android.intent.action.VIEW"
             android:targetPackage="com.aboakbar.admin"
-            android:targetClass="com.aboakbar.admin.FloatingWidgetActionActivity" />
+            android:targetClass="com.aboakbar.admin.FloatingAdminActivity" />
     </shortcut>
 
-    <!-- 2. اختصار المساعد الذكي AI -->
-    <shortcut
-        android:shortcutId="ai_assistant_shortcut"
-        android:enabled="true"
-        android:icon="@drawable/ic_ai_shortcut"
-        android:shortcutShortLabel="@string/shortcut_ai_short"
-        android:shortcutLongLabel="@string/shortcut_ai_long">
-        <intent
-            android:action="com.aboakbar.admin.ACTION_OPEN_FLOATING_AI"
-            android:targetPackage="com.aboakbar.admin"
-            android:targetClass="com.aboakbar.admin.FloatingAiChatActivity" />
-    </shortcut>
-
-    <!-- 3. اختصار إضافة طلب جديد -->
+    <!-- 2. اختصار إضافة طلب جديد مباشر من الزر العائم -->
     <shortcut
         android:shortcutId="add_order_shortcut"
         android:enabled="true"
@@ -37,10 +24,27 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.aboakbar.admin"
-            android:targetClass="com.aboakbar.admin.MainActivity">
+            android:targetClass="com.aboakbar.admin.FloatingAdminActivity">
             <extra
-                android:name="OPEN_URL"
-                android:value="https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/new" />
+                android:name="extra_tab"
+                android:value="tab_add_order" />
+        </intent>
+    </shortcut>
+
+    <!-- 3. اختصار المساعد الذكي AI من الزر العائم -->
+    <shortcut
+        android:shortcutId="ai_assistant_shortcut"
+        android:enabled="true"
+        android:icon="@drawable/ic_ai_shortcut"
+        android:shortcutShortLabel="@string/shortcut_ai_short"
+        android:shortcutLongLabel="@string/shortcut_ai_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.aboakbar.admin"
+            android:targetClass="com.aboakbar.admin.FloatingAdminActivity">
+            <extra
+                android:name="extra_tab"
+                android:value="tab_ai" />
         </intent>
     </shortcut>
 

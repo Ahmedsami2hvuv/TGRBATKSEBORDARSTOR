@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootFloatingAdminLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#99000000">
+
+    <!-- خلفية شفافة قابلة للنقر للإغلاق السريع -->
+    <View
+        android:id="@+id/dismissFloatingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- البطاقة العائمة الفاخرة -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_dialog_rounded"
+        android:elevation="24dp">
+
+        <!-- شريط علوي أنيق للتحكم -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#F20F172A"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <!-- عنوان الزر العائم -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔘 الزر العائم"
+                android:textColor="#38BDF8"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- زر تبديل إضافة طلب -->
+            <TextView
+                android:id="@+id/tabAddOrder"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="➕ إضافة طلب"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_floating_item" />
+
+            <!-- زر تبديل الذكاء الاصطناعي -->
+            <TextView
+                android:id="@+id/tabAiChat"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginStart="6dp"
+                android:text="🤖 الذكاء الاصطناعي"
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- زر تفعيل/إيقاف الفقاعة العائمة الدائمة على الشاشة -->
+            <ImageButton
+                android:id="@+id/btnToggleBubbleOverlay"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_floating_action_circle"
+                android:src="@drawable/ic_floating_widget"
+                android:padding="6dp"
+                android:contentDescription="تثبيت زر عائم على الشاشة" />
+
+            <!-- زر الإغلاق -->
+            <TextView
+                android:id="@+id/btnCloseFloatingDialog"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:background="#33FFFFFF" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#22FFFFFF" />
+
+        <!-- حاوية التبويبات -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- 1. واجهة إضافة الطلب السريع والمباشر من داخل الزر العائم -->
+            <ScrollView
+                android:id="@+id/layoutTabAddOrderContent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:background="#0F172A">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📝 إنشاء وتثبيت طلب جديد فوراً"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="الصق رسالة الزبون من الواتساب أو اكتب التفاصيل وسيتم حفظ الطلب فوراً:"
+                        android:textColor="#94A3B8"
+                        android:textSize="11sp"
+                        android:layout_marginBottom="10dp" />
+
+                    <!-- شريط إجراءات لصق الحافظة -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="نص الطلب أو الرسالة:"
+                            android:textColor="#38BDF8"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnPasteClipboard"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:text="📋 لصق من الحافظة"
+                            android:textSize="11sp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:background="@drawable/bg_floating_item"
+                            android:textColor="#38BDF8" />
+                    </LinearLayout>
+
+                    <!-- حقل نص الطلب -->
+                    <EditText
+                        android:id="@+id/etOrderRawText"
+                        android:layout_width="match_parent"
+                        android:layout_height="110dp"
+                        android:gravity="top|start"
+                        android:background="@drawable/input_bg"
+                        android:textColor="#FFFFFF"
+                        android:textColorHint="#64748B"
+                        android:hint="مثال:\nمحمد علي - 07701234567\nبغداد - المنصور\nسعر الطلب: 25,000\nالمواد: حذاء قياس 42 اسود"
+                        android:textSize="13sp"
+                        android:padding="10dp"
+                        android:inputType="textMultiLine"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- قسم اختيار المجهز -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="اختر المجهز لتجهيز الطلب:"
+                        android:textColor="#38BDF8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupFloatingPreparers"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:singleLine="true" />
+                    </HorizontalScrollView>
+
+                    <!-- حقول مساعدة اختيارية (تعبئة سريعة) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <EditText
+                            android:id="@+id/etCustomerPhone"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/input_bg"
+                            android:textColor="#FFFFFF"
+                            android:textColorHint="#64748B"
+                            android:hint="رقم الهاتف"
+                            android:textSize="12sp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:inputType="phone"
+                            android:layout_marginEnd="6dp" />
+
+                        <EditText
+                            android:id="@+id/etOrderPrice"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/input_bg"
+                            android:textColor="#FFFFFF"
+                            android:textColorHint="#64748B"
+                            android:hint="السعر بالدينار"
+                            android:textSize="12sp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:inputType="number" />
+                    </LinearLayout>
+
+                    <!-- رسالة النتيجة أو الخطأ -->
+                    <TextView
+                        android:id="@+id/tvSubmitStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#10B981"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        android:layout_marginBottom="10dp" />
+
+                    <ProgressBar
+                        android:id="@+id/pbSubmitOrder"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:visibility="gone"
+                        android:layout_marginBottom="10dp" />
+
+                    <!-- زر تثبيت الطلب فوراً -->
+                    <Button
+                        android:id="@+id/btnSubmitOrderDirectly"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="🚀 تثبيت وإضافة الطلب فوراً"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/btn_gradient" />
+
+                </LinearLayout>
+            </ScrollView>
+
+            <!-- 2. واجهة الذكاء الاصطناعي (AI) داخل النافذة العائمة -->
+            <FrameLayout
+                android:id="@+id/layoutTabAiContent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+
+                <WebView
+                    android:id="@+id/floatingAiWebView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent" />
+
+                <ProgressBar
+                    android:id="@+id/pbFloatingAi"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:indeterminate="true" />
+            </FrameLayout>
+
+        </FrameLayout>
+    </LinearLayout>
+
+</RelativeLayout>
