@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { normalizeArabicSearchText } from "@/lib/region-name-normalize";
 
 const excludedModels = new Set([
   "AIConfig",
@@ -81,6 +82,7 @@ type FieldMetadata = {
   isRequired: boolean;
   isId: boolean;
   hasDefaultValue: boolean;
+  isUpdatedAt: boolean;
 };
 
 type ModelMetadata = {
@@ -97,7 +99,7 @@ type DynamicDelegate = {
   deleteMany(args: object): Promise<{ count: number }>;
 };
 
-const modelMetadata = Prisma.dmmf.datamodel.models
+const modelMetadata: ModelMetadata[] = Prisma.dmmf.datamodel.models
   .filter((model) => !excludedModels.has(model.name) && !secretNamePattern.test(model.name))
   .map((model) => ({
     name: model.name,
@@ -117,6 +119,7 @@ const modelMetadata = Prisma.dmmf.datamodel.models
         isRequired: field.isRequired,
         isId: field.isId,
         hasDefaultValue: field.hasDefaultValue,
+        isUpdatedAt: Boolean(field.isUpdatedAt),
       })),
   }));
 
@@ -148,11 +151,78 @@ export function getAiDatabaseSchema(): string {
       fields: model.fields.map((field) => ({
         name: field.name,
         type: field.type,
+        ...(field.isRequired && !field.hasDefaultValue && !field.isId && !field.isUpdatedAt
+          ? { requiredForCreate: true }
+          : {}),
+        ...(field.isId || field.isUpdatedAt ? { generated: true } : {}),
         ...(field.kind === "enum" ? { values: enums.get(field.type) } : {}),
       })),
       relations: relationMap.get(model.name),
     })),
   );
+}
+
+export type EntityCreateIntent =
+  | { status: "resolved"; model: string }
+  | { status: "ambiguous_employee" }
+  | { status: "ambiguous_entity" }
+  | { status: "unavailable"; entity: string };
+
+export function resolveEntityCreateIntent(prompt: string): EntityCreateIntent | null {
+  const normalized = normalizeArabicSearchText(prompt);
+  if (!/(?:^|\s)(?:سوي(?:لي)?|انشئ|انشاا?|اضف(?:لي)?|اضيف(?:لي)?|ضيف(?:لي)?|سجل(?:لي)?|اعمل)(?=\s|$)/u.test(normalized)) {
+    return null;
+  }
+
+  const hasModel = (model: string) => modelMap.has(model);
+  const requestedEntities = [
+    /(?:مورد|موردين|المورد)/u.test(normalized),
+    /(?:مجهز|مجهزين|المجهز)/u.test(normalized),
+    /(?:مندوب|مندوبين|كابتن|سائق)/u.test(normalized),
+    /(?:موظف|موظفين)/u.test(normalized),
+  ].filter(Boolean).length;
+  if (requestedEntities > 1) return { status: "ambiguous_entity" };
+
+  if (/(?:مورد|موردين|المورد)/u.test(normalized)) {
+    return hasModel("StoreSupplier")
+      ? { status: "resolved", model: "StoreSupplier" }
+      : { status: "unavailable", entity: "المورد" };
+  }
+  if (/(?:مجهز|مجهزين|المجهز)/u.test(normalized)) {
+    return hasModel("CompanyPreparer")
+      ? { status: "resolved", model: "CompanyPreparer" }
+      : { status: "unavailable", entity: "المجهز" };
+  }
+  if (/(?:مندوب|مندوبين|كابتن|سائق)/u.test(normalized)) {
+    return hasModel("Courier")
+      ? { status: "resolved", model: "Courier" }
+      : { status: "unavailable", entity: "المندوب" };
+  }
+  if (/(?:موظف|موظفين)/u.test(normalized)) {
+    const isShopEmployee = /(?:موظف.{0,20}(?:محل|متجر|فرع)|(?:محل|متجر|فرع).{0,20}موظف)/u.test(normalized);
+    const isAdminEmployee = /(?:موظف.{0,20}(?:اداره|اداري|الشركه)|(?:اداره|اداري|الشركه).{0,20}موظف)/u.test(normalized);
+    if (isShopEmployee && !hasModel("Employee")) {
+      return { status: "unavailable", entity: "موظف المحل" };
+    }
+    if (isAdminEmployee && !hasModel("StaffEmployee")) {
+      return { status: "unavailable", entity: "موظف الإدارة" };
+    }
+    if (isShopEmployee) return { status: "resolved", model: "Employee" };
+    if (isAdminEmployee) return { status: "resolved", model: "StaffEmployee" };
+    return { status: "ambiguous_employee" };
+  }
+  return null;
+}
+
+export class MissingRequiredCreateFieldsError extends Error {
+  constructor(
+    readonly model: string,
+    readonly data: Record<string, unknown>,
+    readonly fields: Array<{ name: string; type: string }>,
+  ) {
+    super("تحتاج عملية الإنشاء إلى حقول إلزامية إضافية.");
+    this.name = "MissingRequiredCreateFieldsError";
+  }
 }
 
 function getModel(modelName: string): ModelMetadata {
@@ -308,12 +378,14 @@ function validateSelectedFields(model: ModelMetadata, requested: unknown): strin
   return [...new Set(requested.map((name) => getSafeField(model, String(name)).name))];
 }
 
-function normalizeData(model: ModelMetadata, input: unknown): Record<string, unknown> {
+function normalizeData(model: ModelMetadata, input: unknown, allowEmpty = false): Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("بيانات التغيير غير صالحة.");
   }
   const entries = Object.entries(input as Record<string, unknown>);
-  if (entries.length === 0 || entries.length > 20) throw new Error("حدد من 1 إلى 20 حقلاً للتغيير.");
+  if ((!allowEmpty && entries.length === 0) || entries.length > 20) {
+    throw new Error(allowEmpty ? "حدد 20 حقلاً أو أقل للإنشاء." : "حدد من 1 إلى 20 حقلاً للتغيير.");
+  }
   return Object.fromEntries(
     entries.map(([fieldName, value]) => {
       const field = getSafeField(model, fieldName);
@@ -448,20 +520,25 @@ export async function prepareDatabaseChange(plan: DatabasePlan): Promise<{
       throw new Error("إنشاء السجل بهذا الجدول غير مدعوم بسبب حقل رقمي خاص.");
     }
 
-    const data = normalizeData(model, plan.data);
-    const missingRequired = model.fields.find(
+    const data = normalizeData(model, plan.data ?? {}, true);
+    const missingRequired = model.fields.filter(
       (field) =>
         field.isRequired &&
         !field.hasDefaultValue &&
         !field.isId &&
+        !field.isUpdatedAt &&
         !Object.prototype.hasOwnProperty.call(data, field.name),
     );
-    if (missingRequired) {
-      throw new Error(`أحتاج قيمة الحقل "${missingRequired.name}" قبل إنشاء السجل.`);
+    if (missingRequired.length > 0) {
+      throw new MissingRequiredCreateFieldsError(
+        plan.model,
+        data,
+        missingRequired.map(({ name, type }) => ({ name, type })),
+      );
     }
 
     const idField = model.fields.find((field) => field.isId);
-    if (!idField || idField.type !== "String" || blockedWriteFields.has(idField.name)) {
+    if (!idField || idField.type !== "String") {
       throw new Error("إنشاء السجل غير متاح لهذا الجدول بشكل آمن.");
     }
 
