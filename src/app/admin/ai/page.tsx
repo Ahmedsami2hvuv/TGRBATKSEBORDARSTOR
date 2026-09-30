@@ -15,7 +15,13 @@ import {
   Bike,
   Coins,
   RefreshCw,
-  BarChart3
+  BarChart3,
+  ExternalLink,
+  KeyRound,
+  MapPin,
+  Phone,
+  DollarSign,
+  FileText
 } from "lucide-react";
 
 type Message = {
@@ -27,7 +33,15 @@ type Message = {
   orderNumber?: number;
   data?: any;
   needType?: boolean;
+  selectedType?: string;
 };
+
+const ORDER_TYPES = [
+  { id: "طلب من الإدارة", label: "📦 طلب من الإدارة", color: "amber" },
+  { id: "طلب وجهتين", label: "🔄 طلب وجهتين", color: "indigo" },
+  { id: "طلب من محل", label: "🏬 طلب من محل", color: "emerald" },
+  { id: "تجهيز طلب", label: "🛍️ تجهيز طلب", color: "purple" }
+];
 
 export default function AdminAiPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -45,13 +59,24 @@ export default function AdminAiPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
+  // حالة استمارة الطلب السريع داخل الدردشة
+  const [activeFormMsgId, setActiveFormMsgId] = useState<string | null>(null);
+  const [orderFormData, setOrderFormData] = useState({
+    orderType: "طلب من الإدارة",
+    customerPhone: "",
+    regionName: "جيكور",
+    totalAmount: "",
+    summary: ""
+  });
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, activeFormMsgId]);
 
   // إعداد التعرف الصوتي (Web Speech API)
   useEffect(() => {
@@ -131,31 +156,97 @@ export default function AdminAiPage() {
       });
 
       const data = await res.json();
+      const aiMsgId = `ai_${Date.now()}`;
 
       const aiMsg: Message = {
-        id: `ai_${Date.now()}`,
+        id: aiMsgId,
         sender: "ai",
         text: data.message || "تم تنفيذ طلبك بنجاح ✅",
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" }),
         action: data.action,
         orderNumber: data.orderNumber,
         data: data.data,
-        needType: data.needType
+        needType: data.needType,
+        selectedType: data.selectedType || "طلب من الإدارة"
       };
 
       setMessages((prev) => [...prev, aiMsg]);
+
+      // إذا كانت الرسالة تطلب إنشاء طلب، نفتح استمارة الإدخال تلقائياً
+      if (data.needType) {
+        setActiveFormMsgId(aiMsgId);
+        if (data.selectedType) {
+          setOrderFormData((prev) => ({ ...prev, orderType: data.selectedType }));
+        }
+      }
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
           id: `ai_err_${Date.now()}`,
           sender: "ai",
-          text: "⚠️ تعذر الاتصال بالخادم، يرجى المحاولة مرة ثانية.",
+          text: "⚠️ تعذر الاتصال بالخادم، يرجى التأكد من مفاتيح Gemini والمحاولة ثانية.",
           timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
         }
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // تثبيت طلب سريع مباشرة في Supabase
+  const handleQuickOrderSubmit = async (msgId: string) => {
+    if (!orderFormData.customerPhone.trim() && !orderFormData.totalAmount.trim()) {
+      alert("يرجى إدخال رقم هاتف الزبون أو المبلغ على الأقل.");
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    try {
+      const res = await fetch("/api/ai-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          createOrder: true,
+          orderType: orderFormData.orderType,
+          customerPhone: orderFormData.customerPhone,
+          regionName: orderFormData.regionName,
+          totalAmount: parseFloat(orderFormData.totalAmount) || 0,
+          summary: orderFormData.summary
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.done && data.orderNumber) {
+        // إغلاق الاستمارة وإضافة بطاقة النتيجة
+        setActiveFormMsgId(null);
+        setOrderFormData({
+          orderType: "طلب من الإدارة",
+          customerPhone: "",
+          regionName: "جيكور",
+          totalAmount: "",
+          summary: ""
+        });
+
+        const successMsg: Message = {
+          id: `ai_order_${Date.now()}`,
+          sender: "ai",
+          text: `تم بحمد الله تثبيت ${orderFormData.orderType} برقم #${data.orderNumber} في قاعدة البيانات بنجاح! 🚀`,
+          timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" }),
+          action: "create_order",
+          orderNumber: data.orderNumber,
+          data: data
+        };
+
+        setMessages((prev) => [...prev, successMsg]);
+      } else {
+        alert(data.message || "حدث خطأ أثناء تثبيت الطلب.");
+      }
+    } catch (e: any) {
+      alert("تعذر الاتصال بالخادم لتثبيت الطلب.");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -175,6 +266,7 @@ export default function AdminAiPage() {
         timestamp: new Date().toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
       }
     ]);
+    setActiveFormMsgId(null);
   };
 
   return (
@@ -183,7 +275,7 @@ export default function AdminAiPage() {
       <header className="flex items-center justify-between px-4 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin"
+            href="/abo1stor3hlaa2kbr8-47"
             className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
             title="الرجوع للوحة التحكم"
           >
@@ -205,13 +297,25 @@ export default function AdminAiPage() {
           </div>
         </div>
 
-        <button
-          onClick={clearChat}
-          className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-          title="مسح الدردشة"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* رابط سريع لإدارة مفاتيح Gemini API */}
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/settings/ai"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition"
+            title="إعداد مفاتيح Gemini"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">مفاتيح</span> Gemini
+          </Link>
+
+          <button
+            onClick={clearChat}
+            className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+            title="مسح الدردشة"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* منطقة الرسائل */}
@@ -222,7 +326,7 @@ export default function AdminAiPage() {
             className={`flex flex-col ${msg.sender === "user" ? "items-start" : "items-end"}`}
           >
             <div
-              className={`max-w-[88%] sm:max-w-[75%] rounded-2xl p-4 shadow-md text-sm sm:text-base leading-relaxed whitespace-pre-line ${
+              className={`max-w-[92%] sm:max-w-[78%] rounded-2xl p-4 shadow-md text-sm sm:text-base leading-relaxed whitespace-pre-line ${
                 msg.sender === "user"
                   ? "bg-amber-600 text-white rounded-tr-none self-end"
                   : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none self-start"
@@ -230,21 +334,23 @@ export default function AdminAiPage() {
             >
               {msg.text}
 
-              {/* بطاقة الطلب المنشأ إن وجدت */}
+              {/* بطاقة الطلب المثبت بنجاح */}
               {msg.action === "create_order" && msg.orderNumber && (
-                <div className="mt-3 p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-xs sm:text-sm text-slate-300 space-y-2">
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-950 border border-emerald-500/40 text-xs sm:text-sm text-slate-300 space-y-2.5">
                   <div className="flex items-center justify-between font-bold text-emerald-400">
                     <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      طلب مثبت #{msg.orderNumber}
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      طلب مثبت في قاعدة البيانات #{msg.orderNumber}
                     </span>
                     <Link
-                      href={`/admin/orders/${msg.orderNumber}`}
-                      target="_blank"
-                      className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-medium transition"
+                      href="/abo1stor3hlaa2kbr8-47/orders/tracking"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-medium transition flex items-center gap-1"
                     >
-                      عرض الطلب ↗
+                      تتبع الطلبات ↗
                     </Link>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    تم إنشاء وحفظ الطلب في Supabase بحالة قيد الانتظار (pending).
                   </div>
                 </div>
               )}
@@ -264,32 +370,120 @@ export default function AdminAiPage() {
                   <span>تم تحويل وإشعار المندوب لاستلام وتوصيل الطلب.</span>
                 </div>
               )}
-              {/* أزرار اختيار نوع الطلب عند طلب إنشاء طلب */}
+
+              {/* استمارة إدخال الطلب السريعة داخل الشات */}
               {msg.needType && (
-                <div className="mt-3 grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-950/90 border border-amber-500/30 space-y-3">
+                  <div className="text-xs font-bold text-amber-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Package className="w-4 h-4 text-amber-400" />
+                      إنشاء طلب سريع عبر Supabase
+                    </span>
+                    <Link
+                      href="/abo1stor3hlaa2kbr8-47/orders/new"
+                      target="_blank"
+                      className="text-[11px] text-slate-400 hover:text-white underline flex items-center gap-1"
+                    >
+                      الصفحة الكاملة <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+
+                  {/* أزرار اختيار نوع الطلب */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {ORDER_TYPES.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setOrderFormData((prev) => ({ ...prev, orderType: t.id }));
+                          setActiveFormMsgId(msg.id);
+                        }}
+                        className={`p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border ${
+                          orderFormData.orderType === t.id
+                            ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md font-extrabold"
+                            : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* حقول الإدخال السريعة */}
+                  <div className="space-y-2 pt-1">
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="رقم هاتف الزبون (مثال: 07701234567)"
+                        value={orderFormData.customerPhone}
+                        onChange={(e) =>
+                          setOrderFormData({ ...orderFormData, customerPhone: e.target.value })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="المنطقة (مثال: جيكور)"
+                          value={orderFormData.regionName}
+                          onChange={(e) =>
+                            setOrderFormData({ ...orderFormData, regionName: e.target.value })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <DollarSign className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                        <input
+                          type="number"
+                          placeholder="المبلغ (د.ع)"
+                          value={orderFormData.totalAmount}
+                          onChange={(e) =>
+                            setOrderFormData({ ...orderFormData, totalAmount: e.target.value })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <FileText className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="ملاحظات أو نقطة دالة (اختياري)"
+                        value={orderFormData.summary}
+                        onChange={(e) =>
+                          setOrderFormData({ ...orderFormData, summary: e.target.value })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* زر التثبيت */}
                   <button
-                    onClick={() => handleSendMessage("طلب من الإدارة")}
-                    className="p-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    type="button"
+                    onClick={() => handleQuickOrderSubmit(msg.id)}
+                    disabled={isSubmittingOrder}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-950 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
-                    📦 طلب من الإدارة
-                  </button>
-                  <button
-                    onClick={() => handleSendMessage("طلب وجهتين")}
-                    className="p-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    🔄 طلب وجهتين
-                  </button>
-                  <button
-                    onClick={() => handleSendMessage("طلب من محل")}
-                    className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    🏬 طلب من محل
-                  </button>
-                  <button
-                    onClick={() => handleSendMessage("تجهيز طلب")}
-                    className="p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    🛍️ تجهيز طلب
+                    {isSubmittingOrder ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>جاري التثبيت في Supabase...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>تثبيت الطلب في قاعدة البيانات فوراً 🚀</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
