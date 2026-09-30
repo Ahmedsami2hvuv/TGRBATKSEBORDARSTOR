@@ -105,7 +105,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (intent?.action == Intent.ACTION_ASSIST || intent?.action == Intent.ACTION_VOICE_COMMAND) {
-            val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+            val aiIntent = Intent(this, FloatingAdminActivity::class.java).apply {
+                putExtra("extra_tab", "tab_ai")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             startActivity(aiIntent)
@@ -831,7 +832,8 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent?.action == Intent.ACTION_ASSIST || intent?.action == Intent.ACTION_VOICE_COMMAND) {
-            val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+            val aiIntent = Intent(this, FloatingAdminActivity::class.java).apply {
+                putExtra("extra_tab", "tab_ai")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             startActivity(aiIntent)
@@ -1129,8 +1131,10 @@ class MainActivity : AppCompatActivity() {
         fun openFloatingAiChat() {
             runOnUiThread {
                 try {
-                    val intent = Intent(this@MainActivity, FloatingAiChatActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val intent = Intent(this@MainActivity, FloatingAdminActivity::class.java).apply {
+                        putExtra("extra_tab", "tab_ai")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
                     startActivity(intent)
                 } catch (e: Exception) {
                     webView.loadUrl("https://aboakbr.com/admin/ai")

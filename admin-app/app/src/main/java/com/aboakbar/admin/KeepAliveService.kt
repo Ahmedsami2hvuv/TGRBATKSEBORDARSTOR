@@ -32,7 +32,8 @@ class KeepAliveService : Service() {
         }
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, pendingIntentFlags)
 
-        val aiIntent = Intent(this, FloatingAiChatActivity::class.java).apply {
+        val aiIntent = Intent(this, FloatingAdminActivity::class.java).apply {
+            putExtra("extra_tab", "tab_ai")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val aiPendingIntent = PendingIntent.getActivity(this, 102, aiIntent, pendingIntentFlags)
