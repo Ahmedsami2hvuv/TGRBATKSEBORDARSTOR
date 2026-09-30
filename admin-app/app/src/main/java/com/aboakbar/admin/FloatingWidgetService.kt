@@ -17,7 +17,6 @@ import android.provider.Settings
 import android.view.*
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import kotlin.math.abs
 
@@ -29,6 +28,8 @@ class FloatingWidgetService : Service() {
 
     private val CHANNEL_ID = "floating_widget_channel"
     private val NOTIFICATION_ID = 2002
+    private val PREFS_NAME = "floating_widget_prefs"
+    private val KEY_ENABLED = "enabled"
 
     companion object {
         const val ACTION_SHOW = "com.aboakbar.admin.ACTION_SHOW_FLOATING_WIDGET"
@@ -48,8 +49,83 @@ class FloatingWidgetService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_SHOW -> {
+                setEnabled(true)
+                showFloatingWidget()
+                return START_STICKY
+            }
+            ACTION_HIDE -> {
+                setEnabled(false)
+                stopFloatingWidget()
+                return START_NOT_STICKY
+            }
+            ACTION_SET_INVISIBLE -> {
+                if (isEnabled()) {
+                    showFloatingWidget()
+                    floatingBubbleView?.visibility = View.GONE
+                    return START_STICKY
+                }
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_SET_VISIBLE -> {
+                if (isEnabled()) {
+                    showFloatingWidget()
+                    return START_STICKY
+                }
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            null -> {
+                if (isEnabled()) {
+                    showFloatingWidget()
+                    return START_STICKY
+                }
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            else -> {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        }
+    }
+
+    private fun isEnabled(): Boolean =
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
+
+    private fun setEnabled(enabled: Boolean) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_ENABLED, enabled)
+            .apply()
+    }
+
+    private fun showFloatingWidget() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            setEnabled(false)
+            stopFloatingWidget()
+            return
+        }
+
+        startForegroundNotification()
+        if (floatingBubbleView == null) {
+            initFloatingBubble()
+        } else {
+            floatingBubbleView?.visibility = View.VISIBLE
+        }
+    }
+
+    private fun stopFloatingWidget() {
+        removeFloatingBubble()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
         stopSelf()
-        return START_NOT_STICKY
     }
 
     private fun startForegroundNotification() {
@@ -78,8 +154,12 @@ class FloatingWidgetService : Service() {
             .setOngoing(true)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
@@ -114,13 +194,13 @@ class FloatingWidgetService : Service() {
             y = screenSize.y / 3
         }
 
-        setupBubbleTouch()
-
         try {
+            setupBubbleTouch()
             windowManager?.addView(floatingBubbleView, layoutParams)
         } catch (e: Exception) {
             e.printStackTrace()
-            stopSelf()
+            setEnabled(false)
+            stopFloatingWidget()
         }
     }
 
@@ -236,6 +316,10 @@ class FloatingWidgetService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
+        removeFloatingBubble()
+    }
+
+    private fun removeFloatingBubble() {
         if (floatingBubbleView != null) {
             try {
                 windowManager?.removeView(floatingBubbleView)

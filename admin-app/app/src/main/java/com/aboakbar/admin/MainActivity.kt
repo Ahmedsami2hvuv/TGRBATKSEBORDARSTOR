@@ -213,19 +213,6 @@ class MainActivity : AppCompatActivity() {
         requestAppPermissions()
         
         setupLongPressMenu()
-
-        stopFloatingWidgetService()
-    }
-
-    private fun stopFloatingWidgetService() {
-        try {
-            val intent = Intent(this, FloatingWidgetService::class.java).apply {
-                action = FloatingWidgetService.ACTION_HIDE
-            }
-            stopService(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     private fun requestAppPermissions() {
@@ -838,7 +825,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        stopFloatingWidgetService()
         // مزامنة التوكن فوراً عند العودة للتطبيق لضمان عمل QuickDraftActivity
         syncTokenFromCookies()
         
@@ -1359,4 +1345,3 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
-

@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <queries>
@@ -153,9 +154,13 @@
 
         <service
             android:name="com.aboakbar.admin.FloatingWidgetService"
-            android:foregroundServiceType="dataSync"
+            android:foregroundServiceType="specialUse"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keep the user-enabled floating administrator menu visible over other apps." />
+        </service>
 
         <receiver
             android:name="com.aboakbar.admin.AdminAppWidgetProvider"
