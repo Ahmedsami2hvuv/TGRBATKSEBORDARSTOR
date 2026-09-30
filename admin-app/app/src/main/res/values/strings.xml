@@ -7,6 +7,16 @@
     <string name="biometric_cancel">إلغاء</string>
     <string name="incorrect_passcode">الرمز السري غير صحيح!</string>
     <string name="loading">جارٍ التحميل...</string>
-    <string name="shortcut_ai_short">المساعد العائم</string>
-    <string name="shortcut_ai_long">✨ المساعد الذكي العائم</string>
+    <string name="shortcut_ai_short">المساعد الذكي</string>
+    <string name="shortcut_ai_long">🤖 المساعد الذكي (AI)</string>
+    <string name="shortcut_floating_widget">الزر العائم</string>
+    <string name="shortcut_floating_widget_long">🔘 تشغيل الزر العائم</string>
+    <string name="shortcut_add_order">إضافة طلب</string>
+    <string name="shortcut_add_order_long">➕ إضافة طلب جديد</string>
+    <string name="shortcut_orders">الطلبات</string>
+    <string name="shortcut_orders_long">📦 إدارة الطلبات</string>
+    <string name="app_widget_title">أبو الأكبر - لوحة التحكم</string>
+    <string name="floating_widget_permission_required">يرجى تفعيل صلاحية الظهور فوق التطبيقات لإظهار الزر العائم</string>
+    <string name="floating_widget_started">تم تفعيل الزر العائم بنجاح</string>
+    <string name="floating_widget_stopped">تم إخفاء الزر العائم</string>
 </resources>

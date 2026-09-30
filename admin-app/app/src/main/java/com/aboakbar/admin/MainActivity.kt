@@ -765,7 +765,7 @@ class MainActivity : AppCompatActivity() {
         // استرجاع آخر رابط تمت زيارته لضمان الحفاظ على موضع المستخدم
         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val savedLastUrl = sharedPreferences.getString("last_visited_url", null)
-        val targetUrl = intent.getStringExtra("target_url") ?: savedLastUrl ?: ADMIN_DASHBOARD_URL
+        val targetUrl = intent.getStringExtra("OPEN_URL") ?: intent.getStringExtra("target_url") ?: savedLastUrl ?: ADMIN_DASHBOARD_URL
         
         // تحميل الصفحة فقط إذا لم تكن محملة بالفعل
         if (webView.url != targetUrl) {

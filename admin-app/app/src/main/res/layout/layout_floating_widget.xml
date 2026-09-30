@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <!-- القائمة المنبثقة للاختصارات العائمة -->
+    <LinearLayout
+        android:id="@+id/layoutFloatingMenu"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_floating_menu"
+        android:padding="12dp"
+        android:elevation="12dp"
+        android:layout_marginBottom="70dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:visibility="gone">
+
+        <!-- ترويسة القائمة -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_floating_widget"
+                android:contentDescription="أيقونة" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="لوحة الاختصارات السريعة"
+                android:textColor="#38BDF8"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+
+            <ImageView
+                android:id="@+id/btnDismissMenu"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_close_floating"
+                android:padding="3dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="إغلاق القائمة" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#2638BDF8"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 1. زر المساعد الذكي AI -->
+        <LinearLayout
+            android:id="@+id/btnShortcutAi"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_floating_item"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_ai_shortcut"
+                android:contentDescription="ذكاء اصطناعي" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🤖 المساعد الذكي (AI)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginStart="10dp" />
+        </LinearLayout>
+
+        <!-- 2. زر إضافة طلب -->
+        <LinearLayout
+            android:id="@+id/btnShortcutAddOrder"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_floating_item"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_add_order_shortcut"
+                android:contentDescription="إضافة طلب" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="➕ إضافة طلب جديد"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginStart="10dp" />
+        </LinearLayout>
+
+        <!-- 3. زر قائمة الطلبات -->
+        <LinearLayout
+            android:id="@+id/btnShortcutOrders"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_floating_item"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_orders_shortcut"
+                android:contentDescription="الطلبات" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📦 إدارة الطلبات"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginStart="10dp" />
+        </LinearLayout>
+
+        <!-- 4. زر لوحة التحكم الرئيسية -->
+        <LinearLayout
+            android:id="@+id/btnShortcutHome"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_floating_item"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_home_shortcut"
+                android:contentDescription="الرئيسية" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏠 الرئيسية (الداشبورد)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginStart="10dp" />
+        </LinearLayout>
+
+        <!-- 5. زر إخفاء الزر العائم -->
+        <LinearLayout
+            android:id="@+id/btnHideFloatingWidget"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_floating_item"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_close_floating"
+                android:contentDescription="إخفاء" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="إخفاء الزر العائم"
+                android:textColor="#EF4444"
+                android:textSize="11sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- الزر العائم الرئيسي (الفقاعة العائمة القابلة للسحب) -->
+    <FrameLayout
+        android:id="@+id/layoutFloatingBubble"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:background="@drawable/bg_floating_bubble"
+        android:elevation="16dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/imgFloatingIcon"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_floating_widget"
+            android:contentDescription="الزر العائم" />
+    </FrameLayout>
+
+</FrameLayout>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_floating_menu"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!-- شعار واسم التطبيق -->
+    <LinearLayout
+        android:id="@+id/widgetBtnMainApp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.2"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="أبو الأكبر"
+            android:textColor="#38BDF8"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="لوحة الإدارة"
+            android:textColor="#94A3B8"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- الأزرار السريعة -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- 1. زر تفعيل الزر العائم -->
+        <ImageButton
+            android:id="@+id/widgetBtnFloating"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_floating_item"
+            android:src="@drawable/ic_floating_widget"
+            android:contentDescription="الزر العائم"
+            android:layout_marginEnd="6dp" />
+
+        <!-- 2. زر المساعد الذكي AI -->
+        <ImageButton
+            android:id="@+id/widgetBtnAi"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_floating_item"
+            android:src="@drawable/ic_ai_shortcut"
+            android:contentDescription="المساعد الذكي"
+            android:layout_marginEnd="6dp" />
+
+        <!-- 3. زر إضافة طلب -->
+        <ImageButton
+            android:id="@+id/widgetBtnAddOrder"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_floating_item"
+            android:src="@drawable/ic_add_order_shortcut"
+            android:contentDescription="إضافة طلب"
+            android:layout_marginEnd="6dp" />
+
+        <!-- 4. زر الطلبات -->
+        <ImageButton
+            android:id="@+id/widgetBtnOrders"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_floating_item"
+            android:src="@drawable/ic_orders_shortcut"
+            android:contentDescription="الطلبات" />
+
+    </LinearLayout>
+
+</LinearLayout>
