@@ -5,7 +5,6 @@ import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-order-parse";
 import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
-import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 import { submitAdminPreparationDraft, type AdminPrepState } from "./actions";
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
@@ -136,12 +135,10 @@ export function AdminPreparationClient({
           setTitleLine(list[0]!.name);
           return;
         }
-        const normTitle = normalizeRegionNameForMatch(qq);
-        const exact = list.find((x) => normalizeRegionNameForMatch(x.name) === normTitle);
-        if (exact) {
-          setSelected(exact);
-          setQ(exact.name);
-          setTitleLine(exact.name);
+        if (list.length > 1) {
+          setSelected(null);
+          setQ(qq);
+          setHits(list);
           return;
         }
       } catch {

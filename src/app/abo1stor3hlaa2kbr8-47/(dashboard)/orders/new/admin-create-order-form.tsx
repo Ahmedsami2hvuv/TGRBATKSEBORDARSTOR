@@ -113,7 +113,6 @@ import { ClientVoiceNoteField } from "@/app/client/order/client-voice-note-field
 import { createAdminOrder, type AdminCreateOrderState } from "./actions";
 import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-order-parse";
 import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
-import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
@@ -558,12 +557,10 @@ function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
  setTitleLine(list[0]!.name);
  return;
  }
- const normTitle = normalizeRegionNameForMatch(qq);
- const exact = list.find((x) => normalizeRegionNameForMatch(x.name) === normTitle);
- if (exact) {
- setPrepSelectedRegion(exact);
- setPrepRegionQ(exact.name);
- setTitleLine(exact.name);
+ if (list.length > 1) {
+ setPrepSelectedRegion(null);
+ setPrepRegionQ(qq);
+ setPrepHits(list);
  return;
  }
  } catch {}

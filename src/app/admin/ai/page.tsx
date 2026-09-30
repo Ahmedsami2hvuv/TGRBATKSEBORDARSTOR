@@ -43,6 +43,16 @@ type SpeechRecognitionWindow = Window & {
   webkitSpeechRecognition?: new () => SpeechRecognitionLike;
 };
 
+type PreparationDraft = {
+  regionName?: string;
+  customerPhone?: string;
+  products?: string[];
+  originalText?: string;
+  regions?: Array<{ id: string; name: string; deliveryPrice: string }>;
+  preparers?: Array<{ id: string; name: string }>;
+  suppliers?: Array<{ id: string; name: string }>;
+};
+
 type Message = {
   id: string;
   sender: "user" | "ai";
@@ -52,6 +62,7 @@ type Message = {
   orderNumber?: number;
   needType?: boolean;
   selectedCategory?: "single" | "double" | "shop" | "prep";
+  preparationDraft?: PreparationDraft;
   pendingAction?: {
     confirmationToken: string;
     preview: {
@@ -116,6 +127,13 @@ export default function AdminAiPage() {
     prepText: ""
   });
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [preparationDraft, setPreparationDraft] = useState<PreparationDraft | null>(null);
+  const [selectedPreparationRegionId, setSelectedPreparationRegionId] = useState("");
+  const [selectedPreparerIds, setSelectedPreparerIds] = useState<string[]>([]);
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>([]);
+  const [preparationReviewReady, setPreparationReviewReady] = useState(false);
+  const [isLoadingPreparation, setIsLoadingPreparation] = useState(false);
+  const [preparationError, setPreparationError] = useState("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,6 +187,75 @@ export default function AdminAiPage() {
     }
   };
 
+  const applyPreparationDraft = (draft: PreparationDraft) => {
+    setPreparationDraft(draft);
+    setSelectedPreparationRegionId(draft.regions?.length === 1 ? draft.regions[0]!.id : "");
+    setSelectedPreparerIds([]);
+    setSelectedSupplierIds([]);
+    setPreparationReviewReady(Boolean(draft.originalText));
+    setPreparationError("");
+    setFormData((previous) => ({
+      ...previous,
+      prepText: draft.originalText ?? previous.prepText,
+      customerPhone: draft.customerPhone ?? previous.customerPhone,
+      regionName: draft.regionName ?? previous.regionName,
+    }));
+  };
+
+  const loadPreparationChoices = async (regionName = "") => {
+    setIsLoadingPreparation(true);
+    setPreparationError("");
+    try {
+      const response = await fetch("/api/ai-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preparationChoices: true, regionName }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.preparationChoices) {
+        throw new Error(result.message || "تعذر تحميل أسماء المجهزين والموردين.");
+      }
+      setPreparationDraft((previous) => ({
+        ...previous,
+        ...result.preparationChoices,
+        regionName: regionName || previous?.regionName,
+      }));
+    } catch (error) {
+      setPreparationError(error instanceof Error ? error.message : "تعذر تحميل خيارات طلب التجهيز.");
+    } finally {
+      setIsLoadingPreparation(false);
+    }
+  };
+
+  const analyzePreparationText = async () => {
+    if (!formData.prepText.trim()) {
+      setPreparationError("الصق رسالة التجهيز أولاً.");
+      return;
+    }
+    setIsLoadingPreparation(true);
+    setPreparationError("");
+    try {
+      const response = await fetch("/api/ai-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analyzePreparation: true, prepText: formData.prepText }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.preparationDraft) {
+        throw new Error(result.message || "تعذر تحليل رسالة التجهيز.");
+      }
+      applyPreparationDraft(result.preparationDraft);
+    } catch (error) {
+      setPreparationError(error instanceof Error ? error.message : "تعذر تحليل رسالة التجهيز.");
+    } finally {
+      setIsLoadingPreparation(false);
+    }
+  };
+
+  const toggleSelection = (current: string[], id: string, update: (next: string[]) => void) => {
+    update(current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputMessage).trim();
     if (!text || isLoading) return;
@@ -208,6 +295,7 @@ export default function AdminAiPage() {
         orderNumber: data.orderNumber,
         needType: data.needType,
         selectedCategory: data.selectedCategory || "single",
+        preparationDraft: data.preparationDraft,
         pendingAction: data.pendingAction
       };
 
@@ -218,6 +306,9 @@ export default function AdminAiPage() {
         setActiveFormMsgId(aiMsgId);
         if (data.selectedCategory) {
           setCategory(data.selectedCategory);
+        }
+        if (data.preparationDraft) {
+          applyPreparationDraft(data.preparationDraft);
         }
       }
     } catch {
@@ -304,6 +395,22 @@ export default function AdminAiPage() {
         alert("يرجى كتابة رسالة التفاصيل والمنتجات المطلوبة للتجهيز");
         return;
       }
+      if (!preparationReviewReady) {
+        await analyzePreparationText();
+        return;
+      }
+      if (!selectedPreparationRegionId) {
+        setPreparationError("اختار المنطقة الصحيحة قبل تثبيت الطلب.");
+        return;
+      }
+      if (selectedPreparerIds.length === 0) {
+        setPreparationError("اختار مجهّزاً واحداً على الأقل قبل تثبيت الطلب.");
+        return;
+      }
+      if (!formData.customerPhone.trim()) {
+        setPreparationError("تأكد من رقم الزبون في السطر الثاني من الرسالة.");
+        return;
+      }
     }
 
     setIsSubmittingOrder(true);
@@ -324,7 +431,10 @@ export default function AdminAiPage() {
           receiverPhone: formData.receiverPhone,
           receiverRegionName: formData.receiverRegionName,
           shopName: formData.shopName,
-          prepText: formData.prepText
+          prepText: formData.prepText,
+          preparationRegionId: selectedPreparationRegionId,
+          preparerIds: selectedPreparerIds,
+          supplierIds: selectedSupplierIds,
         })
       });
 
@@ -332,6 +442,7 @@ export default function AdminAiPage() {
 
       if (data.done && data.orderNumber) {
         setActiveFormMsgId(null);
+        setPreparationReviewReady(false);
         const successMsg: Message = {
           id: `ai_order_${Date.now()}`,
           sender: "ai",
@@ -351,7 +462,7 @@ export default function AdminAiPage() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -546,6 +657,13 @@ export default function AdminAiPage() {
                         onClick={() => {
                           setCategory(c.id);
                           setActiveFormMsgId(msg.id);
+                          if (c.id === "prep" && !msg.preparationDraft) {
+                            setPreparationReviewReady(false);
+                            setSelectedPreparationRegionId("");
+                            setSelectedPreparerIds([]);
+                            setSelectedSupplierIds([]);
+                            void loadPreparationChoices(formData.regionName);
+                          }
                         }}
                         className={`p-2 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-0.5 border ${
                           category === c.id
@@ -793,20 +911,103 @@ export default function AdminAiPage() {
                       <>
                         <div className="relative">
                           <textarea
-                            rows={3}
-                            placeholder="اكتب هنا رسالة الطلب وقائمة المواد والمنتجات بالتفصيل... *"
+                            rows={6}
+                            placeholder={"الصق الرسالة بهذا الشكل:\nجيكور\n07733921468\nخيار\nبصل\nلحم"}
                             value={formData.prepText}
-                            onChange={(e) => setFormData({ ...formData, prepText: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 resize-none leading-relaxed"
+                            onChange={(e) => {
+                              setFormData({ ...formData, prepText: e.target.value });
+                              setPreparationReviewReady(false);
+                              setSelectedPreparationRegionId("");
+                              setSelectedPreparerIds([]);
+                              setSelectedSupplierIds([]);
+                              setPreparationError("");
+                            }}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 resize-y leading-relaxed"
                           />
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => void analyzePreparationText()}
+                          disabled={isLoadingPreparation || !formData.prepText.trim()}
+                          className="w-full rounded-xl border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-xs font-bold text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
+                        >
+                          {isLoadingPreparation ? "جاري تحليل الطلب..." : "تحليل الرسالة وعرض خيارات التجهيز"}
+                        </button>
+
+                        {preparationDraft && (
+                          <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+                            <div>
+                              <p className="mb-2 text-xs font-bold text-amber-300">اختار المنطقة الصحيحة</p>
+                              {preparationDraft.regions?.length ? (
+                                <div className="space-y-1.5">
+                                  {preparationDraft.regions.map((region) => (
+                                    <label key={region.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs text-slate-200">
+                                      <input
+                                        type="radio"
+                                        name="preparation-region"
+                                        checked={selectedPreparationRegionId === region.id}
+                                        onChange={() => setSelectedPreparationRegionId(region.id)}
+                                      />
+                                      <span>{region.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-rose-300">ما لقيت منطقة تطابق الاسم. عدّل السطر الأول واضغط تحليل من جديد.</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <p className="mb-2 text-xs font-bold text-emerald-300">المجهّزون المتاحون — اختار واحداً أو أكثر</p>
+                              {preparationDraft.preparers?.length ? (
+                                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                                  {preparationDraft.preparers.map((preparer) => (
+                                    <label key={preparer.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs text-slate-200">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedPreparerIds.includes(preparer.id)}
+                                        onChange={() => toggleSelection(selectedPreparerIds, preparer.id, setSelectedPreparerIds)}
+                                      />
+                                      <span>{preparer.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-rose-300">ماكو مجهّزين متاحين للإسناد حالياً.</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <p className="mb-2 text-xs font-bold text-sky-300">الموردون — اختيارهم اختياري</p>
+                              {preparationDraft.suppliers?.length ? (
+                                <div className="grid max-h-36 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
+                                  {preparationDraft.suppliers.map((supplier) => (
+                                    <label key={supplier.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs text-slate-200">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedSupplierIds.includes(supplier.id)}
+                                        onChange={() => toggleSelection(selectedSupplierIds, supplier.id, setSelectedSupplierIds)}
+                                      />
+                                      <span>{supplier.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-slate-400">ماكو موردين متاحين حالياً.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {preparationError && <p className="text-xs font-semibold text-rose-300">{preparationError}</p>}
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="relative">
                             <Phone className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
                             <input
                               type="text"
-                              placeholder="رقم الهاتف (اختياري)"
+                              placeholder="رقم هاتف الزبون *"
                               value={formData.customerPhone}
                               onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
                               className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
@@ -851,7 +1052,7 @@ export default function AdminAiPage() {
                   <button
                     type="button"
                     onClick={handleQuickOrderSubmit}
-                    disabled={isSubmittingOrder}
+                    disabled={isSubmittingOrder || isLoadingPreparation}
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-950 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
                     {isSubmittingOrder ? (
@@ -862,7 +1063,7 @@ export default function AdminAiPage() {
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>تثبيت الطلب في قاعدة البيانات فوراً 🚀</span>
+                        <span>{category === "prep" ? "تثبيت الطلب وإرساله للمجهّزين 🚀" : "تثبيت الطلب في قاعدة البيانات فوراً 🚀"}</span>
                       </>
                     )}
                   </button>
@@ -917,8 +1118,8 @@ export default function AdminAiPage() {
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
 
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -926,7 +1127,7 @@ export default function AdminAiPage() {
               isListening ? "جاري الاستماع لصوتك..." : "اكتب أمرك بالعراقي أو دوس المايك..."
             }
             disabled={isLoading}
-            className="flex-1 bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition"
+            className="max-h-32 min-h-12 flex-1 resize-y overflow-y-auto bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition"
           />
 
           <button

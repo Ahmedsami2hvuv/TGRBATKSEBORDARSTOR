@@ -125,6 +125,19 @@ export function PreparerShoppingDraftEditClient({
   const customerDisplayName = (customerName || "").trim() || initialDraft.customerRegion?.name || (!isLikelyPhoneText(fallbackTitle) ? fallbackTitle : "") || "—";
   const[showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [placesCount, setPlacesCount] = useState<number | "">(initialDraft.placesCount ?? "");
+  const draftMetadata =
+    initialDraft.data && typeof initialDraft.data === "object" && !Array.isArray(initialDraft.data)
+      ? initialDraft.data as Record<string, unknown>
+      : {};
+  const selectedSupplierNames = Array.isArray(draftMetadata.selectedSuppliers)
+    ? draftMetadata.selectedSuppliers
+        .map((supplier) => {
+          if (!supplier || typeof supplier !== "object") return "";
+          const name = (supplier as Record<string, unknown>).name;
+          return typeof name === "string" ? name.trim() : "";
+        })
+        .filter(Boolean)
+    : [];
   const [customDeliveryAlf, setCustomDeliveryAlf] = useState<string>(() => {
     const d = initialDraft.data as any;
     return (d && d.customDeliveryAlf != null) ? String(d.customDeliveryAlf) : "";
@@ -836,6 +849,13 @@ export function PreparerShoppingDraftEditClient({
             )}
         </div>
       </section>
+
+      {selectedSupplierNames.length > 0 && (
+        <section className="kse-glass-dark rounded-2xl border border-sky-200 p-4 shadow-sm">
+          <h2 className="text-sm font-black text-sky-950">الموردون الذين اختارتهم الإدارة</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-700">{selectedSupplierNames.join("، ")}</p>
+        </section>
+      )}
 
         <button type="button" onClick={() => setShowCustomerInfo((v) => !v)} className="flex w-full items-center justify-between rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-black text-sky-950">
           <span>المنطقة: {customerDisplayName}</span>

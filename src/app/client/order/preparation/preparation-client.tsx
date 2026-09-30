@@ -6,7 +6,6 @@ import { clientOrderHistoryPath } from "@/lib/client-order-portal-nav";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-order-parse";
 import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
-import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 import {
   submitEmployeePreparationDraft,
   type EmployeePreparationState,
@@ -124,10 +123,10 @@ export function EmployeePreparationClient({
         setQ(list[0]!.name);
         return;
       }
-      const exact = list.find((x) => normalizeRegionNameForMatch(x.name) === normalizeRegionNameForMatch(qq));
-      if (exact) {
-        setSelected(exact);
-        setQ(exact.name);
+      if (list.length > 1) {
+        setSelected(null);
+        setQ(qq);
+        setHits(list);
       }
     } catch {}
   }

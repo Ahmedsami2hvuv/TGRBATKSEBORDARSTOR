@@ -6,6 +6,7 @@ import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from '@/lib/admin-order-from-adm
 import { normalizeIraqMobileLocal11 } from '@/lib/whatsapp'
 import { SignJWT, jwtVerify } from 'jose'
 import { isAdminSession, getCurrentSessionIsAccountant } from '@/lib/admin-session'
+import { normalizeArabicSearchText, normalizeRegionNameForMatch } from '@/lib/region-name-normalize'
 import {
   applyDatabaseChange,
   executeDatabaseQuery,
@@ -25,10 +26,17 @@ const GEMINI_KEYS = [
 // دالة مساعدة لجلب أو إنشاء منطقة
 async function getOrCreateRegion(regionName?: string) {
   if (regionName && regionName.trim()) {
-    const found = await prisma.region.findFirst({
-      where: { name: { contains: regionName.trim(), mode: 'insensitive' } }
+    const regions = await prisma.region.findMany({
+      where: { name: { contains: regionName.trim(), mode: 'insensitive' } },
+      select: { id: true, name: true, deliveryPrice: true },
+      take: 100,
     })
-    if (found) return found
+    const matches = regions
+    if (matches.length === 1) return matches[0]!
+    if (matches.length > 1) {
+      throw new Error(`وجدت أكثر من منطقة تطابق "${regionName}": ${matches.map((region) => region.name).join("، ")}. اختار الاسم الكامل للمنطقة.`)
+    }
+    throw new Error(`ما لقيت منطقة باسم "${regionName}". اختار منطقة موجودة بالنظام.`)
   }
   const first = await prisma.region.findFirst()
   if (first) return first
@@ -38,6 +46,147 @@ async function getOrCreateRegion(regionName?: string) {
       deliveryPrice: new Decimal(3000)
     }
   })
+}
+
+async function getPreparationChoices(regionName = "") {
+  const [allRegions, preparers, suppliers] = await Promise.all([
+    prisma.region.findMany({
+      orderBy: { name: "asc" },
+      take: 500,
+      select: { id: true, name: true, deliveryPrice: true },
+    }),
+    prisma.companyPreparer.findMany({
+      where: { active: true, availableForAssignment: true },
+      orderBy: { name: "asc" },
+      take: 200,
+      select: { id: true, name: true },
+    }),
+    prisma.storeSupplier.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      take: 200,
+      select: { id: true, name: true },
+    }),
+  ])
+  const normalizedQuery = normalizeRegionNameForMatch(regionName)
+  const regionOptions = normalizedQuery
+    ? allRegions.filter((region) => normalizeRegionNameForMatch(region.name).includes(normalizedQuery))
+    : []
+
+  return {
+    regions: regionOptions.slice(0, 30).map((region) => ({
+      id: region.id,
+      name: region.name,
+      deliveryPrice: region.deliveryPrice.toString(),
+    })),
+    preparers,
+    suppliers,
+  }
+}
+
+function parsePreparationMessage(rawText: string) {
+  const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  if (lines.length < 3) return null
+
+  const regionName = (lines[0] ?? "").replace(/^(?:اسم\s*)?المنطقة\s*[:：-]\s*/i, "").trim()
+  const phoneLine = (lines[1] ?? "").replace(/^(?:رقم\s*)?(?:الزبون|الهاتف)\s*[:：-]\s*/i, "")
+  const digits = phoneLine
+    .replace(/[٠-٩۰-۹]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹".indexOf(digit) % 10))
+    .replace(/\D/g, "")
+  if (!regionName || digits.length < 7 || !lines.slice(2).some((line) => line.length > 0)) return null
+
+  return {
+    regionName,
+    customerPhone: phoneLine.trim(),
+    products: lines.slice(2),
+  }
+}
+
+async function getRelevantPeopleDirectory(prompt: string) {
+  const normalizedPrompt = normalizeArabicSearchText(prompt)
+  const peopleWords = /موظف|مندوب|مجهز|عامل|الشغالين|الكادر|الفريق|الاسماء|اسمائهم|اضهر|اضهري|اظهر|اعرض|استعرض|اطلع|جيب|دور|ابحث|فتش|منو|اخفي|اخف|صفر|اسناد|اسند|تعيين|عين|حول/.test(normalizedPrompt)
+  if (!peopleWords) return []
+
+  const nameWords = normalizedPrompt
+    .split(/\s+/)
+    .filter((word) =>
+      word.length >= 3 &&
+      !/^\d+$/u.test(word) &&
+      !/^(طلب|طلبه|رقم|اريد|منو|مين|شنو|وين|كل|سويلي|اضهرلي|اظهرلي|اظهر|اضهر|اضهري|اعرض|استعرض|اطلع|اطلعلي|جيب|جيبلي|دور|دورلي|ابحث|فتش|اخفيلي|اخفي|صفرلي|صفر|طلعلي|طلعي|الطلب|اسناد|اسند|لي|على|الى|من|في|بالموقع|الموقع|رجاء|ممكن|بالنظام|الشغالين|الكادر|الفريق|اسماء|اسمائهم)$/u.test(word) &&
+      !/(موظف|مندوب|مجهز|عامل|مورد|شغال|كادر|فريق|اسم)/u.test(word)
+    )
+    .flatMap((word) => (word.length > 4 && /^[وفلب]/u.test(word) ? [word, word.slice(1)] : [word]))
+  const nameWhere = nameWords.length > 0
+    ? { OR: nameWords.map((word) => ({ name: { contains: word, mode: "insensitive" as const } })) }
+    : undefined
+  const take = nameWords.length > 0 ? 200 : 30
+
+  const [couriers, preparers, employees, staff, shops, suppliers] = await Promise.all([
+    prisma.courier.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, blocked: true, hiddenFromReports: true },
+    }),
+    prisma.companyPreparer.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, active: true, availableForAssignment: true },
+    }),
+    prisma.employee.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, shop: { select: { name: true } } },
+    }),
+    prisma.staffEmployee.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, active: true },
+    }),
+    prisma.shop.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.storeSupplier.findMany({
+      where: nameWhere,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, active: true },
+    }),
+  ])
+
+  const records = [
+    ...couriers.map((row) => ({ model: "Courier", role: "مندوب", ...row })),
+    ...preparers.map((row) => ({ model: "CompanyPreparer", role: "مجهّز", ...row })),
+    ...employees.map((row) => ({ model: "Employee", role: `موظف محل ${row.shop.name}`, id: row.id, name: row.name })),
+    ...staff.map((row) => ({ model: "StaffEmployee", role: "موظف الإدارة", ...row })),
+    ...shops.map((row) => ({ model: "Shop", role: "محل", ...row })),
+    ...suppliers.map((row) => ({ model: "StoreSupplier", role: "مورد", ...row })),
+  ]
+  if (nameWords.length === 0) {
+    return [
+      ...records.filter((record) => record.model === "Courier").slice(0, 30),
+      ...records.filter((record) => record.model === "CompanyPreparer").slice(0, 30),
+      ...records.filter((record) => record.model === "Employee").slice(0, 30),
+      ...records.filter((record) => record.model === "StaffEmployee").slice(0, 30),
+      ...records.filter((record) => record.model === "Shop").slice(0, 30),
+      ...records.filter((record) => record.model === "StoreSupplier").slice(0, 30),
+    ]
+  }
+
+  const matches = records.filter((record) => {
+    const normalizedName = normalizeArabicSearchText(record.name)
+    return nameWords.some((word) => normalizedName.includes(word))
+  })
+  if (matches.length === 0 && nameWords.length > 0) {
+    return getRelevantPeopleDirectory("منو الشغالين")
+  }
+  return matches.slice(0, 100)
 }
 
 // دالة مساعدة لإنشاء أي نوع من الطلبات بدقة داخل Supabase
@@ -58,6 +207,9 @@ async function executeCreateOrder(payload: {
   shopName?: string
   // طلب تجهيز
   prepText?: string
+  preparationRegionId?: string
+  preparerIds?: string[]
+  supplierIds?: string[]
   summary?: string
 }) {
   const {
@@ -73,6 +225,9 @@ async function executeCreateOrder(payload: {
     receiverRegionName = "جيكور",
     shopName = "",
     prepText = "",
+    preparationRegionId = "",
+    preparerIds = [],
+    supplierIds = [],
     summary = ""
   } = payload
 
@@ -145,49 +300,107 @@ async function executeCreateOrder(payload: {
 
   // === أ. طلب تجهيز (Preparation Order) ===
   if (orderCategory === "prep") {
-    const cleanCustomerPhone = normalizeIraqMobileLocal11(customerPhone) || customerPhone || "07700000000"
-    const targetRegion = await getOrCreateRegion(regionName)
-
-    // إنشاء مسودة تجهيز في جدول الشركة
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        rawListText: prepText || summary || "طلب تجهيز جديد عبر الوكيل الذكي",
-        titleLine: prepText.split('\n')[0]?.substring(0, 80) || "طلب تجهيز مواد",
-        customerPhone: cleanCustomerPhone,
-        customerLandmark: summary || targetRegion.name,
-        customerRegionId: targetRegion.id,
-        orderTime: orderTime || "عاجل اليوم",
-        status: "draft"
-      }
-    })
-
-    // أيضاً إنشاء الطلب في جدول Order ليكون مرئياً في النظام
-    const createdOrder = await prisma.order.create({
-      data: {
-        orderNumber: nextOrderNumber,
-        orderType: "تجهيز طلب",
-        status: "pending",
-        shopId: targetShop.id,
-        customerPhone: cleanCustomerPhone,
-        customerRegionId: targetRegion.id,
-        customerLandmark: `تجهيز: ${draft.titleLine}`,
-        orderSubtotal: amountDecimal,
-        purchasePrice: amountDecimal,
-        deliveryPrice: targetRegion.deliveryPrice ?? new Decimal(0),
-        totalAmount: amountDecimal,
-        orderNoteTime: orderTime || "فوري",
-        summary: prepText,
-        submissionSource: "admin_ai_agent_prep"
-      }
-    })
-
-    return {
-      orderNumber: createdOrder.orderNumber,
-      orderId: createdOrder.id,
-      totalAmount: createdOrder.totalAmount,
-      typeLabel: "طلب تجهيز",
-      message: `تم تثبيت طلب التجهيز برقم #${createdOrder.orderNumber} في قاعدة البيانات ومسودة التجهيز بنجاح! 🛍️`
+    if (!preparationRegionId) {
+      throw new Error("اختار المنطقة من الخيارات قبل تثبيت طلب التجهيز.")
     }
+    if (preparerIds.length === 0) {
+      throw new Error("اختار مجهّزاً واحداً على الأقل قبل تثبيت طلب التجهيز.")
+    }
+    if (preparerIds.length > 200 || supplierIds.length > 200) {
+      throw new Error("عدد اختيارات المجهّزين أو الموردين غير صالح.")
+    }
+    const targetRegion = await prisma.region.findUnique({ where: { id: preparationRegionId } })
+    if (!targetRegion) throw new Error("المنطقة المختارة لم تعد موجودة. أعد تحليل الطلب.")
+    const [selectedPreparers, selectedSuppliers] = await Promise.all([
+      prisma.companyPreparer.findMany({
+        where: { id: { in: preparerIds }, active: true, availableForAssignment: true },
+        select: { id: true, name: true },
+      }),
+      prisma.storeSupplier.findMany({
+        where: { id: { in: supplierIds }, active: true },
+        select: { id: true, name: true },
+      }),
+    ])
+    if (selectedPreparers.length !== new Set(preparerIds).size) {
+      throw new Error("تغيّر توفر أحد المجهّزين. حدّث الخيارات واختار من جديد.")
+    }
+    if (selectedSuppliers.length !== new Set(supplierIds).size) {
+      throw new Error("تغيّرت قائمة الموردين. حدّث الخيارات واختار من جديد.")
+    }
+
+    const lines = prepText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    const parsed = parsePreparationMessage(prepText)
+    const products = (parsed?.products ?? lines).map((line) => ({
+      line,
+      buyAlf: null,
+      sellAlf: null,
+    }))
+    if (products.length === 0) throw new Error("اكتب المنتجات سطر لكل منتج.")
+    const titleLine = `طلب تجهيز - ${targetRegion.name}`.slice(0, 80)
+    const cleanPhone = normalizeIraqMobileLocal11(customerPhone) || customerPhone.trim()
+    if (!cleanPhone) throw new Error("رقم الزبون مطلوب لطلب التجهيز.")
+    const blockedPhone = await prisma.globalBlockedPhone.findUnique({ where: { phone: cleanPhone } })
+    if (blockedPhone) throw new Error(`رقم الزبون (${cleanPhone}) محظور ولا يمكن إنشاء طلب تجهيز له.`)
+
+    const createdOrder = await prisma.$transaction(async (transaction) => {
+      const created = await transaction.order.create({
+        data: {
+          orderNumber: nextOrderNumber,
+          orderType: "تجهيز طلب",
+          status: "pending",
+          shopId: targetShop.id,
+          customerPhone: cleanPhone,
+          customerRegionId: targetRegion.id,
+          customerLandmark: `تجهيز: ${targetRegion.name}`,
+          orderSubtotal: amountDecimal,
+          purchasePrice: amountDecimal,
+          deliveryPrice: targetRegion.deliveryPrice ?? new Decimal(0),
+          totalAmount: amountDecimal,
+          orderNoteTime: orderTime || "فوري",
+          summary: prepText,
+          submissionSource: "admin_ai_agent_prep"
+        }
+      })
+      for (const preparer of selectedPreparers) {
+        const draft = await transaction.companyPreparerShoppingDraft.create({
+          data: {
+            preparerId: preparer.id,
+            rawListText: prepText,
+            titleLine,
+            customerPhone: cleanPhone,
+            customerRegionId: targetRegion.id,
+            customerLandmark: targetRegion.name,
+            orderTime: orderTime || "فوري",
+            status: "draft",
+            data: {
+              version: 1,
+              products,
+              selectedSuppliers: selectedSuppliers.map(({ id, name }) => ({ id, name })),
+              fromAdminId: "admin",
+              fromAdminName: "الإدارة",
+              orderId: created.id,
+              orderNumber: created.orderNumber,
+            },
+          },
+        })
+        await transaction.companyPreparerPrepNotice.create({
+          data: {
+            preparerId: preparer.id,
+            title: `طلب تجهيز جديد #${draft.draftNumber}`,
+            body: titleLine,
+          },
+        })
+      }
+      return created
+    })
+
+  return {
+    orderNumber: createdOrder.orderNumber,
+    orderId: createdOrder.id,
+    totalAmount: createdOrder.totalAmount,
+    typeLabel: "طلب تجهيز",
+    message: `تم تثبيت طلب التجهيز #${createdOrder.orderNumber} وإرساله إلى ${selectedPreparers.map(({ name }) => name).join("، ")} بنجاح. 🛍️`
+  }
   }
 
   // === ب. طلب وجهتين (Two-way / Double Order) ===
@@ -315,6 +528,9 @@ async function legacyPost(req: Request) {
         receiverRegionName: body.receiverRegionName,
         shopName: body.shopName,
         prepText: body.prepText,
+        preparationRegionId: body.preparationRegionId,
+        preparerIds: Array.isArray(body.preparerIds) ? body.preparerIds.map(String) : [],
+        supplierIds: Array.isArray(body.supplierIds) ? body.supplierIds.map(String) : [],
         summary: body.summary
       })
 
@@ -787,6 +1003,26 @@ export async function POST(req: Request) {
       return jsonError("الطلب المرسل غير صالح.", 400)
     }
 
+    if (body.preparationChoices === true) {
+      const choices = await getPreparationChoices(typeof body.regionName === "string" ? body.regionName : "")
+      return NextResponse.json({ done: true, preparationChoices: choices })
+    }
+
+    if (body.analyzePreparation === true) {
+      if (typeof body.prepText !== "string" || body.prepText.length > 10000) {
+        return jsonError("رسالة طلب التجهيز غير صالحة.", 400)
+      }
+      const parsed = parsePreparationMessage(body.prepText)
+      if (!parsed) {
+        return jsonError("اكتب اسم المنطقة بالسطر الأول، ورقم الزبون بالسطر الثاني، وبعدها كل منتج بسطر.", 400)
+      }
+      const choices = await getPreparationChoices(parsed.regionName)
+      return NextResponse.json({
+        done: true,
+        preparationDraft: { ...parsed, originalText: body.prepText, ...choices },
+      })
+    }
+
     if (typeof body.confirmationToken === "string") {
       let payload
       try {
@@ -820,18 +1056,39 @@ export async function POST(req: Request) {
       return jsonError("اكتب طلباً واضحاً لا يتجاوز 4000 حرف.", 400)
     }
     const requestText = prompt.trim()
-    const isOrderCreation =
-      /طلب|طلبية/.test(requestText) &&
-      /سوي|سوّي|انشئ|أنشئ|إنشاء|اضيف|أضيف|اريد.*طلب|أريد.*طلب/.test(requestText)
-    if (isOrderCreation) {
+    const preparationMessage = parsePreparationMessage(requestText)
+    if (preparationMessage) {
+      const choices = await getPreparationChoices(preparationMessage.regionName)
+      return NextResponse.json({
+        done: false,
+        needType: true,
+        selectedCategory: "prep",
+        preparationDraft: {
+          ...preparationMessage,
+          originalText: requestText,
+          ...choices,
+        },
+        message: choices.regions.length > 1
+          ? `حللت الرسالة. لقيت أكثر من منطقة قريبة من "${preparationMessage.regionName}"؛ اختار المنطقة الصحيحة، وحدد المجهّزين والموردين قبل التثبيت.`
+          : "حللت المنطقة ورقم الزبون والمنتجات. راجع المنطقة واختار المجهّزين والموردين قبل التثبيت.",
+      })
+    }
+
+    const quickOrderRequest =
+      /^(?:سويلي|سوّيلي|اريد|أريد|انشئ|أنشئ|إنشاء)\s*(?:لي\s*)?(?:طلب|طلبية)(?:\s+(?:وجهتين|وجهة واحدة|من محل|تجهيز))?[\s.!؟]*$/u.test(requestText)
+    if (quickOrderRequest) {
       let selectedCategory: "single" | "double" | "shop" | "prep" = "single"
       if (/وجهتين|مرسل|مستلم/.test(requestText)) selectedCategory = "double"
       else if (/محل|بيج/.test(requestText)) selectedCategory = "shop"
       else if (/تجهيز|مواد|منتجات/.test(requestText)) selectedCategory = "prep"
+      const preparationChoices = selectedCategory === "prep"
+        ? await getPreparationChoices()
+        : undefined
       return NextResponse.json({
         done: false,
         needType: true,
         selectedCategory,
+        ...(preparationChoices ? { preparationDraft: preparationChoices } : {}),
         message: "اختر نوع الطلب وراجع التفاصيل في الاستمارة قبل تثبيته.",
       })
     }
@@ -841,11 +1098,16 @@ export async function POST(req: Request) {
       return jsonError("ماكو محرك ذكاء مفعّل أو مفاتيح صالحة. راجع إعدادات الذكاء الاصطناعي.", 503)
     }
 
+    const peopleDirectory = await getRelevantPeopleDirectory(requestText)
     const systemPrompt = `أنت مساعد إدارة ذكي لنظام توصيل. تساعد المدير على فهم البيانات وتنفيذ طلبه على قاعدة البيانات.
 مخطط قاعدة البيانات المتاح (اسم الجدول والحقول المسموح قراءتها فقط):
 ${getAiDatabaseSchema()}
 
+دليل أسماء حي من قاعدة البيانات (قد يكون فارغاً أو يحتوي مطابقات محتملة فقط):
+${JSON.stringify(peopleDirectory)}
+
 أعد كائن JSON واحداً فقط:
+لطلب إنشاء طلب جديد من غير تفاصيل كافية: {"kind":"order_form","category":"single أو double أو shop أو prep","message":"رد قصير"}
 للاستعلام: {"kind":"query","model":"اسم الجدول","mode":"rows أو count أو aggregate","filters":{"اسم الحقل":"قيمة أو شرط"},"select":["حقل"],"include":["علاقة مسموحة من المخطط"],"aggregate":{"sum":["حقل رقمي"],"average":["حقل رقمي"],"min":["حقل رقمي"],"max":["حقل رقمي"]},"orderBy":{"field":"حقل","direction":"asc أو desc"},"take":10}
 للتغيير: {"kind":"change","model":"اسم الجدول","operation":"create أو update أو delete","filters":{"حقل":"قيمة"},"data":{"حقل":"قيمة"},"message":"شرح مختصر لما طلبه المدير"}
 للكلام العام أو طلب معلومات إضافية: {"kind":"answer","message":"الرد"}
@@ -858,9 +1120,32 @@ ${getAiDatabaseSchema()}
 - للاستعلام عن عدد السجلات استخدم mode=count؛ وللبيانات اطلب أقل عدد من الحقول والصفوف اللازم للإجابة.
 - استخدم mode=aggregate للجمع والمتوسط وأقل/أعلى قيمة، ويمكنك طلب علاقات مرتبطة عبر include عندما تكون ظاهرة في المخطط.
 - للبحث عبر علاقة مفردة استخدم {"relation":{"is":{"field":"value"}}}، ولعلاقة متعددة استخدم {"relation":{"some":{"field":"value"}}}.
+- افهم أوامر اللهجة العراقية بحسب معناها والسياق، ومنها: طلع/أظهر/جيب للبحث، اخفي/حظر للإخفاء، صفر/صفّر للتصفير، وأسند/عيّن لإسناد الطلب. وجود كلمة "طلب" ورقم طلب لا يعني إنشاء طلب جديد؛ قد يكون المقصود تعديل أو إسناد طلب موجود.
+- عند التعامل مع اسم شخص أو جهة، ابحث عنه في دليل الأسماء الحي أولاً، واستخدم model وid المطابقين كشرط دقيق. لا تستخدم أول تطابق جزئي ولا تختر سجلاً بالحدس.
+- إذا ظهر الاسم نفسه لأكثر من نوع أو سجل، أعد kind=answer واسأل سؤالاً واضحاً مع عرض الأسماء والأدوار المطابقة، ولا تغيّر أي سجل حتى يحدد المدير المقصود.
+- دليل الأسماء يساعد على تحديد السجل لكنه ليس قائمة كاملة. إذا طلب المدير كل الأسماء أو كل الموظفين، نفّذ استعلاماً على الجدول المناسب ولا تعرض عينة الدليل على أنها كل النتائج.
+- إذا قال المستخدم "إظهار" أو "إخفاء" لمندوب، ابحث في Courier وميّز الحقول الموجودة فعلاً مثل blocked وhiddenFromReports. اعرض أي تغيير كمعاينة لا تنفذه مباشرة.
+- إذا كان الطلب غامضاً أو ينقصه اسم أو رقم أو وجهة، اسأل عن المعلومة الناقصة بدلاً من فتح استمارة طلب أو اختراع قيمة.
 - إذا نقصت معلومة لازمة للتغيير، اسأل عنها بدلاً من إنشاء قيم افتراضية.`
 
     const plan = await generateDatabasePlan(providers, systemPrompt, requestText)
+
+    if (plan.kind === "order_form") {
+      const selectedCategory =
+        plan.category === "double" || plan.category === "shop" || plan.category === "prep"
+        ? plan.category
+        : "single"
+      const preparationDraft = selectedCategory === "prep"
+        ? await getPreparationChoices()
+        : undefined
+      return NextResponse.json({
+        done: false,
+        needType: true,
+        selectedCategory,
+        ...(preparationDraft ? { preparationDraft } : {}),
+        message: plan.message || "اختار نوع الطلب وراجع التفاصيل قبل تثبيته.",
+      })
+    }
 
     if (plan.kind === "answer") {
       return NextResponse.json({ done: true, message: plan.message || "شلون أگدر أساعدك؟" })
