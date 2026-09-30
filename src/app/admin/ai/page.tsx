@@ -93,6 +93,7 @@ const TIME_PRESETS = ["فوري", "الصباح", "العصر", "المساء", 
 export default function AdminAiPage() {
   const searchParams = useSearchParams();
   const isWidgetView = searchParams?.get("view") === "widget";
+  const [assistantFontScale, setAssistantFontScale] = useState(1);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -511,6 +512,10 @@ export default function AdminAiPage() {
     setActiveFormMsgId(null);
   };
 
+  const adjustAssistantFont = (amount: number) => {
+    setAssistantFontScale((scale) => Math.min(1.4, Math.max(0.8, Number((scale + amount).toFixed(1)))));
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans">
       {/* الشريط العلوي */}
@@ -562,6 +567,27 @@ export default function AdminAiPage() {
           </Link>
 
           <button
+            type="button"
+            onClick={() => adjustAssistantFont(-0.1)}
+            disabled={assistantFontScale <= 0.8}
+            className="flex size-9 items-center justify-center rounded-xl bg-slate-800 text-sm font-bold text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-40"
+            title="تصغير الكتابة"
+            aria-label="تصغير الكتابة"
+          >
+            أ−
+          </button>
+          <button
+            type="button"
+            onClick={() => adjustAssistantFont(0.1)}
+            disabled={assistantFontScale >= 1.4}
+            className="flex size-9 items-center justify-center rounded-xl bg-slate-800 text-sm font-bold text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-40"
+            title="تكبير الكتابة"
+            aria-label="تكبير الكتابة"
+          >
+            أ+
+          </button>
+
+          <button
             onClick={clearChat}
             className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
             title="مسح الدردشة"
@@ -572,7 +598,7 @@ export default function AdminAiPage() {
       </header>
 
       {/* منطقة الرسائل */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ zoom: assistantFontScale }}>
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -1137,7 +1163,7 @@ export default function AdminAiPage() {
       </div>
 
       {/* أزرار اقتراحات سريعة */}
-      <div className="px-4 py-2 bg-slate-900/60 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+      <div className="px-4 py-2 bg-slate-900/60 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0" style={{ zoom: assistantFontScale }}>
         <button
           onClick={() => handleSendMessage("سويلي طلب")}
           className="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/60 whitespace-nowrap flex items-center gap-1.5 transition"
@@ -1155,7 +1181,7 @@ export default function AdminAiPage() {
       </div>
 
       {/* حقل الإدخال وزر الصوت والإرسال */}
-      <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0">
+      <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0" style={{ zoom: assistantFontScale }}>
         <div className="max-w-4xl mx-auto flex items-center gap-2">
           <button
             type="button"
