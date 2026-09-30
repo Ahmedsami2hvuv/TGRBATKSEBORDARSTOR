@@ -22,6 +22,7 @@ import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 import { AdminGesturesSettings } from "./admin-gestures-settings";
 import { SocialLinksSettingsForm } from "./social-links-settings-form";
+import { FloatingMenuSettings } from "./floating-menu-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -594,6 +595,13 @@ export function SettingsBlocks({
       content: <NotificationSettingsForm initial={notificationInitial} />
     },
     {
+      id: "floating-menu",
+      title: "القائمة الدائرية العائمة 🎯",
+      subtitle: "تخصيص أقسام، ألوان، وروابط القائمة الدائرية العائمة.",
+      tone: "indigo",
+      content: <FloatingMenuSettings icons={globalIcons} />
+    },
+    {
       id: "purge-demo",
       title: "مسح وتصفير الطلبات ⚠️",
       subtitle: "مسح جميع الطلبات من الأساس وبدء الترقيم من 1.",
@@ -601,6 +609,7 @@ export function SettingsBlocks({
       content: <PurgeDemoDataForm />
     }
   ], [
+
     globalIcons, chatEnabled, chatSaving, trackingEnabled, trackingSaving,
     telegramBots, telegramSaving, availableFonts, currentFont, newAdminId,
     newAdminName, telegramAdminsInitial, telegramAdminIds, mandoubFeatures,

@@ -20,7 +20,7 @@ interface CustomCategory {
 
 const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#64748b"];
 
-export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
+export function FloatingMenuSettings({ icons }: { icons?: GlobalIconsConfig | null }) {
   const [categories, setCategories] = useState<CustomCategory[]>([]);
   const [isLocked, setIsLocked] = useState(false);
   const [menuScale, setMenuScale] = useState(1);
@@ -174,240 +174,216 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-           <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isLocked}
-                onChange={e => setIsLocked(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-indigo-600"
-              />
-              <span className="text-sm font-black text-slate-800">قفل موضع القائمة</span>
-           </label>
-           <p className="text-[10px] text-slate-500 mt-1">يمنع سحب القائمة وتغيير مكانها بالخطأ.</p>
+      {/* Global Menu Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 dark:bg-[#0c221b]/40 p-4 rounded-2xl border border-slate-200 dark:border-[#C9A86A]/30">
+        <div className="flex items-center justify-between p-2 bg-white dark:bg-[#0A3D2E]/20 rounded-xl border border-slate-100 dark:border-white/5">
+          <span className="text-xs font-bold text-slate-700 dark:text-[#F5D77F]">تثبيت مكان الزر (قفل السحب)</span>
+          <input
+            type="checkbox"
+            checked={isLocked}
+            onChange={(e) => setIsLocked(e.target.checked)}
+            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+          />
         </div>
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-           <label className="block text-sm font-black text-slate-800 mb-2">حجم القائمة ({menuScale}x)</label>
-           <input
-              type="range" min="0.5" max="1.5" step="0.1"
-              value={menuScale}
-              onChange={e => setMenuScale(parseFloat(e.target.value))}
-              className="w-full"
-           />
+
+        <div className="flex flex-col gap-1 p-2 bg-white dark:bg-[#0A3D2E]/20 rounded-xl border border-slate-100 dark:border-white/5">
+          <div className="flex justify-between text-xs font-bold">
+            <span className="text-slate-700 dark:text-[#F5D77F]">حجم القائمة (Scale)</span>
+            <span className="text-indigo-600 dark:text-indigo-400">{Math.round(menuScale * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+            value={menuScale}
+            onChange={(e) => setMenuScale(parseFloat(e.target.value))}
+            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+          />
         </div>
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-           <label className="block text-sm font-black text-slate-800 mb-2">حجم الخط ({menuFontSize}px)</label>
-           <input
-              type="range" min="6" max="16" step="1"
-              value={menuFontSize}
-              onChange={e => setMenuFontSize(parseInt(e.target.value))}
-              className="w-full"
-           />
+
+        <div className="flex flex-col gap-1 p-2 bg-white dark:bg-[#0A3D2E]/20 rounded-xl border border-slate-100 dark:border-white/5">
+          <div className="flex justify-between text-xs font-bold">
+            <span className="text-slate-700 dark:text-[#F5D77F]">حجم الخط (Font Size)</span>
+            <span className="text-indigo-600 dark:text-indigo-400">{menuFontSize}px</span>
+          </div>
+          <input
+            type="range"
+            min="5"
+            max="14"
+            step="1"
+            value={menuFontSize}
+            onChange={(e) => setMenuFontSize(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+          />
         </div>
       </div>
 
+      {/* Categories List */}
       <div className="space-y-4">
-        {/* بطاقة زر الذكاء الاصطناعي الثابت */}
-        <div className="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200/80 rounded-2xl flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center text-white text-base shadow-sm shrink-0">
-              ✨
-            </div>
-            <div>
-              <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
-                المساعد الذكي (الذكاء الاصطناعي)
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">زر ثابت دائم</span>
-              </h4>
-              <p className="text-[10px] text-slate-500 mt-0.5 font-medium">
-                مدمج وثابت تلقائياً كأول زر في القائمة الدائرية العائمة لتنفيذ الأوامر الصوتية والنصية.
-              </p>
-            </div>
-          </div>
-          <div className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl shrink-0">
-            مفعل دائماً ✓
-          </div>
-        </div>
-
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-            الأقسام والروابط المخصصة
-            {!loading && <span className="text-[10px] text-emerald-500 font-bold bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse">● مزامنة تلقائية</span>}
-          </h3>
+          <h3 className="text-sm font-black text-slate-800 dark:text-[#F5D77F]">أقسام القائمة الدائرية</h3>
           <button
+            type="button"
             onClick={addCategory}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition"
           >
-            + إضافة قسم
+            <span>+ إضافة قسم</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {categories.map((cat, idx) => (
+        {categories.length === 0 && (
+          <div className="text-center py-8 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+            <p className="text-xs text-slate-400">لا توجد أقسام مخصصة حالياً. اضغط على "إضافة قسم" للبدء.</p>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {categories.map((cat, catIndex) => (
             <div
               key={cat.id}
               draggable
-              onDragStart={(e) => handleCatDragStart(e, idx)}
+              onDragStart={(e) => handleCatDragStart(e, catIndex)}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleCatDrop(e, idx)}
-              className={`border rounded-2xl overflow-hidden bg-white shadow-sm transition-all ${
-                draggedCatIndex === idx
-                  ? "opacity-50 border-indigo-400 border-dashed scale-[0.99]"
-                  : "border-slate-200"
-              }`}
+              onDrop={(e) => handleCatDrop(e, catIndex)}
+              className="bg-white dark:bg-[#0c221b]/60 border border-slate-200 dark:border-[#C9A86A]/30 rounded-2xl p-4 space-y-3 shadow-xs"
             >
-              <div className="flex items-center justify-between p-3 bg-slate-50 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  {/* Category Drag Handle */}
-                  <div
-                    className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-indigo-600 transition"
-                    title="اسحب لترتيب القسم"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </div>
+              {/* Category Header */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                  <span className="cursor-move text-slate-400 hover:text-slate-600">☰</span>
                   
-                  {/* Category Reorder Buttons */}
-                  <div className="flex flex-col -space-y-1">
-                    <button
-                      onClick={() => moveCategory(idx, "up")}
-                      disabled={idx === 0}
-                      className="text-[10px] text-slate-400 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-400 transition"
-                      title="تحريك لأعلى"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      onClick={() => moveCategory(idx, "down")}
-                      disabled={idx === categories.length - 1}
-                      className="text-[10px] text-slate-400 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-400 transition"
-                      title="تحريك لأسفل"
-                    >
-                      ▼
-                    </button>
-                  </div>
-
-                  <div
-                    className="w-4 h-4 rounded-full border border-black/10 cursor-pointer shrink-0"
-                    style={{ backgroundColor: cat.color }}
-                    onClick={() => {
-                        const nextColor = COLORS[(COLORS.indexOf(cat.color) + 1) % COLORS.length];
-                        updateCategory(cat.id, { color: nextColor });
-                    }}
-                  />
+                  {/* Emoji / Icon Selector */}
                   <input
-                    value={cat.name}
-                    onChange={e => updateCategory(cat.id, { name: e.target.value })}
-                    className="bg-transparent border-none p-0 text-sm font-black text-slate-800 focus:ring-0 w-32"
-                  />
-                  <input
+                    type="text"
                     value={cat.icon}
-                    onChange={e => {
-                        const val = e.target.value;
-                        const folderEmojis = ["📂", "📁", "🗂️", "💼", "🗄️"];
-                        if (!folderEmojis.includes(val.trim())) {
-                            updateCategory(cat.id, { icon: val });
-                        }
-                    }}
-                    placeholder="Emoji"
-                    className="bg-transparent border-none p-0 text-center text-sm focus:ring-0 w-10"
+                    onChange={(e) => updateCategory(cat.id, { icon: e.target.value })}
+                    className="w-10 h-10 text-center text-lg bg-slate-100 dark:bg-[#0A3D2E]/40 border border-slate-200 dark:border-[#C9A86A]/40 rounded-xl"
+                    title="رمز أو إيموجي القسم"
                   />
+
+                  {/* Name */}
+                  <input
+                    type="text"
+                    value={cat.name}
+                    onChange={(e) => updateCategory(cat.id, { name: e.target.value })}
+                    placeholder="اسم القسم"
+                    className="flex-1 px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-[#0A3D2E]/20 border border-slate-200 dark:border-[#C9A86A]/40 rounded-xl focus:ring-1 focus:ring-indigo-500"
+                  />
+
+                  {/* Color Picker */}
+                  <div className="flex items-center gap-1">
+                    {COLORS.slice(0, 5).map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => updateCategory(cat.id, { color })}
+                        className={`w-6 h-6 rounded-full transition-transform ${cat.color === color ? "scale-125 ring-2 ring-indigo-400" : ""}`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <button onClick={() => deleteCategory(cat.id)} className="text-rose-500 p-1 hover:bg-rose-50 rounded-lg transition">
-                  <DynamicIcon iconKey="ui_trash" config={icons} className="w-4 h-4" fallback={<span>🗑️</span>} />
-                </button>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveCategory(catIndex, "up")}
+                    disabled={catIndex === 0}
+                    className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg text-xs disabled:opacity-30"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveCategory(catIndex, "down")}
+                    disabled={catIndex === categories.length - 1}
+                    className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg text-xs disabled:opacity-30"
+                  >
+                    ▼
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addLink(cat.id)}
+                    className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 rounded-lg text-xs font-bold"
+                  >
+                    + رابط
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteCategory(cat.id)}
+                    className="p-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs hover:bg-rose-100 transition"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
 
-              <div className="p-3 space-y-2">
-                {cat.links.map((link, lIdx) => (
-                  <div
-                    key={link.id}
-                    draggable
-                    onDragStart={(e) => handleLinkDragStart(e, cat.id, lIdx)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleLinkDrop(e, cat.id, lIdx)}
-                    className={`flex items-center gap-2 group p-1 rounded-xl transition-all border border-transparent ${
-                      draggedLinkIndex === lIdx && draggedLinkCatId === cat.id
-                        ? "bg-indigo-50/50 border-dashed border-indigo-200 opacity-40"
-                        : "hover:bg-slate-50/80"
-                    }`}
-                  >
-                    {/* Link Drag Handle */}
+              {/* Category Sub-Links */}
+              {cat.links.length > 0 && (
+                <div className="mr-8 space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  {cat.links.map((link, linkIndex) => (
                     <div
-                      className="cursor-grab active:cursor-grabbing p-1 text-slate-350 hover:text-indigo-600 transition shrink-0"
-                      title="اسحب لترتيب الرابط"
+                      key={link.id}
+                      draggable
+                      onDragStart={(e) => handleLinkDragStart(e, cat.id, linkIndex)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => handleLinkDrop(e, cat.id, linkIndex)}
+                      className="flex items-center gap-2 bg-slate-50 dark:bg-[#0A3D2E]/10 p-2 rounded-xl border border-slate-100 dark:border-white/5"
                     >
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M7 2a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm-6 6a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm-6 6a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2z" />
-                      </svg>
-                    </div>
-
-                    {/* Link Reorder Buttons */}
-                    <div className="flex flex-col -space-y-1.5 shrink-0">
+                      <span className="cursor-move text-slate-300 text-xs">⋮⋮</span>
+                      <input
+                        type="text"
+                        value={link.name}
+                        onChange={(e) => {
+                          const newLinks = cat.links.map(l => l.id === link.id ? { ...l, name: e.target.value } : l);
+                          updateCategory(cat.id, { links: newLinks });
+                        }}
+                        placeholder="اسم الرابط"
+                        className="w-1/3 px-2 py-1 bg-white dark:bg-[#0A3D2E]/30 text-xs font-bold border border-slate-200 dark:border-[#C9A86A]/30 rounded-lg"
+                      />
+                      <input
+                        type="text"
+                        value={link.url}
+                        onChange={(e) => {
+                          const newLinks = cat.links.map(l => l.id === link.id ? { ...l, url: e.target.value } : l);
+                          updateCategory(cat.id, { links: newLinks });
+                        }}
+                        placeholder="https://..."
+                        className="flex-1 px-2 py-1 bg-white dark:bg-[#0A3D2E]/30 text-xs font-mono border border-slate-200 dark:border-[#C9A86A]/30 rounded-lg text-left dir-ltr"
+                      />
                       <button
-                        onClick={() => moveLink(cat.id, lIdx, "up")}
-                        disabled={lIdx === 0}
-                        className="text-[9px] text-slate-350 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-350 transition"
-                        title="تحريك لأعلى"
+                        type="button"
+                        onClick={() => moveLink(cat.id, linkIndex, "up")}
+                        disabled={linkIndex === 0}
+                        className="p-1 bg-white dark:bg-white/5 rounded text-[10px] disabled:opacity-30"
                       >
                         ▲
                       </button>
                       <button
-                        onClick={() => moveLink(cat.id, lIdx, "down")}
-                        disabled={lIdx === cat.links.length - 1}
-                        className="text-[9px] text-slate-350 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-350 transition"
-                        title="تحريك لأسفل"
+                        type="button"
+                        onClick={() => moveLink(cat.id, linkIndex, "down")}
+                        disabled={linkIndex === cat.links.length - 1}
+                        className="p-1 bg-white dark:bg-white/5 rounded text-[10px] disabled:opacity-30"
                       >
                         ▼
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteLink(cat.id, link.id)}
+                        className="text-rose-500 hover:text-rose-700 p-1"
+                      >
+                        ✕
+                      </button>
                     </div>
-
-                    <input
-                      value={link.name}
-                      onChange={e => {
-                        setCategories(prev => prev.map(c => c.id === cat.id ? {
-                           ...c, links: c.links.map(l => l.id === link.id ? { ...l, name: e.target.value } : l)
-                        } : c));
-                      }}
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold focus:border-indigo-400 outline-none"
-                    />
-                    <input
-                      value={link.url}
-                      onChange={e => {
-                        setCategories(prev => prev.map(c => c.id === cat.id ? {
-                           ...c, links: c.links.map(l => l.id === link.id ? { ...l, url: e.target.value } : l)
-                        } : c));
-                      }}
-                      className="flex-[2] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-500 focus:border-indigo-400 outline-none"
-                    />
-                    <button onClick={() => deleteLink(cat.id, link.id)} className="text-slate-400 hover:text-rose-500 transition shrink-0">
-                      <DynamicIcon iconKey="ui_close" config={icons} className="w-3 h-3" fallback={<span>×</span>} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => addLink(cat.id)}
-                  className="w-full py-1.5 border border-dashed border-slate-300 rounded-lg text-[10px] font-black text-slate-500 hover:bg-slate-50 transition"
-                >
-                  + إضافة رابط لـ {cat.name}
-                </button>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
-          {categories.length === 0 && (
-            <div className="text-center py-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-               <p className="text-sm text-slate-400 font-bold">لا يوجد أقسام مضافة بعد.</p>
-            </div>
-          )}
         </div>
       </div>
-
-      {loading && (
-        <div className="text-center py-4">
-          <p className="text-xs text-slate-500 font-bold animate-bounce">جاري جلب البيانات من السحابة...</p>
-        </div>
-      )}
     </div>
   );
 }
