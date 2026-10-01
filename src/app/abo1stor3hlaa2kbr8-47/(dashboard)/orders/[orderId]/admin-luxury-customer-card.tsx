@@ -347,7 +347,14 @@ export function AdminLuxuryCustomerCard({
         {/* محتوى بيانات الزبون */}
         <div className="p-3.5 space-y-3">
           <div className="flex gap-3 items-start">
-            <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+            <div className="flex-1 min-w-0 flex flex-col gap-2">
+              {/* اسم الزبون إن وجد */}
+              {effectiveName && effectiveName !== "الزبون" && effectiveName !== "المستلم" && effectiveName !== "—" && (
+                <div className="text-[15px] font-black text-[#0A3D2E] leading-tight truncate">
+                  {effectiveName}
+                </div>
+              )}
+
               {/* شارة المنطقة */}
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDF6E3] border border-[#C9A86A]/20 shadow-[inset_0_1px_0_white] self-start">
                 <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shrink-0">

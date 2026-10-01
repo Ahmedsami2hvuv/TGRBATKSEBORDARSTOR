@@ -217,9 +217,20 @@ export function OrderViewContent({
 
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
 
-  const submitterName = order.shop?.name || order.submittedByCompanyPreparer?.name || order.submittedBy?.name || (isSystemAdminOrder ? "الإدارة" : "المحل");
+  const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
+  const rawShopEmployeePhone = (order.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone?.trim() || "";
+
+  const submitterName =
+    order.shop?.ownerName?.trim() ||
+    rawShopEmployeeName ||
+    order.submittedBy?.name?.trim() ||
+    order.submittedByCompanyPreparer?.name?.trim() ||
+    order.shop?.name?.trim() ||
+    (isSystemAdminOrder ? "الإدارة" : "المحل");
+
   const submitterPhone =
     order.shop?.phone?.trim() ||
+    rawShopEmployeePhone ||
     order.submittedByCompanyPreparer?.phone?.trim() ||
     order.submittedBy?.phone?.trim() ||
     (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : "");

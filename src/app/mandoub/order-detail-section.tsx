@@ -200,11 +200,11 @@ export function OrderDetailSection({
 
   const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
   const submitterName =
-    order.shop?.name?.trim() ||
     order.shop?.ownerName?.trim() ||
     rawShopEmployeeName ||
-    order.submittedByCompanyPreparer?.name?.trim() ||
     order.submittedBy?.name?.trim() ||
+    order.submittedByCompanyPreparer?.name?.trim() ||
+    order.shop?.name?.trim() ||
     (isPreparerOrAdminOrder ? "الإدارة" : "المحل");
 
   const effectiveShopName = isPreparerOrAdminOrder

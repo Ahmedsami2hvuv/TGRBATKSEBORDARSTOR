@@ -115,6 +115,8 @@ export type MandoubRow = {
   /** ميزات الوصول السريع من خارج الطلب */
   audioUrl?: string | null;
   summary?: string | null;
+  shopId?: string | null;
+  shopEmployees?: any[];
   shopPhone?: string | null;
   alternatePhone?: string | null;
   secondCustomerPhone?: string | null;
@@ -1950,20 +1952,23 @@ export function MandoubOrderTable({
                   customerLandmark: activeOrderData.landmarkLine,
                   secondCustomerLandmark: activeOrderData.secondCustomerLandmark,
                   moneyEvents: activeOrderData.moneyEvents || [],
+                  shopId: activeOrderData.shopId,
                   shop: {
+                     id: activeOrderData.shopId,
                      name: activeOrderData.shopName,
                      phone: activeOrderData.shopPhone,
                      photoUrl: activeOrderData.shopDoorPhotoUrl,
                      locationUrl: activeOrderData.shopLocationUrl,
                      region: { name: activeOrderData.shopRegionName || "—" },
                      ownerName: activeOrderData.submitterName,
+                     employees: activeOrderData.shopEmployees || [],
                   } as any,
                   customerRegion: { name: activeOrderData.regionLine } as any,
                   secondCustomerRegion: { name: activeOrderData.secondCustomerRegionName || "—" } as any,
                   customer: {
                      name: activeOrderData.customerName,
                   } as any,
-                  submittedBy: { name: activeOrderData.submitterName } as any,
+                  submittedBy: { name: activeOrderData.submitterName, phone: activeOrderData.shopPhone } as any,
                   routeMode: activeOrderData.routeMode,
                   submissionSource: activeOrderData.submissionSource,
                   secondCustomerPhone: activeOrderData.secondCustomerPhone,

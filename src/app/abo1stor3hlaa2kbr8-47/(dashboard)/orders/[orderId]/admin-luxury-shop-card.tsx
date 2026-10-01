@@ -14,7 +14,7 @@ import {
 } from "@/lib/client-image-compress";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
-import { updateShopPhoneAction } from "@/app/actions/update-shop-phone";
+import { updateShopPhoneAction, updateShopOwnerNameAction } from "@/app/actions/update-shop-phone";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -50,6 +50,11 @@ export function AdminLuxuryShopCard({
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const [ownerNameModalOpen, setOwnerNameModalOpen] = useState(false);
+  const [newOwnerNameInput, setNewOwnerNameInput] = useState("");
+  const [savingOwnerName, setSavingOwnerName] = useState(false);
+  const [ownerNameError, setOwnerNameError] = useState<string | null>(null);
 
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
@@ -105,7 +110,10 @@ export function AdminLuxuryShopCard({
 
   const rawShopName = order.shop?.name?.trim() || "";
   const rawOwnerName = order.shop?.ownerName?.trim() || "";
+  const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
   const rawSubmitterName = submitterName?.trim() || "";
+  const rawOrderEmployee = order.submittedBy?.name?.trim() || "";
+  const rawOrderPreparer = order.submittedByCompanyPreparer?.name?.trim() || "";
 
   // اسم المحل الأساسي يظهر دائماً كاسم المحل الفعلي
   let shopName = rawShopName;
@@ -117,12 +125,18 @@ export function AdminLuxuryShopCard({
     }
   }
 
-  // اسم صاحب المحل أو المسؤول يظهر تحته إن وجد وكان مختلفاً
+  // اسم صاحب المحل أو العميل أو المسؤول يظهر تحته
   let ownerName = "";
   if (rawOwnerName && rawOwnerName !== shopName) {
     ownerName = rawOwnerName;
+  } else if (rawShopEmployeeName && rawShopEmployeeName !== shopName) {
+    ownerName = rawShopEmployeeName;
   } else if (rawSubmitterName && rawSubmitterName !== shopName && rawSubmitterName !== "—" && rawSubmitterName !== "الإدارة") {
     ownerName = rawSubmitterName;
+  } else if (rawOrderEmployee && rawOrderEmployee !== shopName && rawOrderEmployee !== "الإدارة") {
+    ownerName = rawOrderEmployee;
+  } else if (rawOrderPreparer && rawOrderPreparer !== shopName && rawOrderPreparer !== "الإدارة") {
+    ownerName = rawOrderPreparer;
   } else if (isSystemAdminOrder && shopName === "الإدارة") {
     ownerName = rawSubmitterName || "المسؤول";
   }
@@ -152,7 +166,8 @@ export function AdminLuxuryShopCard({
     setSavingPhone(true);
     setPhoneError(null);
     try {
-      const res = await updateShopPhoneAction(order.id, order.shopId, newPhoneInput.trim());
+      const targetShopId = order.shopId || order.shop?.id || "";
+      const res = await updateShopPhoneAction(order.id, targetShopId, newPhoneInput.trim());
       if (res.ok) {
         setPhoneModalOpen(false);
         router.refresh();
@@ -163,6 +178,29 @@ export function AdminLuxuryShopCard({
       setPhoneError(err?.message || "حدث خطأ غير متوقع");
     } finally {
       setSavingPhone(false);
+    }
+  };
+
+  const handleSaveOwnerName = async () => {
+    if (!newOwnerNameInput.trim()) {
+      setOwnerNameError("يرجى كتابة اسم العميل");
+      return;
+    }
+    setSavingOwnerName(true);
+    setOwnerNameError(null);
+    try {
+      const targetShopId = order.shopId || order.shop?.id || "";
+      const res = await updateShopOwnerNameAction(order.id, targetShopId, newOwnerNameInput.trim());
+      if (res.ok) {
+        setOwnerNameModalOpen(false);
+        router.refresh();
+      } else {
+        setOwnerNameError(res.error || "تعذر حفظ اسم العميل");
+      }
+    } catch (err: any) {
+      setOwnerNameError(err?.message || "حدث خطأ غير متوقع");
+    } finally {
+      setSavingOwnerName(false);
     }
   };
 
@@ -229,16 +267,39 @@ export function AdminLuxuryShopCard({
                 <div className="text-[16px] font-black text-[#0A3D2E] leading-tight truncate">
                   {shopName}
                 </div>
-                {ownerName && (
-                  <div className="flex items-center gap-1.5 mt-1">
+                {ownerName ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewOwnerNameInput(ownerName);
+                      setOwnerNameError(null);
+                      setOwnerNameModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 mt-1 hover:opacity-80 transition cursor-pointer text-right group"
+                    title="انقر لتعديل اسم العميل / صاحب المحل"
+                  >
                     <span className="w-[18px] h-[18px] rounded-full bg-[#FDF6E3] border border-[#C9A86A]/30 flex items-center justify-center shrink-0">
                       <svg className="w-[10px] h-[10px] text-[#9C7D46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                     </span>
-                    <span className="text-[12px] font-bold text-[#3A4F49] truncate">{ownerName}</span>
-                  </div>
+                    <span className="text-[12px] font-bold text-[#3A4F49] truncate group-hover:text-emerald-800">{ownerName}</span>
+                    <span className="text-[10px] text-amber-700 opacity-60 group-hover:opacity-100">✏️</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewOwnerNameInput("");
+                      setOwnerNameError(null);
+                      setOwnerNameModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 mt-1 rounded-lg border border-dashed border-[#C9A86A]/60 bg-[#FDF6E3]/60 hover:bg-[#FDF6E3] px-2 py-0.5 text-[11px] font-bold text-[#8B6A2A] transition cursor-pointer"
+                    title="إضافة اسم العميل / صاحب المحل"
+                  >
+                    <span>➕ إضافة اسم العميل</span>
+                  </button>
                 )}
               </div>
 
@@ -462,6 +523,59 @@ export function AdminLuxuryShopCard({
                 className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0A3D2E] to-[#115740] hover:bg-[#115740] text-[#E8C77E] font-black text-sm border border-[#C9A86A] shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
               >
                 {savingPhone ? "جاري الحفظ..." : "💾 حفظ رقم هاتف العميل"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة خيارات وتعديل اسم العميل / صاحب المحل */}
+      {ownerNameModalOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-150 text-right">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>👤</span>
+                  <span>اسم العميل ({shopName})</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  {ownerName ? `الاسم الحالي: ${ownerName}` : "لا يوجد اسم مسجل للعميل"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOwnerNameModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {ownerNameError && (
+              <div className="mb-3 rounded-2xl bg-rose-50 border border-rose-200 p-2.5 text-center text-xs font-bold text-rose-700 shadow-2xs">
+                ⚠️ {ownerNameError}
+              </div>
+            )}
+
+            <div className="space-y-3 pt-2">
+              <label className="block text-xs font-black text-slate-700">
+                {ownerName ? "تعديل اسم العميل أو صاحب المحل:" : "أدخل اسم العميل لحفظه:"}
+              </label>
+              <input
+                type="text"
+                value={newOwnerNameInput}
+                onChange={(e) => setNewOwnerNameInput(e.target.value)}
+                placeholder="مثال: أم زيون أو اسم صاحب المحل"
+                className="w-full text-right font-bold text-base px-3.5 py-2.5 rounded-2xl border-2 border-[#C9A86A]/50 focus:border-[#C9A86A] focus:outline-hidden bg-slate-50 text-slate-900 shadow-inner"
+              />
+              <button
+                type="button"
+                disabled={savingOwnerName}
+                onClick={handleSaveOwnerName}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0A3D2E] to-[#115740] hover:bg-[#115740] text-[#E8C77E] font-black text-sm border border-[#C9A86A] shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              >
+                {savingOwnerName ? "جاري الحفظ..." : "💾 حفظ اسم العميل"}
               </button>
             </div>
           </div>

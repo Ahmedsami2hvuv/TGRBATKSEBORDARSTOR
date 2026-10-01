@@ -924,15 +924,22 @@ export default async function MandoubPage({ searchParams }: Props) {
       // بيانات الوصول السريع
       audioUrl: o.voiceNoteUrl,
       summary: o.summary,
-      shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
+      shopId: o.shop?.id || o.shopId || null,
+      shopEmployees: (o.shop as any)?.employees || [],
+      shopPhone:
+        o.shop?.phone?.trim() ||
+        (o.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone?.trim() ||
+        o.submittedBy?.phone?.trim() ||
+        o.submittedByCompanyPreparer?.phone?.trim() ||
+        null,
       alternatePhone: o.alternatePhone,
       customerRegionId: o.customerRegionId,
       secondCustomerPhone: o.secondCustomerPhone,
       secondCustomerRegionId: o.secondCustomerRegionId,
-      shopLocationUrl: o.shop.locationUrl,
+      shopLocationUrl: o.shop?.locationUrl || "",
       customerLocationUrl: mergedCustomerLocation,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl || sProfile?.locationUrl || "",
-      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl) || "",
+      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop?.photoUrl) || "",
       customerDoorPhotoUrl: resolvePublicAssetSrc(o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl) || "",
       secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(o.secondCustomerDoorPhotoUrl || sProfile?.photoUrl) || "",
       imageUrl: resolvePublicAssetSrc(o.imageUrl) || "",
@@ -941,9 +948,14 @@ export default async function MandoubPage({ searchParams }: Props) {
 
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
       secondCustomerLandmark: secondLandmarkLine,
-      shopRegionName: o.shop.region?.name || null,
+      shopRegionName: o.shop?.region?.name || null,
       customerName: o.customer?.name || null,
-      submitterName: o.shop.ownerName || o.submittedBy?.name || o.submittedByCompanyPreparer?.name || null,
+      submitterName:
+        o.shop?.ownerName?.trim() ||
+        (o.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() ||
+        o.submittedBy?.name?.trim() ||
+        o.submittedByCompanyPreparer?.name?.trim() ||
+        null,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
       adminAudioUrl: o.adminVoiceNoteUrl,
       showDoorBtn: courier.showDoorBtn,

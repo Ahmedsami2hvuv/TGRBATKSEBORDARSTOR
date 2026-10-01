@@ -17,9 +17,18 @@ export async function updateShopPhoneAction(
 
     const normalized = normalizeIraqMobileLocal11(raw) || raw;
 
-    if (shopId) {
+    let targetShopId = (shopId || "").trim();
+    if (!targetShopId && orderId) {
+      const ord = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { shopId: true },
+      });
+      targetShopId = ord?.shopId || "";
+    }
+
+    if (targetShopId) {
       await prisma.shop.update({
-        where: { id: shopId },
+        where: { id: targetShopId },
         data: { phone: normalized },
       });
     }
@@ -35,5 +44,46 @@ export async function updateShopPhoneAction(
   } catch (err: any) {
     console.error("[updateShopPhoneAction] Error:", err);
     return { ok: false, error: err?.message || "تعذر حفظ رقم الهاتف" };
+  }
+}
+
+export async function updateShopOwnerNameAction(
+  orderId: string,
+  shopId: string,
+  newOwnerName: string
+): Promise<{ ok: boolean; error?: string; ownerName?: string }> {
+  try {
+    const raw = newOwnerName.trim();
+    if (!raw) {
+      return { ok: false, error: "يرجى كتابة اسم العميل" };
+    }
+
+    let targetShopId = (shopId || "").trim();
+    if (!targetShopId && orderId) {
+      const ord = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { shopId: true },
+      });
+      targetShopId = ord?.shopId || "";
+    }
+
+    if (targetShopId) {
+      await prisma.shop.update({
+        where: { id: targetShopId },
+        data: { ownerName: raw },
+      });
+    }
+
+    if (orderId) {
+      revalidatePath(`/mandoub/order/${orderId}`);
+      revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+      revalidatePath("/mandoub");
+      revalidatePath("/abo1stor3hlaa2kbr8-47/orders");
+    }
+
+    return { ok: true, ownerName: raw };
+  } catch (err: any) {
+    console.error("[updateShopOwnerNameAction] Error:", err);
+    return { ok: false, error: err?.message || "تعذر حفظ اسم العميل" };
   }
 }
