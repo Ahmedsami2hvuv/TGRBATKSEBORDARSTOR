@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   upsertMandoubWaButton,
   updateMandoubWaButtonTemplates,
+  deleteMandoubWaButtonVariant,
+  clearAllMandoubWaButtonVariants,
   type WaButtonsFormState,
 } from "../actions";
 import {
@@ -144,6 +146,17 @@ export function WaButtonDetailClient({ row }: Props) {
     return loaded.length ? loaded : [""];
   });
 
+  // مزامنة حالة النماذج فورياً عند تغير بيانات السيرفر
+  useEffect(() => {
+    const loaded = splitMandoubWaTemplateVariants(row.templateText);
+    setVariants(loaded.length ? loaded : [""]);
+  }, [row.templateText]);
+
+  // حالات العمليات الفورية (حذف نموذج محدد أو مسح الكل)
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // مصفوفة حالات المعاينة الحية للنماذج
   const [previewOpen, setPreviewOpen] = useState<Record<number, boolean>>({});
 
@@ -167,9 +180,20 @@ export function WaButtonDetailClient({ row }: Props) {
     });
   };
 
+  // مسح نص نموذج معين فقط (تفريغ الصندوق)
+  const clearVariantText = (index: number) => {
+    updateVariantText(index, "");
+    textareaRefs.current[index]?.focus();
+    setFeedbackMsg({
+      type: "success",
+      text: `تم تفريغ نص النموذج رقم #${index + 1}. تذكر الضغط على "حفظ جميع نماذج الرسائل" بالأسفل لحفظ التغييرات.`,
+    });
+  };
+
   // إضافة نموذج رسالة جديد في الأسفل والتركيز عليه
   const addNewVariant = () => {
     setVariants((prev) => [...prev, ""]);
+    setFeedbackMsg(null);
     setTimeout(() => {
       const lastIndex = variants.length;
       textareaRefs.current[lastIndex]?.focus();
@@ -185,14 +209,92 @@ export function WaButtonDetailClient({ row }: Props) {
     });
   };
 
-  // حذف نموذج
-  const removeVariant = (index: number) => {
-    if (variants.length <= 1) {
-      // تفريغ النموذج إذا كان الوحيد
-      setVariants([""]);
+  // مسح وحذف نموذج مباشرة من السيرفر وقاعدة البيانات
+  const handleDeleteVariantDirectly = async (index: number) => {
+    const isSavedInServer = index < splitMandoubWaTemplateVariants(row.templateText).length;
+
+    // إذا كان النموذج مجرد بطاقة جديدة أضيفت محلياً ولم تُحفظ في السيرفر بعد
+    if (!isSavedInServer) {
+      if (variants.length <= 1) {
+        setVariants([""]);
+      } else {
+        setVariants((prev) => prev.filter((_, i) => i !== index));
+      }
+      setFeedbackMsg({
+        type: "success",
+        text: `تم مسح النموذج رقم #${index + 1} بنجاح.`,
+      });
       return;
     }
-    setVariants((prev) => prev.filter((_, i) => i !== index));
+
+    if (!window.confirm(`هل أنت متأكد من مسح وحذف النموذج رقم #${index + 1} نهائياً؟`)) {
+      return;
+    }
+
+    setDeletingIndex(index);
+    setFeedbackMsg(null);
+    try {
+      const res = await deleteMandoubWaButtonVariant(row.id, index);
+      if (res.ok) {
+        if (res.remainingVariants) {
+          setVariants(res.remainingVariants);
+        } else {
+          setVariants((prev) => {
+            const next = prev.filter((_, i) => i !== index);
+            return next.length ? next : [""];
+          });
+        }
+        setFeedbackMsg({
+          type: "success",
+          text: `✓ تم مسح وحذف النموذج رقم #${index + 1} نهائياً وتحديث السيرفر بنجاح تام!`,
+        });
+        router.refresh();
+      } else {
+        setFeedbackMsg({
+          type: "error",
+          text: res.error || "تعذر مسح النموذج من السيرفر.",
+        });
+      }
+    } catch {
+      setFeedbackMsg({
+        type: "error",
+        text: "تعذر الاتصال بالسيرفر أثناء مسح النموذج، يرجى المحاولة ثانية.",
+      });
+    } finally {
+      setDeletingIndex(null);
+    }
+  };
+
+  // تفريغ ومسح جميع النماذج بالكامل من السيرفر بنقرة واحدة
+  const handleClearAllVariants = async () => {
+    if (!window.confirm("هل أنت متأكد من مسح وتفريغ جميع نماذج الرسائل لهذا الزر بالكامل؟")) {
+      return;
+    }
+    setClearingAll(true);
+    setFeedbackMsg(null);
+    try {
+      const res = await clearAllMandoubWaButtonVariants(row.id);
+      if (res.ok) {
+        setVariants([""]);
+        setFeedbackMsg({
+          type: "success",
+          text: "✓ تم مسح وتفريغ جميع نماذج هذا الزر نهائياً بنجاح تام!",
+        });
+        router.refresh();
+      } else {
+        setFeedbackMsg({
+          type: "error",
+          text: res.error || "تعذر مسح النماذج.",
+        });
+      }
+    } catch {
+      setFeedbackMsg({
+        type: "error",
+        text: "تعذر الاتصال بالسيرفر أثناء مسح النماذج.",
+      });
+    } finally {
+      setClearingAll(false);
+    }
   };
 
   // تحريك النموذج لأعلى
@@ -330,6 +432,28 @@ export function WaButtonDetailClient({ row }: Props) {
             <input type="hidden" name="templateText" value={combinedTemplateText} />
 
             {/* رسائل التنبيه والنجاح */}
+            {feedbackMsg ? (
+              <div
+                className={`rounded-2xl border p-4 text-sm font-bold shadow-sm flex items-center justify-between animate-fadeIn ${
+                  feedbackMsg.type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-rose-200 bg-rose-50 text-rose-700"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span>{feedbackMsg.type === "success" ? "✓" : "⚠️"}</span>
+                  <span>{feedbackMsg.text}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFeedbackMsg(null)}
+                  className="rounded-lg px-2.5 py-1 text-xs font-bold hover:bg-black/5 transition"
+                >
+                  ✕ إغلاق
+                </button>
+              </div>
+            ) : null}
+
             {tempState.error ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700 shadow-sm flex items-center gap-2">
                 <span>⚠️</span>
@@ -349,7 +473,7 @@ export function WaButtonDetailClient({ row }: Props) {
 
             {/* إرشادات سريعة واضحة */}
             <div className="rounded-2xl border border-blue-150 bg-blue-50/50 p-4 text-xs sm:text-sm text-blue-900 leading-relaxed">
-              💡 <strong>تعديل مباشر في مكانه:</strong> اكتب وعدّل في أي نموذج رسالة أدناه مباشرة داخل الصندوق الواسع. استخدم أزرار المتغيرات السريعة فوق كل نموذج لإدراج البيانات (مثل رقم الطلب، السعر، اسم المحل) بنقرة واحدة. عند وجود أكثر من نموذج، سيتمكن المندوب أو النظام من التبديل بينها بسلاسة.
+              💡 <strong>تعديل ومسح فوري:</strong> يمكنك مسح وحذف أي نموذج مباشرة بالضغط على زر <strong>(🗑️ مسح وحذف النموذج)</strong> وسيتم حذفه من السيرفر فوراً دون انتظار. كما يمكنك تفريغ النص بالضغط على <strong>(🧹 مسح النص)</strong>، أو تعديل الصيغة ثم الضغط على زر الحفظ بالأسفل.
             </div>
 
             {/* قائمة بطاقات النماذج */}
@@ -357,11 +481,14 @@ export function WaButtonDetailClient({ row }: Props) {
               {variants.map((text, idx) => {
                 const isPreview = !!previewOpen[idx];
                 const previewResult = applyMandoubWaTemplate(text, SAMPLE_DATA);
+                const isDeleting = deletingIndex === idx;
 
                 return (
                   <div
                     key={`template-card-${idx}`}
-                    className="relative rounded-3xl border-2 border-sky-150 bg-white p-5 sm:p-6 shadow-sm transition-all focus-within:border-sky-500 focus-within:shadow-md"
+                    className={`relative rounded-3xl border-2 bg-white p-5 sm:p-6 shadow-sm transition-all focus-within:border-sky-500 focus-within:shadow-md ${
+                      isDeleting ? "opacity-50 pointer-events-none border-rose-300" : "border-sky-150"
+                    }`}
                   >
                     {/* شريط رأس بطاقة النموذج */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -379,7 +506,7 @@ export function WaButtonDetailClient({ row }: Props) {
                         </div>
                       </div>
 
-                      {/* أدوات التحكم بالنموذج (ترتيب، تكرار، معاينة، حذف) */}
+                      {/* أدوات التحكم بالنموذج (ترتيب، تكرار، معاينة، مسح نص، حذف نموذج فوري) */}
                       <div className="flex flex-wrap items-center gap-1.5">
                         {/* أزرار الترتيب */}
                         <button
@@ -422,21 +549,30 @@ export function WaButtonDetailClient({ row }: Props) {
                           className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition"
                           title="تكرار هذا النموذج"
                         >
-                          📑 نسخ النموذج
+                          📑 نسخ
                         </button>
 
-                        {/* زر حذف */}
+                        {/* زر مسح وتفريغ النص داخل الصندوق */}
+                        {text.trim() ? (
+                          <button
+                            type="button"
+                            onClick={() => clearVariantText(idx)}
+                            className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition"
+                            title="مسح محتوى الكتابة وتفريغ هذا النموذج"
+                          >
+                            🧹 مسح النص
+                          </button>
+                        ) : null}
+
+                        {/* زر مسح وحذف النموذج فورياً ومباشرة من السيرفر */}
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm(`هل تريد حذف النموذج رقم #${idx + 1}؟`)) {
-                              removeVariant(idx);
-                            }
-                          }}
-                          className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
-                          title="حذف هذا النموذج"
+                          disabled={isDeleting}
+                          onClick={() => handleDeleteVariantDirectly(idx)}
+                          className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-extrabold text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition shadow-2xs"
+                          title="مسح وحذف هذا النموذج نهائياً من السيرفر"
                         >
-                          🗑️ حذف
+                          {isDeleting ? "⏳ جارٍ المسح…" : "🗑️ مسح وحذف النموذج"}
                         </button>
                       </div>
                     </div>
@@ -513,13 +649,28 @@ export function WaButtonDetailClient({ row }: Props) {
               </button>
             </div>
 
-            {/* شريط الحفظ الثابت / البارز في الأسفل */}
+            {/* شريط الحفظ الثابت / البارز في الأسفل مع إمكانية مسح الكل */}
             <div className="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-sky-200 bg-white/95 p-4 shadow-xl backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <span className="flex h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs sm:text-sm font-extrabold text-slate-700">
-                  عدد النماذج الحالية: {variants.filter((v) => v.trim()).length}
-                </span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-700">
+                    عدد النماذج: {variants.filter((v) => v.trim()).length}
+                  </span>
+                </div>
+
+                {variants.some((v) => v.trim()) ? (
+                  <button
+                    type="button"
+                    disabled={clearingAll}
+                    onClick={handleClearAllVariants}
+                    className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/80 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition"
+                    title="مسح وتفريغ كل نماذج هذا الزر نهائياً"
+                  >
+                    <span>🗑️</span>
+                    <span>{clearingAll ? "جارٍ المسح…" : "مسح وتفريغ الكل"}</span>
+                  </button>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-3">

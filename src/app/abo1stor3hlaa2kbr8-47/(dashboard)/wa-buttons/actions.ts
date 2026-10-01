@@ -106,6 +106,9 @@ export async function upsertMandoubWaButton(
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  if (id) {
+    revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons/${id}`);
+  }
   revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath("/mandoub");
@@ -131,10 +134,76 @@ export async function updateMandoubWaButtonTemplates(
   });
 
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons/${id}`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath("/mandoub");
   revalidatePath("/staff/portal");
+  return { ok: true };
+}
+
+/** مسح وحذف نموذج محدد نهائياً وحفظه فوراً في قاعدة البيانات */
+export async function deleteMandoubWaButtonVariant(
+  id: string,
+  variantIndex: number,
+): Promise<{ ok: boolean; error?: string; remainingVariants?: string[] }> {
+  const cleanId = id.trim();
+  if (!cleanId) return { ok: false, error: "معرّف الزر غير صالح." };
+
+  const row = await prisma.mandoubWaButtonSetting.findUnique({ where: { id: cleanId } });
+  if (!row) return { ok: false, error: "الزر غير موجود في قاعدة البيانات." };
+
+  const rawVariants = row.templateText
+    ? row.templateText.split(/\n\s*---\s*\n/g).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  let nextVariants: string[] = [];
+  if (rawVariants.length <= 1) {
+    // إذا كان نموذجاً وحيداً أو فارغاً، يتم تصفير النص كلياً
+    nextVariants = [];
+  } else {
+    nextVariants = rawVariants.filter((_, i) => i !== variantIndex);
+  }
+
+  const newTemplateText = nextVariants.join("\n---\n");
+
+  await prisma.mandoubWaButtonSetting.update({
+    where: { id: cleanId },
+    data: { templateText: newTemplateText },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons/${cleanId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
+
+  return { ok: true, remainingVariants: nextVariants.length ? nextVariants : [""] };
+}
+
+/** مسح وتفريغ جميع نماذج الزر بالكامل من قاعدة البيانات */
+export async function clearAllMandoubWaButtonVariants(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const cleanId = id.trim();
+  if (!cleanId) return { ok: false, error: "معرّف الزر غير صالح." };
+
+  const row = await prisma.mandoubWaButtonSetting.findUnique({ where: { id: cleanId } });
+  if (!row) return { ok: false, error: "الزر غير موجود في قاعدة البيانات." };
+
+  await prisma.mandoubWaButtonSetting.update({
+    where: { id: cleanId },
+    data: { templateText: "" },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons/${cleanId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath("/mandoub");
+  revalidatePath("/staff/portal");
+
   return { ok: true };
 }
 
@@ -144,6 +213,7 @@ export async function deleteMandoubWaButton(formData: FormData): Promise<void> {
 
   await prisma.mandoubWaButtonSetting.delete({ where: { id } });
   revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/wa-buttons/${id}`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath("/mandoub");
@@ -180,5 +250,6 @@ export async function duplicateMandoubWaButton(
   revalidatePath("/mandoub");
   revalidatePath("/staff/portal");
 }
+
 
 
