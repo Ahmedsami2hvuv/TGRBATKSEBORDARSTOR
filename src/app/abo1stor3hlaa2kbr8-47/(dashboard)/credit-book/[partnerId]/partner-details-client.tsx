@@ -397,8 +397,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
       if (uploadRes.success) {
         uploadedUrl = uploadRes.url ?? null;
       } else {
-        setError(uploadRes.error || "فشل تحميل الصورة");
-        setIsAdding(false);
+        setError(uploadRes.error || "فشل تحميل الصورة");        setIsAdding(false);
         return;
       }
     }
@@ -797,8 +796,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition"
                 >
                   إغلاق ❌
-                </button>
-              </div>
+                </button>              </div>
               <div className="bg-white border border-slate-200 p-3 rounded-xl mb-3 text-left font-mono text-lg font-bold text-slate-800 break-all select-all min-h-[44px] flex items-center justify-end">
                 {calcExpr || "0"}
               </div>
@@ -1196,25 +1194,62 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   const prevD = index > 0 ? new Date(displayTxs[index - 1].createdAt).toDateString() : null;
                   const showDaySeparator = index === 0 || d1 !== prevD;
 
+                  // تجميع مبالغ كل يوم لإظهار ملخص اليوم داخل فاصل التاريخ
+                  const dayTransactions = displayTxs.filter((dayTx) =>
+                    new Date(dayTx.createdAt).toDateString() === d1
+                  );
+                  const dayGave = dayTransactions
+                    .filter((dayTx) => dayTx.kind === "gave")
+                    .reduce((sum, dayTx) => sum + Number(dayTx.amount || 0), 0);
+                  const dayTook = dayTransactions
+                    .filter((dayTx) => dayTx.kind === "took")
+                    .reduce((sum, dayTx) => sum + Number(dayTx.amount || 0), 0);
+                  const dayNet = dayGave - dayTook;
+
                   return (
                     <React.Fragment key={tx.id}>
                       {showDaySeparator && (
-                        <div className="flex items-center gap-3 my-5 py-1 select-none">
-                          <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80"></div>
-                          <span className="text-[10px] md:text-xs font-black px-4 py-1.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100/60 dark:border-indigo-900/40 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-                            📅 {(() => {
-                              const d = new Date(tx.createdAt);
-                              return d.toLocaleDateString("ar-EG", {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric"
-                              });
-                            })()}
-                          </span>
-                          <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                        <div className="flex flex-col items-center gap-2 my-5 py-2 select-none">
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                            <span className="text-[10px] md:text-xs font-black px-4 py-1.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100/60 dark:border-indigo-900/40 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                              📅 {(() => {
+                                const d = new Date(tx.createdAt);
+                                return d.toLocaleDateString("ar-EG", {
+                                  weekday: "long",
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric"
+                                });
+                              })()}
+                            </span>
+                            <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-black">
+                            <span className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
+                              إجمالي اليوم: {formatDinarAsAlfWithUnit(dayGave + dayTook)}
+                            </span>
+                            <span className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                              أعطيت: {formatDinarAsAlfWithUnit(dayGave)}
+                            </span>
+                            <span className="px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
+                              أخذت: {formatDinarAsAlfWithUnit(dayTook)}
+                            </span>
+                            <span className={`px-3 py-1 rounded-xl border ${
+                              dayNet > 0
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : dayNet < 0
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>
+                              صافي اليوم: {dayNet > 0 ? "+" : ""}{dayNet < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(dayNet))}
+                            </span>
+                          </div>
                         </div>
                       )}
+                    </React.Fragment>
+                  );
 
                       <div 
                         className={`p-3 md:p-4 rounded-2xl transition flex flex-col gap-2 md:gap-3 shadow-sm border-2 ${containerClasses} ${
@@ -1698,235 +1733,3 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     </label>
                     
                     {selectedSystemPartnerId && (
-                      <div className="mb-2.5 p-3 bg-indigo-50 text-indigo-900 rounded-2xl text-xs font-black flex justify-between items-center border border-indigo-100">
-                        <span>
-                          📍 {newPartnerName} {newPartnerPhone ? `(${newPartnerPhone})` : ""}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedSystemPartnerId("");
-                            setNewPartnerName("");
-                            setNewPartnerPhone("");
-                          }}
-                          className="text-rose-600 hover:text-rose-800 text-[10px] font-black border border-rose-200 px-2 py-0.5 rounded-lg bg-white transition"
-                        >
-                          إلغاء التحديد
-                        </button>
-                      </div>
-                    )}
-
-                    {isLoadingUnadded ? (
-                      <div className="text-xs text-slate-500 py-2">جاري تحميل القائمة...</div>
-                    ) : unaddedSystemPartners.length === 0 ? (
-                      <div className="text-xs text-rose-500 font-bold py-2">جميع الحسابات من هذا النوع مضافة مسبقاً!</div>
-                    ) : (
-                      <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto divide-y divide-slate-100 bg-white">
-                        {unaddedSystemPartners
-                          .filter(item => {
-                            const query = systemPartnerSearch.toLowerCase();
-                            const matchesName = item.name.toLowerCase().includes(query);
-                            const matchesPhone = item.phone && item.phone.toLowerCase().includes(query);
-                            return matchesName || matchesPhone;
-                          })
-                          .map((item) => {
-                            const isSelected = selectedSystemPartnerId === item.id;
-                            return (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSystemPartnerId(item.id);
-                                  setNewPartnerName(item.name);
-                                  setNewPartnerPhone(item.phone || "");
-                                }}
-                                className={`w-full text-right px-4 py-3 text-xs font-bold transition flex justify-between items-center ${
-                                  isSelected 
-                                    ? "bg-indigo-50 text-indigo-700 font-black border-r-4 border-indigo-600" 
-                                    : "hover:bg-slate-50 text-slate-700"
-                                }`}
-                              >
-                                <span>{item.name} {item.phone ? `(${item.phone})` : ""}</span>
-                                {isSelected && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black">محدد ✅</span>}
-                              </button>
-                            );
-                          })
-                        }
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {addPartnerError && <p className="text-xs font-bold text-rose-600">{addPartnerError}</p>}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isAddingPartner}
-                  className="flex-1 px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50"
-                >
-                  {isAddingPartner ? "جاري الإضافة..." : "حفظ الشريك"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddPartnerModal(false)}
-                  className="px-4 py-2.5 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* نافذة فحص الأخطاء والتسويات (Audit Modal) */}
-      {showAuditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                🔍 تحليل الأخطاء الحسابية والتسويات المخفية
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowAuditModal(false)}
-                className="text-slate-400 hover:text-rose-600 transition p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30"
-              >
-                ❌
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-4">
-              <p className="text-sm font-bold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-                هذا النظام يقوم بتحليل المحفظة واكتشاف أي قيود تسوية تمت بشكل تلقائي لمعالجة فروقات مخفية بين الحساب التراكمي للإدارة والحركات الظاهرة للمندوب.
-              </p>
-              
-              {partner.transactions.filter(tx => tx.isAuto && (tx.id.includes('auto-courier-adjust') || tx.id.includes('tip-offset') || tx.note?.includes('تسوية'))).length === 0 ? (
-                <div className="p-8 text-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl">
-                  <span className="text-4xl mb-3 block">✅</span>
-                  <h4 className="font-black text-emerald-800 dark:text-emerald-400 text-lg mt-2">الحساب سليم 100%</h4>
-                  <p className="text-emerald-600 dark:text-emerald-500 text-sm mt-2 font-bold">لا توجد أي أخطاء أو قيود تسوية عشوائية في حساب هذا المندوب.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <h4 className="font-black text-slate-800 dark:text-slate-200 mb-2">قائمة التسويات والفروقات التي تمت:</h4>
-                  {partner.transactions
-                    .filter(tx => tx.isAuto && (tx.id.includes('auto-courier-adjust') || tx.id.includes('tip-offset') || tx.note?.includes('تسوية')))
-                    .map(tx => (
-                    <div key={tx.id} className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex flex-col gap-2 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-1.5 h-full bg-amber-400 dark:bg-amber-600"></div>
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-lg">
-                            {tx.kind === 'took' ? 'أخذت (نقصان دين)' : 'أعطيت (زيادة دين)'}
-                          </span>
-                          <span className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">
-                            {formatDinarAsAlfWithUnit(tx.amount)}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                          {new Date(tx.createdAt).toLocaleDateString('ar-EG')}
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs font-bold text-slate-600 dark:text-slate-400 mt-1">
-                        <span className="text-slate-800 dark:text-slate-300">السبب برمجياً: </span>
-                        {tx.id.includes('tip-offset') 
-                          ? "إكرامية استلمها المندوب من الزبون (أعطيت)، وتم عمل هذه التسوية العكسية (أخذت) لكي تُخصم من ذمته للإدارة لأنها من حقه الصافي." 
-                          : tx.note?.includes('تصفير')
-                            ? "قيد تم إنشاؤه تلقائياً لتصفير الحساب ومطابقته عند قيام الإدارة بالضغط على زر تصفير الحساب."
-                            : "قيد تسوية أرباح أو فرق ناتج عن عمليات تم حذفها أو تعديلها في النظام ولم تتزامن مع سجل الحركات بشكل مباشر، فقام النظام بتعديلها كفرق إجمالي."}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowAuditModal(false)}
-                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-black rounded-xl transition shadow-sm"
-              >
-                حسناً، فهمت
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* نافذة تعديل بيانات الشريك (الاسم والهاتف) المنبثقة من القلم */}
-      {showEditDetailsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col text-right">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                ✏️ تعديل بيانات الحساب
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowEditDetailsModal(false)}
-                className="text-slate-400 hover:text-rose-600 transition p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30"
-              >
-                ❌
-              </button>
-            </div>
-            
-            <form onSubmit={handleSaveDetails}>
-              <div className="p-6 space-y-4">
-                {editDetailsError && (
-                  <div className="p-3 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl">
-                    {editDetailsError}
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-xs font-black text-slate-500 mb-1.5">الاسم الحقيقي</label>
-                  <input
-                    type="text"
-                    required
-                    value={editDetailsName}
-                    onChange={(e) => setEditDetailsName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-right"
-                    placeholder="أدخل الاسم..."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-black text-slate-500 mb-1.5">رقم الهاتف (اختياري)</label>
-                  <input
-                    type="text"
-                    value={editDetailsPhone}
-                    onChange={(e) => setEditDetailsPhone(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-right"
-                    placeholder="أدخل رقم الهاتف..."
-                  />
-                </div>
-              </div>
-              
-              <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowEditDetailsModal(false)}
-                  className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingDetails}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition shadow-sm disabled:opacity-50"
-                >
-                  {isSavingDetails ? "جاري الحفظ..." : "حفظ التغييرات"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
