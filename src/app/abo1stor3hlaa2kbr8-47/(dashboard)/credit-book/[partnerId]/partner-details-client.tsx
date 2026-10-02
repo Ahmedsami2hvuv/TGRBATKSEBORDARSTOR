@@ -497,8 +497,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
     if (res.success) {
       alert("تم تصفير الحساب وتصفية جميع الديون والطلبات المرتبطة به بنجاح!");
-      refreshPartnerData();
-    } else {
+      refreshPartnerData();    } else {
       alert(res.error || "حدث خطأ أثناء تصفير الحساب");
     }
   };
@@ -997,8 +996,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               onClick={() => setShowExpensesList(!showExpensesList)}
               className="w-full flex items-center justify-between font-black text-sm text-sky-950 dark:text-sky-100 hover:text-sky-700 transition cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <span>📦 المصروفات:</span>
+              <div className="flex items-center gap-2">                <span>📦 المصروفات:</span>
                 <span className="text-sky-700 dark:text-sky-300 font-mono text-base font-black">
                   {formatDinarAsAlfWithUnit(totalExpenseAmount)}
                 </span>
@@ -1248,8 +1246,6 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                           </div>
                         </div>
                       )}
-                    </React.Fragment>
-                  );
 
                       <div 
                         className={`p-3 md:p-4 rounded-2xl transition flex flex-col gap-2 md:gap-3 shadow-sm border-2 ${containerClasses} ${
@@ -1498,7 +1494,6 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                             }`}>{tx.note || "بدون بيان وملاحظات"}</span>
                           )}
                         </p>
-
                         {tx.imageUrl && (
                           <div className="shrink-0 self-center">
                             <img 
