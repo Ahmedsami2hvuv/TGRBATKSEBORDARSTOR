@@ -370,7 +370,12 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           }
         });
 
-        if (!exists) {
+        // لا تُسجّل معاملات المورد إذا كان سعر الشراء صفر؛ وإذا صارت المعاملة القديمة صفر نحذفها.
+        if (totalBuyAlf <= 0) {
+          if (exists) {
+            await db.creditBookTransaction.delete({ where: { id: exists.id } });
+          }
+        } else if (!exists) {
           // Record automatic transaction: kind is "took" (أخذت - يطلبنا) because supplier prepared the goods, so we owe them.
           const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
           
@@ -614,7 +619,12 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
 
         const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
 
-        if (!exists) {
+        // لا تُنشأ/تُبقى معاملة مورد بسعر صفر.
+        if (totalBuyAlf <= 0) {
+          if (exists) {
+            await db.creditBookTransaction.delete({ where: { id: exists.id } });
+          }
+        } else if (!exists) {
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
