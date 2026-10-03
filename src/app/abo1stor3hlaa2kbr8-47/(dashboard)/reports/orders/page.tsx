@@ -4,7 +4,7 @@ import { ad } from "@/lib/admin-ui";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقرير الطلبات — وصلي للتوصيل",
+  title: "تقرير الطلبات — وصلي",
 };
 
 type Props = { searchParams: Promise<{ from?: string; to?: string }> };

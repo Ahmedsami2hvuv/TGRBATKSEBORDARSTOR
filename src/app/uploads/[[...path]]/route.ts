@@ -189,7 +189,7 @@ export async function GET(
           const title = `${product.name} | ${product.branch?.name ? product.branch.name + " - " : ""}${product.branch?.category?.name ? product.branch.category.name + " | " : ""}خصيب ستور`;
           const description = product.description?.trim() 
             ? product.description 
-            : `تسوق ${product.name} من متجر وصلي للتوصيل. اطلب الآن واستلم فوري لباب بيتك!`;
+            : `تسوق ${product.name} من متجر وصلي. اطلب الآن واستلم فوري لباب بيتك!`;
           const targetUrl = product.branch?.categoryId 
             ? `https://aboakbr.com/store/c/${product.branch.categoryId}?b=${product.branchId}&product=${product.id}`
             : `https://aboakbr.com/store/product/${product.id}`;
@@ -211,7 +211,7 @@ export async function GET(
   <meta property="og:image:secure_url" content="${absoluteImageUrl}">
   <meta property="og:image:width" content="800">
   <meta property="og:image:height" content="800">
-  <meta property="og:site_name" content="متجر وصلي للتوصيل">
+  <meta property="og:site_name" content="متجر وصلي">
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
@@ -245,7 +245,7 @@ export async function GET(
 
         if (branch) {
           const title = `فرع ${branch.name} — ${branch.category?.name || "المتجر"} | خصيب ستور`;
-          const description = `تصفح منتجات ${branch.name} في ${branch.category?.name || "المتجر"} — متجر وصلي للتوصيل.`;
+          const description = `تصفح منتجات ${branch.name} في ${branch.category?.name || "المتجر"} — متجر وصلي.`;
           const targetUrl = branch.categoryId ? `https://aboakbr.com/store/c/${branch.categoryId}?b=${branch.id}` : `https://aboakbr.com/store/b/${branch.id}`;
 
           const html = `<!DOCTYPE html>
@@ -263,7 +263,7 @@ export async function GET(
   <meta property="og:image" content="${absoluteImageUrl}">
   <meta property="og:image:width" content="800">
   <meta property="og:image:height" content="800">
-  <meta property="og:site_name" content="متجر وصلي للتوصيل">
+  <meta property="og:site_name" content="متجر وصلي">
   
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
@@ -292,8 +292,8 @@ export async function GET(
         }
 
         if (category) {
-          const title = `قسم ${category.name} | متجر وصلي للتوصيل`;
-          const description = `تصفح جميع فروع ومنتجات قسم ${category.name} في متجر وصلي للتوصيل.`;
+          const title = `قسم ${category.name} | متجر وصلي`;
+          const description = `تصفح جميع فروع ومنتجات قسم ${category.name} في متجر وصلي.`;
           const targetUrl = `https://aboakbr.com/store/c/${category.id}`;
 
           const html = `<!DOCTYPE html>
@@ -311,7 +311,7 @@ export async function GET(
   <meta property="og:image" content="${absoluteImageUrl}">
   <meta property="og:image:width" content="800">
   <meta property="og:image:height" content="800">
-  <meta property="og:site_name" content="متجر وصلي للتوصيل">
+  <meta property="og:site_name" content="متجر وصلي">
   
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">

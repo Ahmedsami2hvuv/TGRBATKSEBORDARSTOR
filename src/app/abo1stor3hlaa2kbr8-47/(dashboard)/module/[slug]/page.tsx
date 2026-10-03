@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const tile = ADMIN_TILES.find((t) => t.slug === slug);
   return {
-    title: tile ? `${tile.label} — وصلي للتوصيل` : "قسم — وصلي للتوصيل",
+    title: tile ? `${tile.label} — وصلي` : "قسم — وصلي",
   };
 }
 

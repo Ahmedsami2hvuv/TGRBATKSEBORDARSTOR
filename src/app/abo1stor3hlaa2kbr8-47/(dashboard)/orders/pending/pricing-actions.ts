@@ -504,7 +504,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
               preparerInvoices,
               noProfit,
               customerInvoiceText: buildCustomerInvoiceText({
-                brandLabel: "وصلي للتوصيل",
+                brandLabel: "وصلي",
                 orderNumberLabel: `#${originalOrder?.orderNumber || "(جديد)"}`,
                 regionTitle: draftData!.titleLine,
                 phone: draftData!.customerPhone,
@@ -555,7 +555,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
               noProfit,
               staffId: draftData?.data && typeof draftData.data === "object" ? (draftData.data as any).fromStaffEmployeeId || null : null,
               customerInvoiceText: buildCustomerInvoiceText({
-                brandLabel: "وصلي للتوصيل",
+                brandLabel: "وصلي",
                 orderNumberLabel: `#(جديد)`,
                 regionTitle: draftData!.titleLine,
                 phone: draftData!.customerPhone,
@@ -631,7 +631,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             preparerInvoices,
             noProfit,
             customerInvoiceText: buildCustomerInvoiceText({
-              brandLabel: "وصلي للتوصيل",
+              brandLabel: "وصلي",
               orderNumberLabel: `#${originalOrder!.orderNumber}`,
               regionTitle: customerRegion?.name || "",
               phone: originalOrder!.customerPhone,

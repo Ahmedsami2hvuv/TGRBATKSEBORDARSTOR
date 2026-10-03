@@ -15,7 +15,7 @@ import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "معلومات الزبون — وصلي للتوصيل",
+  title: "معلومات الزبون — وصلي",
 };
 
 /** في الرابط: طلبات بدون حقل منطقة في الطلبية */

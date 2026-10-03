@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { prisma } from "./prisma";
 
-const SITE_NAME = "متجر وصلي للتوصيل";
+const SITE_NAME = "متجر وصلي";
 const DEFAULT_STORE_URL = "https://aboakbr.com/store";
 const DEFAULT_ICON_URL = "https://aboakbr.com/images/wasly-logo.png";
 
@@ -49,7 +49,7 @@ export async function getStoreCategoryMetadata(
         const title = `${prod.name} | ${prod.branch?.name ? prod.branch.name + " - " : ""}${SITE_NAME}`;
         const description = prod.description?.trim() 
           ? prod.description 
-          : `تسوق ${prod.name} من متجر وصلي للتوصيل بأفضل سعر وجودة.`;
+          : `تسوق ${prod.name} من متجر وصلي بأفضل سعر وجودة.`;
         const canonicalUrl = `https://aboakbr.com/store/c/${categoryId}?b=${prod.branchId}&product=${prod.id}`;
 
         return {
@@ -135,7 +135,7 @@ export async function getStoreCategoryMetadata(
       const title = `قسم ${category.name} | ${SITE_NAME}`;
       const description = category.notes?.trim()
         ? category.notes
-        : `تصفح جميع فروع ومنتجات قسم ${category.name} في متجر وصلي للتوصيل.`;
+        : `تصفح جميع فروع ومنتجات قسم ${category.name} في متجر وصلي.`;
       const canonicalUrl = `https://aboakbr.com/store/c/${categoryId}`;
 
       return {
@@ -197,7 +197,7 @@ export async function getStoreBranchMetadata(
         const title = `${prod.name} | ${prod.branch?.name ? prod.branch.name + " - " : ""}${SITE_NAME}`;
         const description = prod.description?.trim()
           ? prod.description
-          : `تسوق ${prod.name} من متجر وصلي للتوصيل.`;
+          : `تسوق ${prod.name} من متجر وصلي.`;
         const canonicalUrl = `https://aboakbr.com/store/b/${branchId}?product=${prod.id}`;
 
         return {
@@ -239,7 +239,7 @@ export async function getStoreBranchMetadata(
       const title = `${branch.name} — ${branch.category?.name || "المتجر"} | ${SITE_NAME}`;
       const description = branch.notes?.trim()
         ? branch.notes
-        : `تصفح منتجات ${branch.name} في متجر وصلي للتوصيل.`;
+        : `تصفح منتجات ${branch.name} في متجر وصلي.`;
       const canonicalUrl = `https://aboakbr.com/store/b/${branchId}`;
 
       return {
@@ -296,7 +296,7 @@ export async function getStoreProductMetadata(productId: string): Promise<Metada
       const title = `${prod.name} | ${prod.branch?.name ? prod.branch.name + " - " : ""}${SITE_NAME}`;
       const description = prod.description?.trim() 
         ? prod.description 
-        : `تسوق ${prod.name} من متجر وصلي للتوصيل بأفضل جودة وسعر.`;
+        : `تسوق ${prod.name} من متجر وصلي بأفضل جودة وسعر.`;
       const canonicalUrl = prod.branch?.categoryId
         ? `https://aboakbr.com/store/c/${prod.branch.categoryId}?b=${prod.branchId}&product=${prod.id}`
         : `https://aboakbr.com/store/product/${prod.id}`;
@@ -339,7 +339,7 @@ export async function getStoreProductMetadata(productId: string): Promise<Metada
  * الميتا داتا العامة الافتراضية للمتجر
  */
 export function getDefaultStoreMetadata(customTitle?: string, customDesc?: string, customImage?: string): Metadata {
-  const title = customTitle || `متجر وصلي للتوصيل`;
+  const title = customTitle || `متجر وصلي`;
   const description = customDesc || `تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.`;
   const imageUrl = getAbsoluteImageUrl(customImage || DEFAULT_ICON_URL);
 

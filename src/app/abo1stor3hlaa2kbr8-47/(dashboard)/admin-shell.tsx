@@ -613,7 +613,7 @@ export function AdminShell({
             />
             <div>
               <span className="text-xs sm:text-sm font-black text-[#F5D77F] block leading-tight">
-                وصلي للتوصيل
+                وصلي
               </span>
               <span className="text-[10px] font-bold text-emerald-200/80 block">
                 لوحة التحكم الإدارية ⚜️

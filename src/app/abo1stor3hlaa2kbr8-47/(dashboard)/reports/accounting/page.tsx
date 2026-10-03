@@ -4,7 +4,7 @@ import { ad } from "@/lib/admin-ui";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "ربط المحاسبة — وصلي للتوصيل",
+  title: "ربط المحاسبة — وصلي",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

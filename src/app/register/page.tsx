@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "إنشاء حساب — وصلي للتوصيل",
+  title: "إنشاء حساب — وصلي",
 };
 
 export default function RegisterPage() {

@@ -66,7 +66,7 @@ export function buildCustomerInvoiceText(params: {
   parts.push("✨ المجموع الكلي: ✨");
   parts.push(`بدون التوصيل = ${formatAlfForCustomer(withoutDelivery)} 💵`);
   parts.push(`مــــع التوصيل = ${formatAlfForCustomer(run)} 💵`);
-  parts.push("شكراً لاختياركم وصلي للتوصيل! ❤️");
+  parts.push("شكراً لاختياركم وصلي! ❤️");
 
   return parts.join("\n");
 }

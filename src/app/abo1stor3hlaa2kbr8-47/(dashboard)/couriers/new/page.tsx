@@ -3,7 +3,7 @@ import { ad } from "@/lib/admin-ui";
 import { CourierForm } from "../courier-form";
 
 export const metadata = {
-  title: "مندوب جديد — وصلي للتوصيل",
+  title: "مندوب جديد — وصلي",
 };
 
 export default function NewCourierPage() {

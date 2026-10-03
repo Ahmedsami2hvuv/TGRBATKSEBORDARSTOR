@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props) {
   const { day } = await params;
   const label = /^\d{4}-\d{2}-\d{2}$/.test(day) ? formatBaghdadDateLabel(day) : day;
   return {
-    title: `مؤرشف — ${label} — وصلي للتوصيل`,
+    title: `مؤرشف — ${label} — وصلي`,
   };
 }
 

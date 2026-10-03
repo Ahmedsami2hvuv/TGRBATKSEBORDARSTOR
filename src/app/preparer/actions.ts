@@ -491,7 +491,7 @@ export async function submitPreparerShoppingDraft(
               preparerInvoices,
               noProfit: !!draftData?.noProfit,
               customerInvoiceText: buildCustomerInvoiceText({
-                brandLabel: "وصلي للتوصيل",
+                brandLabel: "وصلي",
                 orderNumberLabel: `#${existingOrder.orderNumber}`,
                 regionTitle: draft.titleLine,
                 phone: draft.customerPhone,
@@ -528,7 +528,7 @@ export async function submitPreparerShoppingDraft(
               preparerInvoices,
               noProfit: !!draftData?.noProfit,
               customerInvoiceText: buildCustomerInvoiceText({
-                brandLabel: "وصلي للتوصيل",
+                brandLabel: "وصلي",
                 orderNumberLabel: "...",
                 regionTitle: draft.titleLine,
                 phone: draft.customerPhone,
@@ -566,7 +566,7 @@ export async function submitPreparerShoppingDraft(
             preparerInvoices,
             noProfit: !!draftData?.noProfit,
             customerInvoiceText: buildCustomerInvoiceText({
-              brandLabel: "وصلي للتوصيل",
+              brandLabel: "وصلي",
               orderNumberLabel: "...",
               regionTitle: draft.titleLine,
               phone: draft.customerPhone,
@@ -1071,7 +1071,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
             deliveryAlf,
             preparerInvoices,
             customerInvoiceText: buildCustomerInvoiceText({
-              brandLabel: "وصلي للتوصيل",
+              brandLabel: "وصلي",
               orderNumberLabel: `#${order.orderNumber}`,
               regionTitle: titleLine,
               phone: customerPhone || "—",

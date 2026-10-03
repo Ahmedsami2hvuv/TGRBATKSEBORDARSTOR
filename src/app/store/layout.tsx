@@ -7,21 +7,21 @@ import { StoreSidePanels } from "@/components/store-side-panels";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aboakbr.com"),
   title: {
-    default: "متجر وصلي للتوصيل",
+    default: "متجر وصلي",
     template: "%s | وصلي",
   },
   description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
   openGraph: {
-    title: "متجر وصلي للتوصيل",
+    title: "متجر وصلي",
     description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
     url: "https://aboakbr.com/store",
-    siteName: "وصلي للتوصيل",
+    siteName: "وصلي",
     images: [
       {
         url: "https://aboakbr.com/images/wasly-logo.png",
         width: 800,
         height: 800,
-        alt: "شعار وصلي للتوصيل",
+        alt: "شعار وصلي",
       },
     ],
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "متجر وصلي للتوصيل",
+    title: "متجر وصلي",
     description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
     images: ["https://aboakbr.com/images/wasly-logo.png"],
   },

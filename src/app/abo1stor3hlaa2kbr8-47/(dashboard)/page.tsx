@@ -5,7 +5,7 @@ import { AdminDebtsWidget } from "./admin-debts-widget";
 import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const metadata = {
-  title: "لوحة الرئيسية — وصلي للتوصيل",
+  title: "لوحة الرئيسية — وصلي",
 };
 
 type Props = {

@@ -6,7 +6,7 @@ import { CustomerProfileUpsertForm } from "../customer-profile-upsert-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إضافة زبون مرجعي جديد — وصلي للتوصيل",
+  title: "إضافة زبون مرجعي جديد — وصلي",
 };
 
 export default async function NewCustomerProfilePage() {

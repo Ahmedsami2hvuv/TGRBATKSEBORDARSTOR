@@ -3,7 +3,7 @@ import LuxuryDeliveryDashboard from "@/components/luxury-delivery/LuxuryDelivery
 
 export const metadata: Metadata = {
   title: "لوحة التحكم الملكية الفاخرة | إدارة التوصيل",
-  description: "لوحة تحكم وتتبع الطلبات الملكية الفاخرة بطراز الزمرد والذهب — وصلي للتوصيل",
+  description: "لوحة تحكم وتتبع الطلبات الملكية الفاخرة بطراز الزمرد والذهب — وصلي",
 };
 
 export default function LuxuryDeliveryPage() {

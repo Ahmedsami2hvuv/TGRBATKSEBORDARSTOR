@@ -120,7 +120,7 @@ export default function ScrollytellingHero() {
         {/* Headlines */}
         <motion.div style={{ opacity: h1Opacity, y: h1Y }} className="absolute left-1/2 top-[20%] -translate-x-1/2 w-[90vw] md:w-[620px] text-center z-10 pointer-events-none">
           <h2 className="font-bold tracking-[1px] text-[32px] md:text-[46px] leading-[1.4] text-[#22323F]">
-            وصلي للتوصيل<br/><span className="text-[#0088ff]">توصيل أسرع .. لكل مكان</span>
+            وصلي<br/><span className="text-[#0088ff]">توصيل أسرع .. لكل مكان</span>
           </h2>
           <div className="w-[56px] h-[3px] rounded-full bg-[#BFE0F2] mx-auto mt-4" />
         </motion.div>

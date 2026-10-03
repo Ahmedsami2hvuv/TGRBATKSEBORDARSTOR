@@ -12,7 +12,7 @@ import { serializePrisma } from "@/lib/serialize-prisma";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الموظفين — وصلي للتوصيل",
+  title: "الموظفين — وصلي",
 };
 
 export default async function AdminEmployeesHubPage() {
