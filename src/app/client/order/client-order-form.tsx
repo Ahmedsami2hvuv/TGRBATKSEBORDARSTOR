@@ -91,7 +91,6 @@ type PropsInner = {
   noCarsMode?: string;
   employeePhone?: string;
   recentOrderTypes?: string[];
-  recentOrderTimes?: string[];
   initialOrder: {
     orderNumber: number;
     customerPhone: string;
@@ -130,7 +129,6 @@ function ClientOrderFormInner({
   noCarsMode = "off",
   employeePhone = "",
   recentOrderTypes = [],
-  recentOrderTimes = [],
   initialOrder,
   onResetForNewOrder,
 }: PropsInner) {
@@ -142,7 +140,6 @@ function ClientOrderFormInner({
   const orderTypeRef = useRef<HTMLInputElement>(null);
   const orderPriceRef = useRef<HTMLInputElement>(null);
   const customerPhoneRef = useRef<HTMLInputElement>(null);
-  const orderTimeRef = useRef<HTMLInputElement>(null);
   const regionSearchRef = useRef<HTMLInputElement>(null);
   const regionContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -177,7 +174,7 @@ function ClientOrderFormInner({
   );
   const greetingName = viewerName || employeeName || "العميل";
   const [alternatePhone, setAlternatePhone] = useState(initialOrder?.alternatePhone ?? "");
-  const [orderTime, setOrderTime] = useState(initialOrder?.orderTime ?? "");
+  const [orderTime, setOrderTime] = useState(initialOrder?.orderTime ?? "الآن");
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
   const [vehiclePreference, setVehiclePreference] = useState("auto");
   const [deliveryPriceAdd, setDeliveryPriceAdd] = useState<number | null>(null);
@@ -524,15 +521,6 @@ function ClientOrderFormInner({
       return false;
     }
 
-    if (!orderTime.trim()) {
-      setFieldErrorModal({
-        title: "وقت الاستلام مطلوب ⏰",
-        message: "يرجى تحديد وقت استلام الطلب (مثل: فوراً، بعد ساعة)",
-        targetRef: orderTimeRef,
-      });
-      return false;
-    }
-
     return true;
   };
 
@@ -564,7 +552,7 @@ function ClientOrderFormInner({
     setSelected(null);
     setOrderType("");
     setOrderPrice("");
-    setOrderTime("");
+    setOrderTime("الآن");
     setIsPrepaidAll(false);
     setIsReverse(false);
     setNotes("");
@@ -1059,47 +1047,21 @@ function ClientOrderFormInner({
               </div>
             )}
 
-            {/* السطر الثالث: شوكت تحب نستلم الطلب */}
+            {/* وقت الطلب يُسجّل تلقائياً */}
             <div className="mt-[14px] rounded-[18px] bg-[#F0F9FF] border-[1.5px] border-[#38BDF8]/30 p-[12px] flex items-center gap-[12px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]">
               <div className="w-[44px] h-[44px] rounded-[14px] bg-white border border-[#38BDF8]/30 shadow-sm flex items-center justify-center shrink-0">
                 <Clock className="w-[20px] h-[20px] text-[#0369A1]" />
               </div>
               <div className="flex-1">
                 <p className="text-[11px] font-black text-[#0369A1] leading-[1]">
-                  شوكت تحب نستلم الطلب
+                  وقت الطلب
                 </p>
-                {/* اقتراحان سريعان من آخر طلبيتين مرفوعتين */}
-                <div className="flex gap-[6px] mt-[6px]">
-                  {(recentOrderTimes.length > 0 ? recentOrderTimes.slice(0, 2) : ["فوراً", "بعد ساعة"]).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => {
-                        setOrderTime(t);
-                        triggerTypingAnimation();
-                      }}
-                      className={`px-[8px] py-[2px] rounded-full border text-[10px] font-bold transition ${
-                        orderTime === t
-                          ? "bg-[#0369A1] text-[#FDE047] border-[#38BDF8]"
-                          : "bg-white border-[#38BDF8]/30 text-[#0369A1]"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-[10px] font-bold text-[#64748B] mt-[5px]">
+                  يتم تسجيل وقت الطلب تلقائياً عند رفع الطلب
+                </p>
               </div>
-              <div className="flex-1 max-w-[150px]">
-                <input
-                  ref={orderTimeRef}
-                  value={orderTime}
-                  onChange={(ev) => {
-                    setOrderTime(ev.target.value);
-                    triggerTypingAnimation();
-                  }}
-                  placeholder="الآن..."
-                  className="focus-ring w-full h-[38px] rounded-[12px] border-[1.5px] border-[#38BDF8]/40 bg-white px-[10px] text-[12px] font-bold text-[#1E293B] outline-none"
-                />
+              <div className="shrink-0 rounded-full bg-white border border-[#38BDF8]/30 px-[10px] py-[6px] text-[11px] font-black text-[#0369A1]">
+                الآن
               </div>
             </div>
 
