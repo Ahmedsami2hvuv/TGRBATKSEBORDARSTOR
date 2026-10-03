@@ -175,7 +175,7 @@ function ClientOrderFormInner({
   );
   const greetingName = viewerName || employeeName || "العميل";
   const [alternatePhone, setAlternatePhone] = useState(initialOrder?.alternatePhone ?? "");
-  const [orderTime, setOrderTime] = useState(initialOrder?.orderTime ?? "الآن");
+  const [orderTime, setOrderTime] = useState(initialOrder?.orderTime ?? "");
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
   const [vehiclePreference, setVehiclePreference] = useState("auto");
   const [deliveryPriceAdd, setDeliveryPriceAdd] = useState<number | null>(null);
@@ -562,7 +562,7 @@ function ClientOrderFormInner({
     setSelected(null);
     setOrderType("");
     setOrderPrice("");
-    setOrderTime("الآن");
+    setOrderTime("");
     setIsPrepaidAll(false);
     setIsReverse(false);
     setNotes("");
@@ -1072,7 +1072,7 @@ function ClientOrderFormInner({
                   setOrderTime(ev.target.value);
                   triggerTypingAnimation();
                 }}
-                placeholder="اكتب وقت الطلب..." 
+                placeholder="اكتب وقت الطلب..."
                 className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#38BDF8]/40 bg-white px-[12px] text-[13px] font-black text-[#1E293B] outline-none placeholder:text-[#94A3B8]"
               />
             </div>
