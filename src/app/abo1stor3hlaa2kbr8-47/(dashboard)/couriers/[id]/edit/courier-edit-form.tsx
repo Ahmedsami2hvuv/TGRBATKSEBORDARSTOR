@@ -1,238 +1,29 @@
-"use client";
-
-import { Fragment, useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+﻿import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
-import {
-  resetCourierMandoubTotals,
-  updateCourier,
-  type CourierFormState,
-  type CourierMandoubResetState,
-} from "../../actions";
+import { CourierForm } from "../courier-form";
 
-const initial: CourierFormState = {};
-const initialReset: CourierMandoubResetState = {};
+export const metadata = {
+  title: "مندوب جديد — وصلي",
+};
 
-export function CourierEditForm({
-  courierId,
-  defaultName,
-  defaultPhone,
-  defaultTelegramUserId,
-  defaultVehicleType,
-  defaultHiddenFromReports,
-  defaultBlocked,
-  defaultZeroEarning,
-  showDoorBtn,
-  showLocationBtn,
-  showCallBtn,
-  showWhatsAppBtn,
-  showNotesBtn,
-  showVoiceNotesBtn,
-  lastMandoubTotalsResetLabel,
-  mandoubWalletCarryOverLabel,
-}: {
-  courierId: string;
-  defaultName: string;
-  defaultPhone: string;
-  defaultTelegramUserId: string;
-  defaultVehicleType: "car" | "bike";
-  defaultHiddenFromReports: boolean;
-  defaultBlocked: boolean;
-  defaultZeroEarning: boolean;
-  showDoorBtn: boolean;
-  showLocationBtn: boolean;
-  showCallBtn: boolean;
-  showWhatsAppBtn: boolean;
-  showNotesBtn: boolean;
-  showVoiceNotesBtn: boolean;
-  lastMandoubTotalsResetLabel: string | null;
-  /** متبقي المحفظة المحمول (يُعرض للمندوب بعد التصفير) */
-  mandoubWalletCarryOverLabel: string;
-}) {
-  const bound = updateCourier.bind(null, courierId);
-  const [state, formAction, pending] = useActionState(bound, initial);
-  const boundReset = resetCourierMandoubTotals.bind(null, courierId);
-  const [resetState, resetAction, resetPending] = useActionState(
-    boundReset,
-    initialReset,
-  );
-  const router = useRouter();
-
-  useEffect(() => {
-    if (resetState.success) {
-      router.refresh();
-    } else if (resetState.error) {
-      alert("خطأ أثناء التصفير: " + resetState.error);
-    }
-  }, [resetState, router]);
-
+export default function NewCourierPage() {
   return (
-    <Fragment>
-    <form action={formAction} className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>اسم المندوب</span>
-          <input
-            name="name"
-            required
-            defaultValue={defaultName}
-            className={ad.input}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>رقم الهاتف</span>
-          <input
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            required
-            defaultValue={defaultPhone}
-            className={ad.input}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>Telegram User ID (للإشعارات)</span>
-          <input
-            name="telegramUserId"
-            inputMode="numeric"
-            placeholder="مثال: 123456789"
-            defaultValue={defaultTelegramUserId}
-            className={ad.input}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>نوع المركبة (لحساب أجر التوصيل)</span>
-          <select
-            name="vehicleType"
-            className={ad.select}
-            defaultValue={defaultVehicleType}
-          >
-            <option value="car">سيارة — ثلثي كلفة التوصيل لكل طلب مُسلَّم</option>
-            <option value="bike">دراجة — نصف كلفة التوصيل لكل طلب مُسلَّم</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            name="hiddenFromReports"
-            defaultChecked={defaultHiddenFromReports}
-            className="h-4 w-4 rounded border-sky-300"
-          />
-          <span className={ad.label}>إخفاء من قوائم الإسناد (لا يظهر عند اختيار مندوب)</span>
-        </label>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            name="blocked"
-            defaultChecked={defaultBlocked}
-            className="h-4 w-4 rounded border-sky-300"
-          />
-          <span className={ad.label}>محظور — لا يظهر في الإسناد والتقرير</span>
-        </label>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            name="zeroEarning"
-            defaultChecked={defaultZeroEarning}
-            className="h-4 w-4 rounded border-sky-300"
-          />
-          <span className={ad.label}>ربح المندوب صفر (كامل مبلغ التوصيل يذهب للإدارة)</span>
-        </label>
-
-        <div className="sm:col-span-2 pt-4 border-t border-slate-100">
-          <p className="text-sm font-bold text-slate-800 mb-3">إعدادات أزرار لوحة المندوب (إظهار/إخفاء):</p>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showDoorBtn" defaultChecked={showDoorBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>زر صورة الباب</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showLocationBtn" defaultChecked={showLocationBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>زر اللوكيشن</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showCallBtn" defaultChecked={showCallBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>أزرار الاتصال</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showWhatsAppBtn" defaultChecked={showWhatsAppBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>أزرار الواتساب</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showNotesBtn" defaultChecked={showNotesBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>الملاحظات النصية</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="showVoiceNotesBtn" defaultChecked={showVoiceNotesBtn} className="h-4 w-4 rounded border-sky-300" />
-              <span className={ad.label}>الملاحظات الصوتية</span>
-            </label>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <p className={ad.muted}>
+        <Link href="/abo1stor3hlaa2kbr8-47/couriers" className={ad.link}>
+          ← المندوبين
+        </Link>
+      </p>
+      <div>
+        <h1 className={ad.h1}>إضافة مندوب توصيل</h1>
+        <p className={`mt-1 ${ad.lead}`}>
+          المندوبون <strong className="text-amber-800">لا يُضافون من صفحة المحل</strong> —
+          كيان مستقل عن موظفي رفع الطلبات للزبائن.
+        </p>
       </div>
-      {state.error ? (
-        <p className={ad.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.ok ? <p className={ad.success}>تم حفظ التعديلات.</p> : null}
-      <button type="submit" disabled={pending} className={ad.btnPrimary}>
-        {pending ? "جارٍ الحفظ…" : "حفظ"}
-      </button>
-    </form>
-
-    <div className="mt-8 border-t border-slate-200 pt-6">
-      <h2 className={`${ad.h2} mb-1`}>لوحة المندوب — تصفير الأرقام</h2>
-      <p className={`${ad.muted} mb-4 max-w-xl`}>
-        زر «تصفير» يصفّر عرض الوارد والصادر والمتبقي وأرباحي للفترة الجديدة لتبدأ من صفر. 
-        لا تتأثر قيمة «بلوك الإدارة» وتبقى تراكمية لحفظ حقوق الإدارة المالية.
-        لا يحذف الطلبات ولا الحركات من النظام.
-      </p>
-      <p className="mb-3 text-sm font-medium text-slate-700">
-        الرصيد المحمول لـ «متبقي المحفظة» عند المندوب الآن:{" "}
-        <span className="font-black tabular-nums text-violet-950">{mandoubWalletCarryOverLabel}</span>
-      </p>
-      {lastMandoubTotalsResetLabel ? (
-        <p className="mb-3 text-sm font-medium text-slate-600">
-          آخر تصفير مسجّل:{" "}
-          <span className="font-bold tabular-nums text-slate-900">
-            {lastMandoubTotalsResetLabel}
-          </span>
-        </p>
-      ) : (
-        <p className="mb-3 text-sm text-slate-500">لم يُجرَ تصفير بعد لهذا المندوب.</p>
-      )}
-      <form
-        action={resetAction}
-        className="flex flex-wrap items-center gap-3"
-        onSubmit={(e) => {
-          if (
-            !window.confirm(
-              "تأكيد تصفير أرقام لوحة المندوب؟ ستُصفَّر عرض الفترة للوارد/الصادر/المتبقي/أرباحي ليبدأ من جديد (بلوك الإدارة سيبقى ثابتاً وتراكمياً).",
-            )
-          ) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <button
-          type="submit"
-          disabled={resetPending}
-          className="rounded-xl border-2 border-amber-500 bg-amber-50 px-5 py-2.5 text-sm font-black text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-60"
-        >
-          {resetPending ? "جارٍ التصفير…" : "تصفير"}
-        </button>
-        {resetState.error ? (
-          <p className={ad.error} role="alert">
-            {resetState.error}
-          </p>
-        ) : null}
-        {resetState.success ? (
-          <p className={ad.success}>
-            تم التصفير. جميع الأرقام بدأت من الصفر، باستثناء بلوك الإدارة التراكمي.
-          </p>
-        ) : null}
-      </form>
+      <section className={ad.section}>
+        <CourierForm />
+      </section>
     </div>
-    </Fragment>
   );
 }

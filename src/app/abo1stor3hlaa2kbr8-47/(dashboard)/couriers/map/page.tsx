@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import type { CourierMapPoint, WithoutLoc } from "./couriers-map-client";
@@ -8,7 +8,7 @@ import { isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "خريطة المندوبين والمجهزين والموظفين — وصلي للتوصيل",
+  title: "خريطة المندوبين والمجهزين والموظفين — وصلي",
 };
 
 export default async function AdminCouriersMapPage() {

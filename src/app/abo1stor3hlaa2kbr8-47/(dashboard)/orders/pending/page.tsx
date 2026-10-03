@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
 import { prisma } from "@/lib/prisma";
@@ -27,7 +27,7 @@ const SYSTEM_ADMIN_PHONE = "07733921568";
 export const revalidate = 15;
 
 export const metadata = {
-  title: "إدارة الطلبات والتجهيز — وصلي للتوصيل",
+  title: "إدارة الطلبات والتجهيز — وصلي",
 };
 
 function customerOrderTimeLabel(orderNoteTime: string | null): string {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { AddToCartButton } from "@/app/store/add-to-cart-button";
@@ -165,7 +165,7 @@ export function ProductCardLazy({
               {/* التوقيع أسفل الصورة في الكارت - ملاصق تماماً وتصميم أنيق */}
               <div className="mt-[-20px] mb-0 px-2.5 py-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full shadow-md z-20 border border-white/20">
                 <span className="text-[8px] md:text-[9px] font-black text-white whitespace-nowrap">
-                  متجر وصلي للتوصيل
+                  متجر وصلي
                 </span>
               </div>
             </div>
@@ -234,7 +234,7 @@ export function ProductCardLazy({
                       <div className="bg-violet-600 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2 shrink-0 border-2 border-white dark:border-slate-900">
                         <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0"></div>
                         <span className="text-[8px] sm:text-xs font-black text-white whitespace-nowrap">
-                          وصلي للتوصيل - 07733921468
+                          وصلي - 07733921468
                         </span>
                       </div>
                     </div>

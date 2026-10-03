@@ -1,4 +1,4 @@
-export const TWO_WAY_TEMPLATE_VARIABLES = [
+﻿export const TWO_WAY_TEMPLATE_VARIABLES = [
   "{orderNumber}",
   "{senderName}",
   "{senderPhone}",
@@ -43,7 +43,7 @@ export function getDefaultTwoWayLocationSenderTemplate(): string {
     "مرحباً (المرسل)،",
     "نرجو تزويدنا بموقعك الجغرافي (اللوكيشن) لاستلام الطلبية رقم {orderNumber}.",
     "منطقة الاستلام: {senderRegion}",
-    "شكراً لتعاونكم مع شركة وصلي للتوصيل.",
+    "شكراً لتعاونكم مع شركة وصلي.",
   ].join("\n");
 }
 
@@ -51,7 +51,7 @@ export function getDefaultTwoWayLocationRecipientTemplate(): string {
   return [
     "السلام عليكم 👋",
     "وياكم كابتن {{{delivery}}} 👨🏻✈️",
-    "من خدمة وصلي للتوصيل 🚚",
+    "من خدمة وصلي 🚚",
     "عدكم طلبية من {{{clientshop}}} 🏪",
     "متجهة لمنطقة {{{city}}} 📍",
     "المبلغ الكلي هو {{{total_price}}} 💰",
@@ -73,7 +73,7 @@ export function getDefaultTwoWayNotifySenderTemplate(): string {
   return [
     "مرحباً (المرسل)،",
     "نحيطكم علماً بأنه تم استلام الطلبية رقم {orderNumber} من موقعكم بنجاح وهي في الطريق للتوصيل إلى: {recipientRegion}.",
-    "شكراً لاختياركم شركة وصلي للتوصيل.",
+    "شكراً لاختياركم شركة وصلي.",
   ].join("\n");
 }
 

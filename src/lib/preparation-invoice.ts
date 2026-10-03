@@ -1,4 +1,4 @@
-import { ALF_PER_DINAR, formatDinarAsAlf } from "@/lib/money-alf";
+﻿import { ALF_PER_DINAR, formatDinarAsAlf } from "@/lib/money-alf";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 
 export type InvoiceProductLine = {
@@ -66,7 +66,7 @@ export function buildCustomerInvoiceText(params: {
   parts.push("✨ المجموع الكلي: ✨");
   parts.push(`بدون التوصيل = ${formatAlfForCustomer(withoutDelivery)} 💵`);
   parts.push(`مــــع التوصيل = ${formatAlfForCustomer(run)} 💵`);
-  parts.push("شكراً لاختياركم وصلي للتوصيل! ❤️");
+  parts.push("شكراً لاختياركم وصلي! ❤️");
 
   return parts.join("\n");
 }

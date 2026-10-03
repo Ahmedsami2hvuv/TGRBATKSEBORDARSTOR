@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
@@ -11,7 +11,7 @@ import { adminCookieName } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "التنبيه القوي 🚨 — وصلي للتوصيل",
+  title: "التنبيه القوي 🚨 — وصلي",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

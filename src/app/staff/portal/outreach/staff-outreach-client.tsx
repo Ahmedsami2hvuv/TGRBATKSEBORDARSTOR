@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useTransition, useMemo, useRef } from "react";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -298,7 +298,7 @@ export function StaffOutreachClient({
       return {
         id: "default",
         title: "رسالة ترحيبية",
-        content: "مرحباً بك عزيزي الزبون، يسعدنا تواصلك مع وصلي للتوصيل والخدمات السريعة 🚗📦",
+        content: "مرحباً بك عزيزي الزبون، يسعدنا تواصلك مع وصلي والخدمات السريعة 🚗📦",
         isActive: true,
       };
     }

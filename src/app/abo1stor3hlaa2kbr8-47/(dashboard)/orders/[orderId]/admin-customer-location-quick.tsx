@@ -1,352 +1,630 @@
-"use client";
-
-import React, { useActionState, useRef, useState, useEffect } from "react";
+﻿import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
+import { prisma } from "@/lib/prisma";
+import { ad } from "@/lib/admin-ui";
 import {
-  type CustomerDoorPhotoState,
-  uploadCustomerLocationFromView,
-  pasteCustomerLocationFromView,
-} from "./customer-door-photo-actions";
-import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
-import { type OrderCardDesignerConfig, getElementStyle } from "@/lib/order-card-customizer";
-import { whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
-import { PhoneActionModal } from "@/components/phone-action-modal";
-import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
+  isWardMismatch,
+  isSaderMismatch,
+  sumDeliveryInFromOrderMoneyEvents,
+  sumPickupOutFromOrderMoneyEvents,
+  sumCourierPickupOut,
+  sumPreparerPickupOut,
+  sumAdminPickupOut,
+} from "@/lib/mandoub-money";
+import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { routeModeOrFromQuery } from "@/lib/admin-super-search";
+import { parseBaghdadDateRange } from "@/lib/order-date-search";
+import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { serializePrisma } from "@/lib/serialize-prisma";
+import { OrderTrackingSearch } from "./order-tracking-search";
+import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
+import { type TrackingTableRow } from "./order-tracking-table-body";
+import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
+import { Decimal } from "@prisma/client/runtime/library";
+import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
-const initial: CustomerDoorPhotoState = {};
 
-export function AdminCustomerLocationQuick({
-  orderId,
-  target = "first",
-  customerPhone,
-  customerPhone2,
-  shopPhone,
-  orderStatus,
-  hasCustomerLocation,
-  hasCourierUploadedLocation,
-  userRole = "admin",
-  templateVars,
-  customButtons,
-  designerConfig,
-}: {
-  orderId: string;
-  target?: "first" | "second";
-  customerPhone?: string;
-  customerPhone2?: string;
-  shopPhone?: string;
-  orderStatus?: string;
-  hasCustomerLocation?: boolean;
-  hasCourierUploadedLocation?: boolean;
-  userRole?: "admin" | "mandoub" | "staff";
-  templateVars?: Record<string, string>;
-  customButtons?: WaButtonNextItem[];
-  designerConfig?: OrderCardDesignerConfig;
-}) {
-  const [gpsState, gpsAction, gpsPending] = useActionState(
-    uploadCustomerLocationFromView.bind(null, orderId),
-    initial,
-  );
-  const [pasteState, pasteAction, pastePending] = useActionState(
-    pasteCustomerLocationFromView.bind(null, orderId),
-    initial,
-  );
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-  const [clientError, setClientError] = useState<string>("");
-  const [locating, setLocating] = useState(false);
-  const gpsFormRef = useRef<HTMLFormElement>(null);
-  const latRef = useRef<HTMLInputElement>(null);
-  const lngRef = useRef<HTMLInputElement>(null);
+// Smart cache window: minor field edits won't thrash tracking.
+// Urgent status transitions are pushed via targeted revalidatePath calls.
+export const revalidate = 60;
 
-  const [showPaste, setShowPaste] = useState(false);
-  const [pastedUrl, setPastedUrl] = useState("");
+export const metadata = {
+  title: "تتبع الطلبات — وصلي",
+};
 
-  const [buttons, setButtons] = useState<WaButtonNextItem[]>(customButtons || []);
-  const [activePhoneModal, setActivePhoneModal] = useState<{
-    phone1: string;
-    phone2?: string | null;
-    messageText: string;
-  } | null>(null);
+function formatShopWithCustomer(
+  shopName: string,
+  customerName: string | null | undefined,
+  routeMode?: string | null,
+  isPreparerOrder?: boolean,
+): string {
+  if (routeMode === "double") return "وجهتين";
+  if (isPreparerOrder) return "الإدارة";
+  return normalizeAdminShopName(shopName) || "—";
+}
 
-  useEffect(() => {
-    if (customButtons) {
-      setButtons(customButtons);
-      return;
+const STATUS_STANDARD = [
+  "all",
+  "pending",
+  "assigned",
+  "delivering",
+  "delivered",
+  "cancelled",
+  "checkSader",
+  "checkWard",
+] as const;
+
+type Props = {
+  searchParams: Promise<{ status?: string; q?: string; wardFilter?: string; saderFilter?: string }>;
+};
+
+export default async function OrderTrackingPage({ searchParams }: Props) {
+  try {
+    const sp = await searchParams;
+    const rawStatus = ((sp.status ?? "all") as string).trim();
+    if (rawStatus === "archived") {
+      redirect(`${SECRET_ADMIN_PATH}/orders/archived`);
     }
-    let cancelled = false;
-    fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WaButtonNextItem[]) => {
-        if (!cancelled && Array.isArray(data)) {
-          setButtons(data);
+    let statusFilter = rawStatus;
+    if (!STATUS_STANDARD.includes(statusFilter as (typeof STATUS_STANDARD)[number])) {
+      statusFilter = "all";
+    }
+    const q = (sp.q ?? "").trim();
+    const wardFilter: "lower" | "higher" =
+      sp.wardFilter === "higher" ? "higher" : "lower";
+    const saderFilter: "lower" | "higher" =
+      sp.saderFilter === "lower" ? "lower" : "higher";
+
+    const where: Prisma.OrderWhereInput = {
+      orderType: { not: "دين" },
+    };
+
+    if (statusFilter === "checkSader" || statusFilter === "checkWard") {
+      where.status = "delivered";
+    } else if (
+      ["pending", "assigned", "delivering", "delivered", "cancelled"].includes(statusFilter)
+    ) {
+      where.status = statusFilter;
+    } else if (statusFilter === "all") {
+      where.status = { notIn: ["cancelled", "archived"] };
+    }
+
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
+      }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      where.OR = or;
+    }
+
+    const pendingTabWhere: Prisma.OrderWhereInput = {
+      status: "pending",
+      orderType: { not: "دين" },
+    };
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
+      }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      pendingTabWhere.OR = or;
+    }
+
+    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
+    let [orders, couriers, pendingTabCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: 150,
+        orderBy: { createdAt: "desc" },
+        include: {
+          shop: {
+            select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
+          },
+          customerRegion: true,
+          secondCustomerRegion: true,
+          courier: true,
+          customer: true,
+          moneyEvents: {
+            where: { deletedAt: null },
+            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
+          },
+        },
+      }),
+      prisma.courier.findMany({
+        where: courierAssignableWhere,
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.order.count({ where: pendingTabWhere }),
+    ]);
+
+    const customerPhoneProfileKeys = new Map<string, { phone: string; regionId: string }>();
+    for (const order of orders) {
+      const normalizedPhone = normalizeIraqMobileLocal11(order.customerPhone);
+      if (!normalizedPhone || !order.customerRegionId) continue;
+      customerPhoneProfileKeys.set(`${normalizedPhone}_${order.customerRegionId}`, {
+        phone: normalizedPhone,
+        regionId: order.customerRegionId,
+      });
+    }
+
+    const customerPhoneProfiles =
+      customerPhoneProfileKeys.size > 0
+        ? await prisma.customerPhoneProfile.findMany({
+            where: {
+              OR: Array.from(customerPhoneProfileKeys.values()).map((profile) => ({
+                phone: profile.phone,
+                regionId: profile.regionId,
+              })),
+            },
+            select: {
+              phone: true,
+              regionId: true,
+              locationUrl: true,
+              photoUrl: true,
+            },
+          })
+        : [];
+
+    const customerPhoneProfileByKey = new Map(
+      customerPhoneProfiles.map((profile) => [
+        `${profile.phone}_${profile.regionId}`,
+        profile,
+      ]),
+    );
+
+    if (statusFilter === "checkSader") {
+      orders = orders.filter((o) => {
+        const type = isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type;
+        return saderFilter === "higher" ? type === "excess" : type === "deficit";
+      });
+    } else if (statusFilter === "checkWard") {
+      orders = orders.filter((o) => {
+        const type = isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type;
+        return wardFilter === "higher" ? type === "excess" : type === "deficit";
+      });
+    }
+
+    function statusPriority(s: string): number {
+      if (s === "pending") return 0;
+      if (s === "assigned") return 1;
+      if (s === "delivering") return 2;
+      if (s === "delivered") return 3;
+      if (s === "cancelled") return 4;
+      return 99;
+    }
+
+    if (statusFilter === "all") {
+      orders = orders.sort(
+        (a, b) =>
+          statusPriority(a.status) - statusPriority(b.status) ||
+          b.orderNumber - a.orderNumber,
+      );
+    } else {
+      orders = orders.sort((a, b) => b.orderNumber - a.orderNumber);
+    }
+
+    function hrefTracking(opts: {
+      status: string;
+      wardFilter?: "lower" | "higher";
+      saderFilter?: "lower" | "higher";
+    }): string {
+      const p = new URLSearchParams();
+      if (opts.status !== "all") p.set("status", opts.status);
+      if (opts.status === "checkWard" && opts.wardFilter) p.set("wardFilter", opts.wardFilter);
+      if (opts.status === "checkSader" && opts.saderFilter) p.set("saderFilter", opts.saderFilter);
+      if (q) p.set("q", q);
+      return p.toString() ? `${SECRET_ADMIN_PATH}/orders/tracking?${p}` : `${SECRET_ADMIN_PATH}/orders/tracking`;
+    }
+
+    const tableRows: TrackingTableRow[] = orders.map((o) => {
+      const phoneProfile = customerPhoneProfileByKey.get(
+        `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
+      );
+
+      const courierPickup = sumCourierPickupOut(o.moneyEvents);
+      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
+      const adminPickup = sumAdminPickupOut(o.moneyEvents);
+
+      const courierDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+      );
+      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const preparerDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+      );
+      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
+      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
+      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
+      const hasDebt = calculatedDebt > 0;
+      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
+
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        orderStatus: o.status,
+        assignedCourierId: o.assignedCourierId ?? null,
+        shopCustomerLabel: formatShopWithCustomer(
+          o.shop?.name ?? "غير معروف",
+          o.customer?.name,
+          o.routeMode,
+          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
+        ),
+        regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
+        orderType: o.orderType || "—",
+        routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
+        prepaidAll: o.prepaidAll,
+        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
+        deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+        calculatedDebt: hasDebt ? calculatedDebt : null,
+        hasDebt: hasDebt,
+        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
+        customerPhone: o.customerPhone || "—",
+        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
+        courierName: o.courier?.name ?? "—",
+        orderNoteTime: o.orderNoteTime,
+        missingCustomerLocation: !hasCustomerLocationUrl(
+          o.customerLocationUrl,
+          o.customer?.customerLocationUrl,
+          phoneProfile?.locationUrl,
+        ),
+        hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
+        summary: o.summary,
+        preparerShoppingJson: o.preparerShoppingJson,
+        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
+        submissionSource: o.submissionSource,
+        wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
+        saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
+        noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
+        noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
+        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
+        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
+        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
+        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
+        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
+        createdAt: o.createdAt,
+        customerName: o.customer?.name || null,
+        // بيانات الوصول السريع
+        audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
+        adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
+        shopPhone: o.shop?.phone || "",
+        shopLocationUrl: o.shop?.locationUrl || "",
+        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
+        secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+        shopDoorPhotoUrl: resolvePublicAssetSrc(
+          o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
+        ),
+        customerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
+        ),
+        secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
+        ),
+        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
+        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
+        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
+        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
+        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
+      };
+    });
+
+    const statusTabs = [
+      { key: "all", label: "الكل" },
+      { key: "pending", label: "جديد" },
+      { key: "assigned", label: "مسند" },
+      { key: "delivering", label: "بالتوصيل" },
+      { key: "delivered", label: "مسلّم" },
+    ];
+
+    // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+    const safeTableRows = serializePrisma(tableRows);
+    const safeCouriers = serializePrisma(couriers);
+
+    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
+    const ALF_PER_DINAR = 1;
+    function numOrZero(v: unknown): number {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    const todayDate = new Date();
+    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
+    if (todayDate < shiftStartToday) {
+      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
+    }
+    const todayFrom = shiftStartToday;
+    const todayTo = new Date(todayFrom);
+    todayTo.setDate(todayTo.getDate() + 1);
+    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
+
+    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          status: "delivered",
+          createdAt: { gte: todayFrom, lte: todayTo }
+        },
+        select: {
+          deliveryPrice: true,
+          courierEarningDinar: true,
+          courier: { select: { zeroEarning: true, vehicleType: true } }
+        }
+      }),
+      prisma.order.findMany({
+        where: {
+          createdAt: { gte: todayFrom, lte: todayTo },
+          preparerShoppingJson: { not: null as any },
+          status: { notIn: ["cancelled", "rejected"] },
+          shop: { name: { in: ADMIN_SHOP_NAMES } }
+        },
+        select: {
+          preparerShoppingJson: true
         }
       })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [customButtons]);
+    ]);
 
-  const isExistingLocation = Boolean(
-    hasCustomerLocation ||
-    (templateVars?.location_url && templateVars.location_url.trim() && templateVars.location_url !== "—")
-  );
-
-  const requestLocation = () => {
-    setClientError("");
-    if (!navigator.geolocation) {
-      setClientError("المتصفح لا يدعم تحديد الموقع");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (!latRef.current || !lngRef.current || !gpsFormRef.current) return;
-        setLocating(false);
-        latRef.current.value = String(pos.coords.latitude);
-        lngRef.current.value = String(pos.coords.longitude);
-        gpsFormRef.current.requestSubmit();
-      },
-      () => {
-        setLocating(false);
-        setClientError("اسمح بالوصول للموقع ثم حاول مرة ثانية");
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    );
-  };
-
-  const handleRequestLocationWa = () => {
-    const locBtn = buttons.find((b) => b.showNextToLocation);
-    let messageText = "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك 📍";
-
-    if (locBtn && locBtn.templateText) {
-      const variants = splitMandoubWaTemplateVariants(locBtn.templateText);
-      const chosenTemplate = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : locBtn.templateText;
-      messageText = applyMandoubWaTemplate(chosenTemplate, {
-        ...(templateVars || {}),
-        customer_phone: customerPhone || templateVars?.customer_phone || "",
-        customer_phone2: customerPhone2 || templateVars?.customer_phone2 || "",
-        shop_phone: shopPhone || templateVars?.shop_phone || "",
-      });
-    }
-
-    const p1 = customerPhone || templateVars?.customer_phone || "";
-    const p2 = customerPhone2 || templateVars?.customer_phone2 || "";
-
-    if (p1 && p2 && p1.trim() !== p2.trim()) {
-      setActivePhoneModal({
-        phone1: p1,
-        phone2: p2,
-        messageText,
-      });
-      return;
-    }
-
-    const targetPhone = p1 || p2;
-    if (!targetPhone) {
-      setClientError("رقم هاتف الزبون غير متوفر لطلب الموقع");
-      return;
-    }
-
-    const url = whatsappMeUrl(targetPhone, messageText);
-    if (url && url !== "#") {
-      openUrlFromUserGesture(url);
-    } else {
-      setClientError("تعذر فتح الواتساب");
-    }
-  };
-
-  const pending = gpsPending || pastePending;
-  const error = gpsState.error || pasteState.error || clientError;
-  const ok = gpsState.ok || pasteState.ok;
-
-  const uploadBtnCustom = designerConfig?.customerCard?.btnUploadLocation;
-  const pasteBtnCustom = designerConfig?.customerCard?.btnPasteLocation;
-
-  // فحص هل توجد أزرار واتساب مخصصة مفعلة بجانب اللوكيشن عند عدم وجود لوكيشن
-  const missingLocWaButtons = buttons.filter((btn) => {
-    if (!btn.showNextToLocation) return false;
-    if (btn.customerLocationRule) {
-      const rules = btn.customerLocationRule.split(",").map((s) => s.trim().toLowerCase());
-      if (rules.includes("exists") || rules.includes("location") || rules.includes("has_location")) {
-        return false;
+    let todayDeliveryProfit = new Decimal(0);
+    for (const o of todayDeliveredOrders) {
+      if (o.deliveryPrice) {
+        let p = new Decimal(0);
+        if (o.courier) {
+          if (o.courier.zeroEarning) {
+            p = o.deliveryPrice;
+          } else {
+            if (o.courierEarningDinar != null) {
+              p = o.deliveryPrice.minus(o.courierEarningDinar);
+            } else {
+              const vehicle = o.courier.vehicleType || "car";
+              const earning = vehicle === "bike"
+                ? o.deliveryPrice.div(2)
+                : o.deliveryPrice.mul(2).div(3);
+              p = o.deliveryPrice.minus(earning);
+            }
+          }
+        } else {
+          if (o.courierEarningDinar != null) {
+            p = o.deliveryPrice.minus(o.courierEarningDinar);
+          } else {
+            p = o.deliveryPrice;
+          }
+        }
+        todayDeliveryProfit = todayDeliveryProfit.plus(p);
       }
     }
-    return true;
-  });
 
-  return (
-    <div className={isExistingLocation ? "w-full" : "mt-2 space-y-2 w-full"} dir="rtl">
-      {/* نموذج الـ GPS المخفي */}
-      <form ref={gpsFormRef} action={gpsAction} className="hidden">
-        <input ref={latRef} type="hidden" name="lat" />
-        <input ref={lngRef} type="hidden" name="lng" />
-        <input type="hidden" name="target" value={target} />
-      </form>
+    let todayPrepProfit = new Decimal(0);
+    for (const o of todayPrepOrders) {
+      if (o.preparerShoppingJson) {
+        const j = o.preparerShoppingJson as any;
+        const products = Array.isArray(j?.products) ? j.products : [];
+        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
+        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
+      }
+    }
 
-      {/* الحالة 1: يوجد لوكيشن للزبون -> لا تظهر أزرار طلب/رفع/لصق اللوكيشن، وتظهر فقط أزرار الواتساب المخصصة لوجود اللوكيشن مثل (تبليغ الزبون) */}
-      {isExistingLocation ? (
-        <div className="w-full flex items-center">
-          <WaLocationCustomButtons
-            userRole={userRole}
-            customerPhone={customerPhone}
-            customerPhone2={customerPhone2}
-            shopPhone={shopPhone}
-            orderStatus={orderStatus}
-            hasCustomerLocation={true}
-            hasCourierUploadedLocation={hasCourierUploadedLocation}
-            templateVars={templateVars}
-            customButtons={buttons}
-            designerConfig={designerConfig}
-          />
-        </div>
-      ) : (
-        /* الحالة 2: لا يوجد لوكيشن للزبون -> تظهر أزرار رفع ولصق وطلب اللوكيشن */
-        <div className="flex gap-[8px] items-center w-full">
-          {/* الزر 1: رفع لوكيشن أوتوماتيكي (GPS) */}
-          {!uploadBtnCustom?.hidden && (
-            <div className="flex-1 min-w-0" style={getElementStyle(uploadBtnCustom)}>
-              <button
-                type="button"
-                disabled={pending || locating}
-                onClick={requestLocation}
-                aria-busy={pending || locating}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_12px_rgba(2,132,199,0.3)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(56,189,248,0.5),0_3px_12px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
-              >
-                <div
-                  className="absolute inset-0 opacity-[0.09] pointer-events-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
-                  }}
-                />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-                <span className="relative flex flex-col items-center justify-center gap-[1px] leading-none px-[2px] text-center">
-                  <span className="flex items-center gap-[3px] text-[11px] font-black text-white tracking-tight">
-                    <span className="text-[11px]">📍</span>
-                    <span>{locating ? "جارٍ الجلب…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن"}</span>
-                  </span>
-                  <span className="text-[10px] font-black text-[#FDE047] tracking-wide">(GPS)</span>
-                </span>
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
-              </button>
-            </div>
-          )}
+    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
 
-          {/* الزر 2: لصق لوكيشن */}
-          {!pasteBtnCustom?.hidden && (
-            <div className="flex-1 min-w-0" style={getElementStyle(pasteBtnCustom)}>
-              <button
-                type="button"
-                disabled={pending || locating}
-                onClick={() => {
-                  setShowPaste(!showPaste);
-                  setClientError("");
-                }}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_12px_rgba(2,132,199,0.3)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(56,189,248,0.5),0_3px_12px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
-              >
-                <div
-                  className="absolute inset-0 opacity-[0.09] pointer-events-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
-                  }}
-                />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-                <span className="relative flex items-center justify-center gap-1 text-center px-1">
-                  <span className="text-[12px]">📋</span>
-                  <span className="text-[12px] font-black text-white leading-none">لصق لوكيشن</span>
-                </span>
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
-              </button>
-            </div>
-          )}
-
-          {/* الزر 3: طلب لوكيشن (أزرار الواتساب المخصصة إن وجدت، أو الزر الافتراضي) */}
-          <div className="flex-1 min-w-0">
-            {missingLocWaButtons.length > 0 ? (
-              <WaLocationCustomButtons
-                userRole={userRole}
-                customerPhone={customerPhone}
-                customerPhone2={customerPhone2}
-                shopPhone={shopPhone}
-                orderStatus={orderStatus}
-                hasCustomerLocation={false}
-                hasCourierUploadedLocation={hasCourierUploadedLocation}
-                templateVars={templateVars}
-                customButtons={buttons}
-                designerConfig={designerConfig}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={handleRequestLocationWa}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_14px_rgba(2,132,199,0.35)] active:scale-[0.97] transition-all hover:shadow-[0_0_18px_rgba(56,189,248,0.5),0_4px_14px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
-              >
-                <div
-                  className="absolute inset-0 opacity-[0.10] pointer-events-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L11 7 L18 4 L12 10 L18 16 L11 13 L10 20 L9 13 L2 16 L8 10 L2 4 L9 7 Z' fill='white'/%3E%3C/svg%3E")`,
-                  }}
-                />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-                <span className="relative flex items-center justify-center gap-1 text-center px-1">
-                  <span className="text-[12px] font-black text-white leading-none">طلب لوكيشن</span>
-                  <span className="text-[12px]">💬</span>
-                </span>
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-                <span className="absolute inset-[1px] rounded-[11px] border border-white/20 pointer-events-none" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* نموذج لصق الرابط الملكي المذهب */}
-      {showPaste && (
-        <form
-          action={pasteAction}
-          className="mt-2.5 p-3 rounded-[16px] bg-gradient-to-b from-[#FFFFFF] to-[#F0F9FF] border-[1.5px] border-[#38BDF8]/60 shadow-[0_4px_18px_rgba(2,132,199,0.15)] space-y-2 animate-in slide-in-from-top-1 duration-200"
-        >
-          <input type="hidden" name="target" value={target} />
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              name="locationUrl"
-              value={pastedUrl}
-              onChange={(e) => setPastedUrl(e.target.value)}
-              placeholder="الصق رابط خرائط قوقل ماب هنا..."
-              className="flex-1 min-h-[40px] rounded-[10px] border border-[#38BDF8]/60 bg-white text-[#0369A1] px-3 text-xs font-bold outline-none focus:border-[#0284C7] shadow-inner transition-all text-right [direction:ltr]"
-              required
-            />
-            <button
-              type="submit"
-              disabled={pending}
-              className="px-4 min-h-[40px] rounded-[10px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-white text-xs font-black shadow-[0_2px_8px_rgba(2,132,199,0.35)] hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
+    return (
+      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
+        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
+        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
+          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={SECRET_ADMIN_PATH}
+              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
+              title="العودة للرئيسية"
             >
-              {pastePending ? "حفظ…" : "حفظ الرابط"}
-            </button>
+              ←
+            </Link>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
+                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+              </h1>
+              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
+                {safeTableRows.length}
+              </span>
+            </div>
           </div>
-        </form>
-      )}
 
-      {error ? (
-        <p className="text-xs font-black text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-300 text-center">
-          {error}
-        </p>
-      ) : null}
-      {ok ? (
-        <p className="text-xs font-black text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-300 text-center">
-          تم تحديث لوكيشن الزبون بنجاح ✨
-        </p>
-      ) : null}
+          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* كبسولة أرباح اليوم الصافية المدمجة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
+              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
+            >
+              <span className="text-xs">💰</span>
+              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
+                {formatDinarAsAlfWithUnit(todayTotalProfit)}
+              </span>
+            </Link>
 
-      {/* مودال اختيار الرقم عند إرسال طلب الواتساب */}
-      {activePhoneModal && (
-        <PhoneActionModal
-          type="whatsapp"
-          phone1={activePhoneModal.phone1}
-          phone2={activePhoneModal.phone2}
-          messageText={activePhoneModal.messageText}
-          onClose={() => setActivePhoneModal(null)}
-        />
-      )}
-    </div>
-  );
+            {/* زر طلب تيست التجريبي السريع */}
+            <QuickTestOrderButton variant="tracking" />
+
+            {/* زر إضافة طلب من الإدارة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/new`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
+              }}
+              title="إضافة طلب من الإدارة"
+            >
+              <span>➕</span>
+              <span className="hidden xs:inline">إضافة طلب</span>
+            </Link>
+
+            {/* زر الطلبات الجديدة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/pending`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
+              }}
+              title="الطلبات الجديدة المعلقة"
+            >
+              <span className="text-[#F5D77F]">✨</span>
+              <span className="hidden xs:inline">جديدة</span>
+              {pendingTabCount > 0 ? (
+                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
+                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
+                </span>
+              ) : null}
+            </Link>
+          </div>
+        </div>
+
+        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
+        <div className="flex items-center gap-2">
+          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
+          <OrderTrackingFilterDropdown
+            currentStatus={statusFilter}
+            pendingCount={pendingTabCount}
+            wardFilter={wardFilter}
+            saderFilter={saderFilter}
+            searchQuery={q}
+          />
+
+          {/* حقل البحث الفوري */}
+          <Suspense
+            fallback={
+              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
+            }
+          >
+            <OrderTrackingSearch
+              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
+              initialQ={q}
+              statusFilter={statusFilter}
+              wardFilter={wardFilter}
+              saderFilter={saderFilter}
+            />
+          </Suspense>
+        </div>
+
+        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
+        {statusFilter === "checkSader" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
+            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "lower"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أقل من البضاعة
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "higher"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أعلى من البضاعة
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
+        {statusFilter === "checkWard" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
+            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "lower"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أقل من المتوقع
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "higher"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أعلى من المتوقع
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
+      </div>
+    );
+  } catch (err: any) {
+    return (
+      <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
+        <h1 className="text-2xl font-bold">Runtime Error in OrderTrackingPage</h1>
+        <p>Please screenshot this page and show it to the developer.</p>
+        <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
+          {err.stack || err.message || String(err)}
+        </pre>
+      </div>
+    );
+  }
 }

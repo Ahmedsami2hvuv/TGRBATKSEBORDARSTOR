@@ -1,11 +1,11 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { AdminDebtsWidget } from "../../admin-debts-widget";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export const metadata = {
-  title: "ديون المحلات — وصلي للتوصيل",
+  title: "ديون المحلات — وصلي",
 };
 
 export default function DebtsReportPage() {

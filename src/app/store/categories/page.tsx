@@ -1,11 +1,11 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getDefaultStoreMetadata } from "@/lib/store-meta";
 
 export const metadata: Metadata = getDefaultStoreMetadata(
-  "جميع الأقسام | وصلي ستور — وصلي للتوصيل",
-  "تصفح جميع أقسام وفئات متجر وصلي للتوصيل وتسوق كل ما تحتاجه بسهولة."
+  "جميع الأقسام | وصلي ستور — وصلي",
+  "تصفح جميع أقسام وفئات متجر وصلي وتسوق كل ما تحتاجه بسهولة."
 );
 
 export default async function CategoriesPage() {

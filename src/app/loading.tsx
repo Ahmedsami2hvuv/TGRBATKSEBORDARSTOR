@@ -1,4 +1,4 @@
-import { DeliveryLoading } from "@/components/delivery-loading";
+﻿import { DeliveryLoading } from "@/components/delivery-loading";
 import { getGlobalIcons } from "@/lib/icon-settings";
 
 export default async function Loading() {
@@ -9,7 +9,7 @@ export default async function Loading() {
         <div className="flex flex-col items-center justify-center mb-8">
           <img src="/images/wasly-logo.png" alt="وصلي" className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-full shadow-md animate-pulse mb-3" />
           <h2 className="text-2xl md:text-3xl font-black text-[#0088ff]">
-            وصلي للتوصيل
+            وصلي
           </h2>
         </div>
 

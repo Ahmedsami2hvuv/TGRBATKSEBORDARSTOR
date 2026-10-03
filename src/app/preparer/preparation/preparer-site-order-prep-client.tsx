@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
@@ -467,7 +467,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const previewInvoice =
     previewPayload && deliveryAlf != null
       ? buildCustomerInvoiceText({
-          brandLabel: "وصلي للتوصيل",
+          brandLabel: "وصلي",
           orderNumberLabel: "مسودة",
           regionTitle: previewPayload.titleLine,
           phone: customerPhone.trim() || "—",

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -9,7 +9,7 @@ import { ProfitsAnalyticsClient } from "./profits-analytics-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تحليلات الأرباح السنوية والشهرية — وصلي للتوصيل",
+  title: "تحليلات الأرباح السنوية والشهرية — وصلي",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

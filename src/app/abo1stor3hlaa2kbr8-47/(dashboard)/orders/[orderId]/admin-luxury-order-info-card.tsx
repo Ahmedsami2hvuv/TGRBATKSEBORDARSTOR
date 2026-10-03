@@ -1,255 +1,630 @@
-"use client";
-
-import React, { useRef, useState, useActionState } from "react";
-import { useRouter } from "next/navigation";
-import { formatDinarAsAlf } from "@/lib/money-alf";
-import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { ImageZoomModal } from "@/components/pinch-zoom-image";
-import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+﻿import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
+import { prisma } from "@/lib/prisma";
+import { ad } from "@/lib/admin-ui";
 import {
-  assignFileToInput,
-  compressImageForMandoubUpload,
-} from "@/lib/client-image-compress";
-import { uploadMandoubOrderImage } from "@/app/mandoub/actions";
+  isWardMismatch,
+  isSaderMismatch,
+  sumDeliveryInFromOrderMoneyEvents,
+  sumPickupOutFromOrderMoneyEvents,
+  sumCourierPickupOut,
+  sumPreparerPickupOut,
+  sumAdminPickupOut,
+} from "@/lib/mandoub-money";
+import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { routeModeOrFromQuery } from "@/lib/admin-super-search";
+import { parseBaghdadDateRange } from "@/lib/order-date-search";
+import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { serializePrisma } from "@/lib/serialize-prisma";
+import { OrderTrackingSearch } from "./order-tracking-search";
+import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
+import { type TrackingTableRow } from "./order-tracking-table-body";
+import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
+import { Decimal } from "@prisma/client/runtime/library";
+import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
-export function AdminLuxuryOrderInfoCard({
-  order,
-  setPreviewImageUrl,
-  designerConfig,
-  auth,
-  nextUrl,
-  hideSubtotalInfo = false,
-  isMandoubPortal = false,
-}: {
-  order: any;
-  setPreviewImageUrl: (url: string | null) => void;
-  designerConfig?: any;
-  auth?: { c: string; exp: string; s: string };
-  nextUrl?: string;
-  hideSubtotalInfo?: boolean;
-  isMandoubPortal?: boolean;
-}) {
-  const router = useRouter();
-  const [zoomOpen, setZoomOpen] = useState(false);
-  const [compressing, setCompressing] = useState(false);
 
-  const cameraFileRef = useRef<HTMLInputElement>(null);
-  const galleryFileRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-  const [, formAction, pending] = useActionState(uploadMandoubOrderImage, {});
+// Smart cache window: minor field edits won't thrash tracking.
+// Urgent status transitions are pushed via targeted revalidatePath calls.
+export const revalidate = 60;
 
-  const orderImageUrl = resolvePublicAssetSrc(order.imageUrl);
+export const metadata = {
+  title: "تتبع الطلبات — وصلي",
+};
 
-  const parseNum = (val: string | number | null | undefined): number => {
-    if (val === null || val === undefined) return 0;
-    if (typeof val === "number") return isNaN(val) ? 0 : val;
-    const clean = String(val).replace(/[^\d.]/g, "");
-    const num = parseFloat(clean);
-    return isNaN(num) ? 0 : num;
-  };
+function formatShopWithCustomer(
+  shopName: string,
+  customerName: string | null | undefined,
+  routeMode?: string | null,
+  isPreparerOrder?: boolean,
+): string {
+  if (routeMode === "double") return "وجهتين";
+  if (isPreparerOrder) return "الإدارة";
+  return normalizeAdminShopName(shopName) || "—";
+}
 
-  const subtotalVal = order.orderSubtotal != null ? parseNum(order.orderSubtotal) : 0;
-  const deliveryVal = order.deliveryPrice != null ? parseNum(order.deliveryPrice) : 0;
-  const totalVal = order.totalAmount != null ? parseNum(order.totalAmount) : 0;
+const STATUS_STANDARD = [
+  "all",
+  "pending",
+  "assigned",
+  "delivering",
+  "delivered",
+  "cancelled",
+  "checkSader",
+  "checkWard",
+] as const;
 
-  async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
-    if (!(file instanceof File) || file.size <= 0) return;
+type Props = {
+  searchParams: Promise<{ status?: string; q?: string; wardFilter?: string; saderFilter?: string }>;
+};
 
-    setCompressing(true);
-    let photoToUpload = file;
-    try {
-      photoToUpload = await compressImageForMandoubUpload(file);
-      assignFileToInput(inputEl, photoToUpload);
-    } catch (err) {
-      console.error("خطأ في ضغط الصورة:", err);
-    } finally {
-      setCompressing(false);
+export default async function OrderTrackingPage({ searchParams }: Props) {
+  try {
+    const sp = await searchParams;
+    const rawStatus = ((sp.status ?? "all") as string).trim();
+    if (rawStatus === "archived") {
+      redirect(`${SECRET_ADMIN_PATH}/orders/archived`);
+    }
+    let statusFilter = rawStatus;
+    if (!STATUS_STANDARD.includes(statusFilter as (typeof STATUS_STANDARD)[number])) {
+      statusFilter = "all";
+    }
+    const q = (sp.q ?? "").trim();
+    const wardFilter: "lower" | "higher" =
+      sp.wardFilter === "higher" ? "higher" : "lower";
+    const saderFilter: "lower" | "higher" =
+      sp.saderFilter === "lower" ? "lower" : "higher";
+
+    const where: Prisma.OrderWhereInput = {
+      orderType: { not: "دين" },
+    };
+
+    if (statusFilter === "checkSader" || statusFilter === "checkWard") {
+      where.status = "delivered";
+    } else if (
+      ["pending", "assigned", "delivering", "delivered", "cancelled"].includes(statusFilter)
+    ) {
+      where.status = statusFilter;
+    } else if (statusFilter === "all") {
+      where.status = { notIn: ["cancelled", "archived"] };
     }
 
-    if (formRef.current) {
-      formRef.current.requestSubmit();
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
+      }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      where.OR = or;
     }
-  }
 
-  const busy = compressing || pending;
-  const orderTitle = order.orderType || order.summary || "أدوية";
+    const pendingTabWhere: Prisma.OrderWhereInput = {
+      status: "pending",
+      orderType: { not: "دين" },
+    };
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
+      }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      pendingTabWhere.OR = or;
+    }
 
-  const cameraInputUniqueId = `order-img-cam-${order.id}`;
-  const galleryInputUniqueId = `order-img-gal-${order.id}`;
+    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
+    let [orders, couriers, pendingTabCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: 150,
+        orderBy: { createdAt: "desc" },
+        include: {
+          shop: {
+            select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
+          },
+          customerRegion: true,
+          secondCustomerRegion: true,
+          courier: true,
+          customer: true,
+          moneyEvents: {
+            where: { deletedAt: null },
+            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
+          },
+        },
+      }),
+      prisma.courier.findMany({
+        where: courierAssignableWhere,
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.order.count({ where: pendingTabWhere }),
+    ]);
 
-  return (
-    <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      <form ref={formRef} action={formAction} className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]">
-        <input type="hidden" name="orderId" value={order.id} />
-        {nextUrl && <input type="hidden" name="nextUrl" value={nextUrl} />}
-        {auth && (
-          <>
-            <input type="hidden" name="c" value={auth.c} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-          </>
-        )}
-        <input
-          id={cameraInputUniqueId}
-          ref={cameraFileRef}
-          type="file"
-          name="orderImageCamera"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            void handleFileSelected(file, cameraFileRef.current);
-          }}
-        />
-        <input
-          id={galleryInputUniqueId}
-          ref={galleryFileRef}
-          type="file"
-          name="orderImageGallery"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            void handleFileSelected(file, galleryFileRef.current);
-          }}
-        />
-      </form>
+    const customerPhoneProfileKeys = new Map<string, { phone: string; regionId: string }>();
+    for (const order of orders) {
+      const normalizedPhone = normalizeIraqMobileLocal11(order.customerPhone);
+      if (!normalizedPhone || !order.customerRegionId) continue;
+      customerPhoneProfileKeys.set(`${normalizedPhone}_${order.customerRegionId}`, {
+        phone: normalizedPhone,
+        regionId: order.customerRegionId,
+      });
+    }
 
-      <div className="relative unified-card rounded-[20px] border-[1.5px] border-[#38BDF8]/40 bg-[#FFFFFF] shadow-[0_6px_20px_rgba(2,132,199,0.08)] overflow-hidden">
-        {/* معينات الزوايا الأربعة */}
-        <div className="hidden top-[10px] right-[10px]" />
-        <div className="hidden top-[10px] left-[10px]" />
-        <div className="hidden bottom-[10px] right-[10px]" />
-        <div className="hidden bottom-[10px] left-[10px]" />
+    const customerPhoneProfiles =
+      customerPhoneProfileKeys.size > 0
+        ? await prisma.customerPhoneProfile.findMany({
+            where: {
+              OR: Array.from(customerPhoneProfileKeys.values()).map((profile) => ({
+                phone: profile.phone,
+                regionId: profile.regionId,
+              })),
+            },
+            select: {
+              phone: true,
+              regionId: true,
+              locationUrl: true,
+              photoUrl: true,
+            },
+          })
+        : [];
 
-        {/* الهيدر */}
-        <div className="unified-header px-3.5 py-3 flex items-center justify-between bg-gradient-to-r from-[#F0F9FF] to-[#FFFFFF] border-b border-[#38BDF8]/20">
-          <div className="flex items-center gap-2.5">
-            <div className="w-[32px] h-[32px] rounded-[10px] bg-gradient-to-br from-[#0284C7] to-[#0369A1] flex items-center justify-center shadow-[0_3px_10px_rgba(2,132,199,0.25)] border border-[#38BDF8]/40">
-              <svg className="w-[16px] h-[16px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
+    const customerPhoneProfileByKey = new Map(
+      customerPhoneProfiles.map((profile) => [
+        `${profile.phone}_${profile.regionId}`,
+        profile,
+      ]),
+    );
+
+    if (statusFilter === "checkSader") {
+      orders = orders.filter((o) => {
+        const type = isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type;
+        return saderFilter === "higher" ? type === "excess" : type === "deficit";
+      });
+    } else if (statusFilter === "checkWard") {
+      orders = orders.filter((o) => {
+        const type = isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type;
+        return wardFilter === "higher" ? type === "excess" : type === "deficit";
+      });
+    }
+
+    function statusPriority(s: string): number {
+      if (s === "pending") return 0;
+      if (s === "assigned") return 1;
+      if (s === "delivering") return 2;
+      if (s === "delivered") return 3;
+      if (s === "cancelled") return 4;
+      return 99;
+    }
+
+    if (statusFilter === "all") {
+      orders = orders.sort(
+        (a, b) =>
+          statusPriority(a.status) - statusPriority(b.status) ||
+          b.orderNumber - a.orderNumber,
+      );
+    } else {
+      orders = orders.sort((a, b) => b.orderNumber - a.orderNumber);
+    }
+
+    function hrefTracking(opts: {
+      status: string;
+      wardFilter?: "lower" | "higher";
+      saderFilter?: "lower" | "higher";
+    }): string {
+      const p = new URLSearchParams();
+      if (opts.status !== "all") p.set("status", opts.status);
+      if (opts.status === "checkWard" && opts.wardFilter) p.set("wardFilter", opts.wardFilter);
+      if (opts.status === "checkSader" && opts.saderFilter) p.set("saderFilter", opts.saderFilter);
+      if (q) p.set("q", q);
+      return p.toString() ? `${SECRET_ADMIN_PATH}/orders/tracking?${p}` : `${SECRET_ADMIN_PATH}/orders/tracking`;
+    }
+
+    const tableRows: TrackingTableRow[] = orders.map((o) => {
+      const phoneProfile = customerPhoneProfileByKey.get(
+        `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
+      );
+
+      const courierPickup = sumCourierPickupOut(o.moneyEvents);
+      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
+      const adminPickup = sumAdminPickupOut(o.moneyEvents);
+
+      const courierDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+      );
+      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const preparerDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+      );
+      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
+      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
+      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
+      const hasDebt = calculatedDebt > 0;
+      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
+
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        orderStatus: o.status,
+        assignedCourierId: o.assignedCourierId ?? null,
+        shopCustomerLabel: formatShopWithCustomer(
+          o.shop?.name ?? "غير معروف",
+          o.customer?.name,
+          o.routeMode,
+          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
+        ),
+        regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
+        orderType: o.orderType || "—",
+        routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
+        prepaidAll: o.prepaidAll,
+        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
+        deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+        calculatedDebt: hasDebt ? calculatedDebt : null,
+        hasDebt: hasDebt,
+        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
+        customerPhone: o.customerPhone || "—",
+        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
+        courierName: o.courier?.name ?? "—",
+        orderNoteTime: o.orderNoteTime,
+        missingCustomerLocation: !hasCustomerLocationUrl(
+          o.customerLocationUrl,
+          o.customer?.customerLocationUrl,
+          phoneProfile?.locationUrl,
+        ),
+        hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
+        summary: o.summary,
+        preparerShoppingJson: o.preparerShoppingJson,
+        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
+        submissionSource: o.submissionSource,
+        wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
+        saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
+        noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
+        noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
+        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
+        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
+        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
+        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
+        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
+        createdAt: o.createdAt,
+        customerName: o.customer?.name || null,
+        // بيانات الوصول السريع
+        audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
+        adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
+        shopPhone: o.shop?.phone || "",
+        shopLocationUrl: o.shop?.locationUrl || "",
+        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
+        secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+        shopDoorPhotoUrl: resolvePublicAssetSrc(
+          o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
+        ),
+        customerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
+        ),
+        secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
+        ),
+        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
+        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
+        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
+        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
+        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
+      };
+    });
+
+    const statusTabs = [
+      { key: "all", label: "الكل" },
+      { key: "pending", label: "جديد" },
+      { key: "assigned", label: "مسند" },
+      { key: "delivering", label: "بالتوصيل" },
+      { key: "delivered", label: "مسلّم" },
+    ];
+
+    // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+    const safeTableRows = serializePrisma(tableRows);
+    const safeCouriers = serializePrisma(couriers);
+
+    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
+    const ALF_PER_DINAR = 1;
+    function numOrZero(v: unknown): number {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    const todayDate = new Date();
+    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
+    if (todayDate < shiftStartToday) {
+      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
+    }
+    const todayFrom = shiftStartToday;
+    const todayTo = new Date(todayFrom);
+    todayTo.setDate(todayTo.getDate() + 1);
+    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
+
+    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          status: "delivered",
+          createdAt: { gte: todayFrom, lte: todayTo }
+        },
+        select: {
+          deliveryPrice: true,
+          courierEarningDinar: true,
+          courier: { select: { zeroEarning: true, vehicleType: true } }
+        }
+      }),
+      prisma.order.findMany({
+        where: {
+          createdAt: { gte: todayFrom, lte: todayTo },
+          preparerShoppingJson: { not: null as any },
+          status: { notIn: ["cancelled", "rejected"] },
+          shop: { name: { in: ADMIN_SHOP_NAMES } }
+        },
+        select: {
+          preparerShoppingJson: true
+        }
+      })
+    ]);
+
+    let todayDeliveryProfit = new Decimal(0);
+    for (const o of todayDeliveredOrders) {
+      if (o.deliveryPrice) {
+        let p = new Decimal(0);
+        if (o.courier) {
+          if (o.courier.zeroEarning) {
+            p = o.deliveryPrice;
+          } else {
+            if (o.courierEarningDinar != null) {
+              p = o.deliveryPrice.minus(o.courierEarningDinar);
+            } else {
+              const vehicle = o.courier.vehicleType || "car";
+              const earning = vehicle === "bike"
+                ? o.deliveryPrice.div(2)
+                : o.deliveryPrice.mul(2).div(3);
+              p = o.deliveryPrice.minus(earning);
+            }
+          }
+        } else {
+          if (o.courierEarningDinar != null) {
+            p = o.deliveryPrice.minus(o.courierEarningDinar);
+          } else {
+            p = o.deliveryPrice;
+          }
+        }
+        todayDeliveryProfit = todayDeliveryProfit.plus(p);
+      }
+    }
+
+    let todayPrepProfit = new Decimal(0);
+    for (const o of todayPrepOrders) {
+      if (o.preparerShoppingJson) {
+        const j = o.preparerShoppingJson as any;
+        const products = Array.isArray(j?.products) ? j.products : [];
+        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
+        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
+      }
+    }
+
+    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
+
+    return (
+      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
+        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
+        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
+          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={SECRET_ADMIN_PATH}
+              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
+              title="العودة للرئيسية"
+            >
+              ←
+            </Link>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
+                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+              </h1>
+              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
+                {safeTableRows.length}
+              </span>
             </div>
-            <h3 className="text-[14px] font-black text-[#0369A1] leading-none">تفاصيل الطلبية والمبلغ</h3>
+          </div>
+
+          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* كبسولة أرباح اليوم الصافية المدمجة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
+              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
+            >
+              <span className="text-xs">💰</span>
+              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
+                {formatDinarAsAlfWithUnit(todayTotalProfit)}
+              </span>
+            </Link>
+
+            {/* زر طلب تيست التجريبي السريع */}
+            <QuickTestOrderButton variant="tracking" />
+
+            {/* زر إضافة طلب من الإدارة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/new`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
+              }}
+              title="إضافة طلب من الإدارة"
+            >
+              <span>➕</span>
+              <span className="hidden xs:inline">إضافة طلب</span>
+            </Link>
+
+            {/* زر الطلبات الجديدة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/pending`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
+              }}
+              title="الطلبات الجديدة المعلقة"
+            >
+              <span className="text-[#F5D77F]">✨</span>
+              <span className="hidden xs:inline">جديدة</span>
+              {pendingTabCount > 0 ? (
+                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
+                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
+                </span>
+              ) : null}
+            </Link>
           </div>
         </div>
 
-        {/* المحتوى: التفاصيل يمين (أدوية بدون "نوع الطلب")، الصورة يسار 110px */}
-        <div className="p-3.5 bg-[#FFFFFF]">
-          <div className="flex gap-3 items-start" dir="rtl">
-            <div className="flex-1 min-w-0 space-y-3" style={{ flex: "1.5" }}>
-              {/* اسم الطلب مباشرة بدون كلمة "نوع الطلب" */}
-              <div className="flex items-center gap-2.5">
-                <div className="w-[38px] h-[38px] rounded-[11px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center shadow-[inset_0_1px_0_white]">
-                  <svg className="w-[18px] h-[18px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                    <path d="M10 9H8" />
-                    <path d="M16 13H8" />
-                    <path d="M16 17H8" />
-                  </svg>
-                </div>
-                <div className="text-[18px] font-black text-[#0369A1] leading-none truncate">
-                  {orderTitle}
-                </div>
-              </div>
+        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
+        <div className="flex items-center gap-2">
+          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
+          <OrderTrackingFilterDropdown
+            currentStatus={statusFilter}
+            pendingCount={pendingTabCount}
+            wardFilter={wardFilter}
+            saderFilter={saderFilter}
+            searchQuery={q}
+          />
 
-              <div className="space-y-2.5">
-                {/* سعر الطلب */}
-                <div className="w-full h-[40px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#38BDF8]/40 px-3 flex items-center justify-between gap-2 shadow-[0_2px_6px_rgba(2,132,199,0.08),inset_0_1px_0_white]">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="w-[22px] h-[22px] rounded-[9px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center">
-                      <svg className="w-[12px] h-[12px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
-                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-                      </svg>
-                    </span>
-                    <span className="text-[12px] font-bold text-[#0369A1] whitespace-nowrap">سعر الطلب</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-[14px] font-black text-[#0F172A] font-mono [direction:ltr]">
-                      {order.orderSubtotal != null ? formatDinarAsAlf(subtotalVal) : "0"}
-                    </span>
-                    <span className="text-[11px] font-bold text-[#0369A1] whitespace-nowrap">ألف</span>
-                  </div>
-                </div>
+          {/* حقل البحث الفوري */}
+          <Suspense
+            fallback={
+              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
+            }
+          >
+            <OrderTrackingSearch
+              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
+              initialQ={q}
+              statusFilter={statusFilter}
+              wardFilter={wardFilter}
+              saderFilter={saderFilter}
+            />
+          </Suspense>
+        </div>
 
-                {/* التوصيل */}
-                <div className="w-full h-[40px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#38BDF8]/40 px-3 flex items-center justify-between gap-2 shadow-[0_2px_6px_rgba(2,132,199,0.08),inset_0_1px_0_white]">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="w-[22px] h-[22px] rounded-[9px] bg-[#0284C7] border border-[#38BDF8]/30 flex items-center justify-center">
-                      <svg className="w-[12px] h-[12px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                        <path d="M15 18H9" />
-                        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                        <circle cx="17" cy="18" r="2" />
-                        <circle cx="7" cy="18" r="2" />
-                      </svg>
-                    </span>
-                    <span className="text-[12px] font-bold text-[#0369A1] whitespace-nowrap">التوصيل</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-[14px] font-black text-[#0F172A] font-mono [direction:ltr]">
-                      {order.deliveryPrice != null ? formatDinarAsAlf(deliveryVal) : "0"}
-                    </span>
-                    <span className="text-[11px] font-bold text-[#0369A1] whitespace-nowrap">ألف</span>
-                  </div>
-                </div>
-
-                {/* الصندوق الكلي العريض 100% بارتفاع 70px ورقم 42px فقط بدون كلمة ألف */}
-                <div
-                  className="w-full h-[70px] rounded-[16px] border-[2px] border-[#38BDF8] shadow-[0_4px_14px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.3)] flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #0284C7 0%, #0369A1 100%)" }}
-                >
-                  <span className="text-[42px] font-black leading-none text-[#0F172A] font-mono tracking-tight [direction:ltr]">
-                    {order.totalAmount != null ? formatDinarAsAlf(totalVal) : "0"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض المباشرين للجهاز */}
-            <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
-              <SwipeableLuxuryPhotoBox
-                size={110}
-                variant="order"
-                imageUrl={orderImageUrl}
-                label="صورة الطلب"
-                isBusy={busy}
-                cameraInputId={cameraInputUniqueId}
-                galleryInputId={galleryInputUniqueId}
-                onCameraClick={() => cameraFileRef.current?.click()}
-                onGalleryClick={() => galleryFileRef.current?.click()}
-                onClickPreview={() => {
-                  if (orderImageUrl) {
-                    setPreviewImageUrl(orderImageUrl);
-                    setZoomOpen(true);
-                  } else {
-                    cameraFileRef.current?.click();
-                  }
-                }}
-                fallbackIcon={
-                  <svg className="w-[24px] h-[24px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                  </svg>
-                }
-              />
+        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
+        {statusFilter === "checkSader" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
+            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "lower"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أقل من البضاعة
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "higher"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أعلى من البضاعة
+              </Link>
             </div>
           </div>
-        </div>
+        ) : null}
+
+        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
+        {statusFilter === "checkWard" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
+            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "lower"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أقل من المتوقع
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "higher"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أعلى من المتوقع
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
       </div>
-
-      {zoomOpen && orderImageUrl && (
-        <ImageZoomModal
-          imageUrl={orderImageUrl}
-          title="صورة الطلبية"
-          uploadedByName={order.orderImageUploadedByName}
-          onClose={() => setZoomOpen(false)}
-        />
-      )}
-    </div>
-  );
+    );
+  } catch (err: any) {
+    return (
+      <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
+        <h1 className="text-2xl font-bold">Runtime Error in OrderTrackingPage</h1>
+        <p>Please screenshot this page and show it to the developer.</p>
+        <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
+          {err.stack || err.message || String(err)}
+        </pre>
+      </div>
+    );
+  }
 }

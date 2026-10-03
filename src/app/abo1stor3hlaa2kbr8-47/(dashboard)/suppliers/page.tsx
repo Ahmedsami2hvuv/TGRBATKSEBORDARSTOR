@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
@@ -9,7 +9,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الموردين — وصلي للتوصيل",
+  title: "الموردين — وصلي",
 };
 
 export default async function SuppliersPage() {

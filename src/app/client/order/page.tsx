@@ -1,4 +1,4 @@
-import { ALF_PER_DINAR } from "@/lib/money-alf";
+﻿import { ALF_PER_DINAR } from "@/lib/money-alf";
 import type { EmployeeOrderPortalVerifyReason } from "@/lib/employee-order-portal-link";
 import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إدخال طلب — وصلي للتوصيل",
+  title: "إدخال طلب — وصلي",
 };
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {

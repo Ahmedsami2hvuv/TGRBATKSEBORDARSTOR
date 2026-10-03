@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export const metadata = {
-  title: "نظام التقارير — وصلي للتوصيل",
+  title: "نظام التقارير — وصلي",
 };
 
 type Props = {

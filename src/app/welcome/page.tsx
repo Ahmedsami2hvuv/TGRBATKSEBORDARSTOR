@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -640,7 +640,7 @@ export default function WelcomePage() {
                 قبل لا تغادر... لا تنسى تخزن رقمنا بجهازك! 📲
               </h3>
               <p className="text-white/70 text-xs md:text-sm leading-relaxed mb-6">
-                احفظ اسم (وصلي للتوصيل) برقم <strong>07733921468</strong> حتى تطلب بأي وقت بضغطة زر وتوصلك عروض محلات أبي الخصيب أول بأول.
+                احفظ اسم (وصلي) برقم <strong>07733921468</strong> حتى تطلب بأي وقت بضغطة زر وتوصلك عروض محلات أبي الخصيب أول بأول.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 <a

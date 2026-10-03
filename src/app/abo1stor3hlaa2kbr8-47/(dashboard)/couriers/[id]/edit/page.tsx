@@ -1,21 +1,12 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { prisma } from "@/lib/prisma";
+﻿import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
-import { CourierEditForm } from "./courier-edit-form";
+import { CourierForm } from "../courier-form";
 
-export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "مندوب جديد — وصلي",
+};
 
-type Props = { params: Promise<{ id: string }> };
-
-export default async function EditCourierPage({ params }: Props) {
-  const { id } = await params;
-  const courier = await prisma.courier.findUnique({ where: { id } });
-  if (!courier) {
-    notFound();
-  }
-
+export default function NewCourierPage() {
   return (
     <div className="space-y-6">
       <p className={ad.muted}>
@@ -24,36 +15,14 @@ export default async function EditCourierPage({ params }: Props) {
         </Link>
       </p>
       <div>
-        <h1 className={ad.h1}>تعديل مندوب</h1>
+        <h1 className={ad.h1}>إضافة مندوب توصيل</h1>
+        <p className={`mt-1 ${ad.lead}`}>
+          المندوبون <strong className="text-amber-800">لا يُضافون من صفحة المحل</strong> —
+          كيان مستقل عن موظفي رفع الطلبات للزبائن.
+        </p>
       </div>
       <section className={ad.section}>
-        <CourierEditForm
-          courierId={courier.id}
-          defaultName={courier.name}
-          defaultPhone={courier.phone}
-          defaultTelegramUserId={courier.telegramUserId ?? ""}
-          defaultVehicleType={courier.vehicleType === "bike" ? "bike" : "car"}
-          defaultHiddenFromReports={courier.hiddenFromReports}
-          defaultBlocked={courier.blocked}
-          defaultZeroEarning={courier.zeroEarning}
-          showDoorBtn={courier.showDoorBtn}
-          showLocationBtn={courier.showLocationBtn}
-          showCallBtn={courier.showCallBtn}
-          showWhatsAppBtn={courier.showWhatsAppBtn}
-          showNotesBtn={courier.showNotesBtn}
-          showVoiceNotesBtn={courier.showVoiceNotesBtn}
-          lastMandoubTotalsResetLabel={
-            courier.mandoubTotalsResetAt
-              ? courier.mandoubTotalsResetAt.toLocaleString("ar-IQ-u-nu-latn", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })
-              : null
-          }
-          mandoubWalletCarryOverLabel={formatDinarAsAlfWithUnit(
-            courier.mandoubWalletCarryOverDinar,
-          )}
-        />
+        <CourierForm />
       </section>
     </div>
   );

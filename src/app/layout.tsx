@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
 import { StaticBackground } from "@/components/static-background";
@@ -15,8 +15,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://aboakbr.com"),
-  title: "وصلي للتوصيل",
-  description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+  title: "وصلي",
+  description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
   manifest: "/site.webmanifest",
   icons: {
     icon: "/icon.png",
@@ -24,16 +24,16 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
   openGraph: {
-    title: "وصلي للتوصيل",
-    description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+    title: "وصلي",
+    description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
     url: "https://aboakbr.com",
-    siteName: "وصلي للتوصيل",
+    siteName: "وصلي",
     images: [
       {
         url: "/images/wasly-logo.png",
         width: 1024,
         height: 1024,
-        alt: "وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+        alt: "وصلي — توصيل أسرع .. لكل مكان",
       },
     ],
     locale: "ar_IQ",
@@ -41,11 +41,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "وصلي للتوصيل",
-    description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+    title: "وصلي",
+    description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
     images: ["/images/wasly-logo.png"],
   },
-  appleWebApp: { capable: true, title: "وصلي للتوصيل", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "وصلي", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

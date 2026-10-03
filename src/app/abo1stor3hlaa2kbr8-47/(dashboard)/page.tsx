@@ -1,11 +1,11 @@
-import { testTelegramAction } from "./actions";
+﻿import { testTelegramAction } from "./actions";
 import { AdminHubDashboard } from "./admin-hub-dashboard";
 import { AdminProfitsWidget } from "./admin-profits-widget";
 import { AdminDebtsWidget } from "./admin-debts-widget";
 import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const metadata = {
-  title: "لوحة الرئيسية — وصلي للتوصيل",
+  title: "لوحة الرئيسية — وصلي",
 };
 
 type Props = {

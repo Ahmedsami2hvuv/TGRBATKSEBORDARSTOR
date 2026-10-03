@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type FormEvent, type ChangeEvent } from "react";
@@ -310,7 +310,7 @@ function ClientOrderFormInner({
         <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
 
         <header className="kse-glass-dark rounded-2xl border border-sky-200 p-6">
-          <p className="text-xs font-bold uppercase tracking-wide text-sky-800">وصلي للتوصيل</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-sky-800">وصلي</p>
           {resolvePublicImageSrc(shop.photoUrl) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

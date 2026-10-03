@@ -1,10 +1,10 @@
-import { verifyCustomerPushSignature } from "@/lib/customer-push-token";
+﻿import { verifyCustomerPushSignature } from "@/lib/customer-push-token";
 import { CustomerPushSubscribe } from "./customer-push-subscribe";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تفعيل إشعارات الزبون — وصلي للتوصيل",
+  title: "تفعيل إشعارات الزبون — وصلي",
 };
 
 type Props = {

@@ -1,66 +1,40 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { CustomerProfileEditForm } from "../../customer-profile-edit-form";
-import { CustomerProfileDeleteForm } from "../../customer-profile-delete-form";
+import { CustomerProfileUpsertForm } from "../customer-profile-upsert-form";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تعديل تفاصيل زبون — وصلي للتوصيل",
+  title: "إضافة زبون مرجعي جديد — وصلي",
 };
 
-export default async function EditCustomerProfilePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const [profile, regions] = await Promise.all([
-    prisma.customerPhoneProfile.findUnique({
-      where: { id },
-    }),
-    prisma.region.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-  ]);
-
-  if (!profile) {
-    notFound();
-  }
+export default async function NewCustomerProfilePage() {
+  const regions = await prisma.region.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   const regionOptions = regions.map((r) => ({ id: r.id, name: r.name }));
 
   return (
     <div className="space-y-6">
-      <p className={ad.muted}>
-        <Link href="/abo1stor3hlaa2kbr8-47/customers/profiles" className={ad.link}>
-          ← تفاصيل الزبائن المرجعية
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <Link href="/abo1stor3hlaa2kbr8-47/customers" className={ad.link}>
+          ← رجوع لبيانات الزبائن
         </Link>
-      </p>
-      <div>
-        <h1 className={ad.h1}>تعديل تفاصيل الزبون</h1>
-        <p className={`mt-1 ${ad.lead}`}>
-          الرقم ثابت؛ يمكنك تغيير المنطقة، اللوكيشن، الملاحظات، والصورة.
-        </p>
+        <Link href="/abo1stor3hlaa2kbr8-47/customers/profiles/import-legacy-kse" className={ad.link}>
+          استيراد دفعي من طلبات الموقع القديم (KSE)
+        </Link>
       </div>
-      <section className={ad.section}>
-        <CustomerProfileEditForm
-          profileId={profile.id}
-          defaultPhone={profile.phone}
-          defaultRegionId={profile.regionId}
-          defaultLocationUrl={profile.locationUrl}
-          defaultLandmark={profile.landmark}
-          defaultAlternatePhone={profile.alternatePhone ?? ""}
-          defaultNotes={profile.notes}
-          defaultPhotoUrl={profile.photoUrl}
-          defaultIsBlocked={profile.isBlocked}
-          regions={regionOptions}
-        />
-        <CustomerProfileDeleteForm id={profile.id} />
-      </section>
+
+      <div className={`${ad.section} max-w-2xl mx-auto shadow-lg border-t-4 border-sky-500`}>
+        <CustomerProfileUpsertForm regions={regionOptions} />
+      </div>
+
+      <div className="text-center text-xs text-slate-400">
+        سيتم تحديث البيانات تلقائياً إذا كان الرقم مسجلاً مسبقاً في نفس المنطقة.
+      </div>
     </div>
   );
 }

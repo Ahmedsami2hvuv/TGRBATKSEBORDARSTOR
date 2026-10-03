@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -129,7 +129,7 @@ export function ProductCard({
       shareUrl = `${origin}/store/b/${bId}?product=${product.id}`;
     }
 
-    const shareMessage = `تعال شوف:\n${product.name}\nالموجود في متجر وصلي للتوصيل 🛒\n${shareUrl}`;
+    const shareMessage = `تعال شوف:\n${product.name}\nالموجود في متجر وصلي 🛒\n${shareUrl}`;
 
     return { shareUrl, shareMessage };
   };

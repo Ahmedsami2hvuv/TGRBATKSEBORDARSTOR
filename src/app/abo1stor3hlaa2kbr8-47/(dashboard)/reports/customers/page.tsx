@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
@@ -7,7 +7,7 @@ import { CustomerReportsClient } from "./customer-reports-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير الزبائن — وصلي للتوصيل",
+  title: "تقارير الزبائن — وصلي",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

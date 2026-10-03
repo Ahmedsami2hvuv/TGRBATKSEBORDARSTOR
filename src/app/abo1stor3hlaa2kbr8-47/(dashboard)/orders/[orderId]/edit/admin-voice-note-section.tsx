@@ -1,463 +1,630 @@
-"use client";
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { VoiceNoteAudio, VoiceNotePreviewBlob } from "@/components/voice-note-audio";
+﻿import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
+import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
+import {
+  isWardMismatch,
+  isSaderMismatch,
+  sumDeliveryInFromOrderMoneyEvents,
+  sumPickupOutFromOrderMoneyEvents,
+  sumCourierPickupOut,
+  sumPreparerPickupOut,
+  sumAdminPickupOut,
+} from "@/lib/mandoub-money";
+import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { routeModeOrFromQuery } from "@/lib/admin-super-search";
+import { parseBaghdadDateRange } from "@/lib/order-date-search";
+import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { uploadAdminVoiceNote } from "./voice-note-actions";
-import { DeleteAdminVoiceNoteButton } from "./delete-admin-voice-note-button";
+import { serializePrisma } from "@/lib/serialize-prisma";
+import { OrderTrackingSearch } from "./order-tracking-search";
+import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
+import { type TrackingTableRow } from "./order-tracking-table-body";
+import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
+import { Decimal } from "@prisma/client/runtime/library";
+import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
+import { QuickTestOrderButton } from "@/components/quick-test-order-button";
 
-const MAX_MS = 10_000;
 
-function pickRecorderMime(): string {
-  if (typeof MediaRecorder === "undefined") return "";
-  const types = [
-    "audio/webm;codecs=opus",
-    "audio/webm",
-    "audio/mp4",
-    "audio/m4a",
-    "audio/aac",
-    "audio/ogg;codecs=opus",
-    "audio/ogg",
-    "audio/3gpp",
-  ];
-  if (typeof MediaRecorder.isTypeSupported === "function") {
-    for (const t of types) {
-      try {
-        if (MediaRecorder.isTypeSupported(t)) return t;
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-  return "";
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
+// Smart cache window: minor field edits won't thrash tracking.
+// Urgent status transitions are pushed via targeted revalidatePath calls.
+export const revalidate = 60;
+
+export const metadata = {
+  title: "تتبع الطلبات — وصلي",
+};
+
+function formatShopWithCustomer(
+  shopName: string,
+  customerName: string | null | undefined,
+  routeMode?: string | null,
+  isPreparerOrder?: boolean,
+): string {
+  if (routeMode === "double") return "وجهتين";
+  if (isPreparerOrder) return "الإدارة";
+  return normalizeAdminShopName(shopName) || "—";
 }
 
-/**
- * embedded: داخل نموذج تعديل الطلب — الحقل `adminVoice` يُرفَع مع زر «تحديث».
- * standalone: صفحة عرض الطلب فقط — يُرفَع تلقائياً بعد انتهاء التسجيل.
- */
-export function AdminVoiceNoteSection({
-  orderId,
-  defaultAdminVoiceNoteUrl,
-  variant = "embedded",
-}: {
-  orderId: string;
-  defaultAdminVoiceNoteUrl: string | null;
-  variant?: "embedded" | "standalone" | "button" | "royal_circular";
-}) {
-  const router = useRouter();
-  const src = resolvePublicAssetSrc(defaultAdminVoiceNoteUrl);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const standaloneFormRef = useRef<HTMLFormElement>(null);
-  const mrRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef<number>(0);
-  const [supported, setSupported] = useState(true);
-  const [recording, setRecording] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const STATUS_STANDARD = [
+  "all",
+  "pending",
+  "assigned",
+  "delivering",
+  "delivered",
+  "cancelled",
+  "checkSader",
+  "checkWard",
+] as const;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hasMedia = Boolean(
-      (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ||
-      (navigator as any).getUserMedia ||
-      (navigator as any).webkitGetUserMedia
-    );
-    if (!hasMedia || typeof MediaRecorder === "undefined") {
-      setSupported(false);
+type Props = {
+  searchParams: Promise<{ status?: string; q?: string; wardFilter?: string; saderFilter?: string }>;
+};
+
+export default async function OrderTrackingPage({ searchParams }: Props) {
+  try {
+    const sp = await searchParams;
+    const rawStatus = ((sp.status ?? "all") as string).trim();
+    if (rawStatus === "archived") {
+      redirect(`${SECRET_ADMIN_PATH}/orders/archived`);
     }
-  }, []);
-
-  const clearFile = useCallback(() => {
-    const input = fileRef.current;
-    if (input) {
-      const dt = new DataTransfer();
-      input.files = dt.files;
+    let statusFilter = rawStatus;
+    if (!STATUS_STANDARD.includes(statusFilter as (typeof STATUS_STANDARD)[number])) {
+      statusFilter = "all";
     }
-    setPreviewBlob(null);
-    setElapsedMs(0);
-    setError(null);
-  }, []);
+    const q = (sp.q ?? "").trim();
+    const wardFilter: "lower" | "higher" =
+      sp.wardFilter === "higher" ? "higher" : "lower";
+    const saderFilter: "lower" | "higher" =
+      sp.saderFilter === "lower" ? "lower" : "higher";
 
-  useEffect(() => {
-    return () => {
-      if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
-      if (tickRef.current) clearInterval(tickRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+    const where: Prisma.OrderWhereInput = {
+      orderType: { not: "دين" },
     };
-  }, []);
 
-  const stopTimers = () => {
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
+    if (statusFilter === "checkSader" || statusFilter === "checkWard") {
+      where.status = "delivered";
+    } else if (
+      ["pending", "assigned", "delivering", "delivered", "cancelled"].includes(statusFilter)
+    ) {
+      where.status = statusFilter;
+    } else if (statusFilter === "all") {
+      where.status = { notIn: ["cancelled", "archived"] };
     }
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
-  };
 
-  const finishRecording = useCallback(() => {
-    stopTimers();
-    const mr = mrRef.current;
-    if (mr && mr.state !== "inactive") {
-      try {
-        mr.stop();
-      } catch {
-        /* ignore */
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
       }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      where.OR = or;
     }
-  }, []);
 
-  const nativeMicInputRef = useRef<HTMLInputElement>(null);
-
-  const handleNativeMicFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const input = fileRef.current;
-    if (input) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
+    const pendingTabWhere: Prisma.OrderWhereInput = {
+      status: "pending",
+      orderType: { not: "دين" },
+    };
+    if (q) {
+      const asNum = parseInt(q, 10);
+      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+      const dateRange = parseBaghdadDateRange(q);
+      const or: Prisma.OrderWhereInput[] = [
+        ...routeModeOrFromQuery(q),
+        { customerPhone: { contains: q } },
+        { orderType: { contains: q, mode: "insensitive" } },
+        { shop: { name: { contains: q, mode: "insensitive" } } },
+        { courier: { name: { contains: q, mode: "insensitive" } } },
+        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
+        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
+        { customer: { name: { contains: q, mode: "insensitive" } } },
+        { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
+      ];
+      if (numExact) {
+        or.unshift({ orderNumber: asNum });
+      }
+      if (dateRange) {
+        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
+      }
+      pendingTabWhere.OR = or;
     }
-    setPreviewBlob(file);
-    setError(null);
 
-    if (variant === "standalone" || variant === "button") {
-      queueMicrotask(() => {
-        standaloneFormRef.current?.requestSubmit();
+    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
+    let [orders, couriers, pendingTabCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: 150,
+        orderBy: { createdAt: "desc" },
+        include: {
+          shop: {
+            select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
+          },
+          customerRegion: true,
+          secondCustomerRegion: true,
+          courier: true,
+          customer: true,
+          moneyEvents: {
+            where: { deletedAt: null },
+            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
+          },
+        },
+      }),
+      prisma.courier.findMany({
+        where: courierAssignableWhere,
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.order.count({ where: pendingTabWhere }),
+    ]);
+
+    const customerPhoneProfileKeys = new Map<string, { phone: string; regionId: string }>();
+    for (const order of orders) {
+      const normalizedPhone = normalizeIraqMobileLocal11(order.customerPhone);
+      if (!normalizedPhone || !order.customerRegionId) continue;
+      customerPhoneProfileKeys.set(`${normalizedPhone}_${order.customerRegionId}`, {
+        phone: normalizedPhone,
+        regionId: order.customerRegionId,
       });
     }
-  };
 
-  const startRecording = async () => {
-    setError(null);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    const prevMr = mrRef.current;
-    if (prevMr && prevMr.state !== "inactive") {
-      try {
-        prevMr.onstop = null;
-        prevMr.stop();
-      } catch {
-        /* ignore */
-      }
+    const customerPhoneProfiles =
+      customerPhoneProfileKeys.size > 0
+        ? await prisma.customerPhoneProfile.findMany({
+            where: {
+              OR: Array.from(customerPhoneProfileKeys.values()).map((profile) => ({
+                phone: profile.phone,
+                regionId: profile.regionId,
+              })),
+            },
+            select: {
+              phone: true,
+              regionId: true,
+              locationUrl: true,
+              photoUrl: true,
+            },
+          })
+        : [];
+
+    const customerPhoneProfileByKey = new Map(
+      customerPhoneProfiles.map((profile) => [
+        `${profile.phone}_${profile.regionId}`,
+        profile,
+      ]),
+    );
+
+    if (statusFilter === "checkSader") {
+      orders = orders.filter((o) => {
+        const type = isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type;
+        return saderFilter === "higher" ? type === "excess" : type === "deficit";
+      });
+    } else if (statusFilter === "checkWard") {
+      orders = orders.filter((o) => {
+        const type = isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type;
+        return wardFilter === "higher" ? type === "excess" : type === "deficit";
+      });
     }
-    mrRef.current = null;
-    stopTimers();
-    clearFile();
 
-    if (!supported) {
-      if (nativeMicInputRef.current) {
-        nativeMicInputRef.current.click();
-        return;
-      }
-      setError("التسجيل الصوتي غير متاح في هذا المتصفح.");
-      return;
+    function statusPriority(s: string): number {
+      if (s === "pending") return 0;
+      if (s === "assigned") return 1;
+      if (s === "delivering") return 2;
+      if (s === "delivered") return 3;
+      if (s === "cancelled") return 4;
+      return 99;
     }
 
-    try {
-      let stream: MediaStream;
-      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } else if ((navigator as any).getUserMedia) {
-        stream = await new Promise((resolve, reject) => {
-          (navigator as any).getUserMedia.call(navigator, { audio: true }, resolve, reject);
-        });
-      } else if ((navigator as any).webkitGetUserMedia) {
-        stream = await new Promise((resolve, reject) => {
-          (navigator as any).webkitGetUserMedia.call(navigator, { audio: true }, resolve, reject);
-        });
-      } else {
-        throw new Error("NO_USER_MEDIA");
-      }
+    if (statusFilter === "all") {
+      orders = orders.sort(
+        (a, b) =>
+          statusPriority(a.status) - statusPriority(b.status) ||
+          b.orderNumber - a.orderNumber,
+      );
+    } else {
+      orders = orders.sort((a, b) => b.orderNumber - a.orderNumber);
+    }
 
-      streamRef.current = stream;
-      chunksRef.current = [];
+    function hrefTracking(opts: {
+      status: string;
+      wardFilter?: "lower" | "higher";
+      saderFilter?: "lower" | "higher";
+    }): string {
+      const p = new URLSearchParams();
+      if (opts.status !== "all") p.set("status", opts.status);
+      if (opts.status === "checkWard" && opts.wardFilter) p.set("wardFilter", opts.wardFilter);
+      if (opts.status === "checkSader" && opts.saderFilter) p.set("saderFilter", opts.saderFilter);
+      if (q) p.set("q", q);
+      return p.toString() ? `${SECRET_ADMIN_PATH}/orders/tracking?${p}` : `${SECRET_ADMIN_PATH}/orders/tracking`;
+    }
 
-      const mime = pickRecorderMime();
-      const options = mime ? { mimeType: mime } : undefined;
-      const mr = new MediaRecorder(stream, options);
-      mrRef.current = mr;
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+    const tableRows: TrackingTableRow[] = orders.map((o) => {
+      const phoneProfile = customerPhoneProfileByKey.get(
+        `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
+      );
+
+      const courierPickup = sumCourierPickupOut(o.moneyEvents);
+      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
+      const adminPickup = sumAdminPickupOut(o.moneyEvents);
+
+      const courierDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+      );
+      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const preparerDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+      );
+      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
+      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
+      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
+      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
+      const hasDebt = calculatedDebt > 0;
+      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
+
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        orderStatus: o.status,
+        assignedCourierId: o.assignedCourierId ?? null,
+        shopCustomerLabel: formatShopWithCustomer(
+          o.shop?.name ?? "غير معروف",
+          o.customer?.name,
+          o.routeMode,
+          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
+        ),
+        regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
+        orderType: o.orderType || "—",
+        routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
+        prepaidAll: o.prepaidAll,
+        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
+        deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+        calculatedDebt: hasDebt ? calculatedDebt : null,
+        hasDebt: hasDebt,
+        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
+        customerPhone: o.customerPhone || "—",
+        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
+        courierName: o.courier?.name ?? "—",
+        orderNoteTime: o.orderNoteTime,
+        missingCustomerLocation: !hasCustomerLocationUrl(
+          o.customerLocationUrl,
+          o.customer?.customerLocationUrl,
+          phoneProfile?.locationUrl,
+        ),
+        hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
+        summary: o.summary,
+        preparerShoppingJson: o.preparerShoppingJson,
+        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
+        submissionSource: o.submissionSource,
+        wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
+        saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
+        noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
+        noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
+        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
+        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
+        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
+        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
+        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
+        createdAt: o.createdAt,
+        customerName: o.customer?.name || null,
+        // بيانات الوصول السريع
+        audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
+        adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
+        shopPhone: o.shop?.phone || "",
+        shopLocationUrl: o.shop?.locationUrl || "",
+        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
+        secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+        shopDoorPhotoUrl: resolvePublicAssetSrc(
+          o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
+        ),
+        customerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
+        ),
+        secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
+          o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
+        ),
+        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
+        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
+        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
+        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
+        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
       };
-      mr.onstop = () => {
-        stopTimers();
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-        mrRef.current = null;
-        setRecording(false);
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || "audio/m4a" });
-        chunksRef.current = [];
-        if (blob.size === 0) {
-          setError("لم يُسجَّل صوت. حاول مرة أخرى.");
-          return;
-        }
-        const ext = blob.type.includes("webm")
-          ? "webm"
-          : blob.type.includes("mp4") || blob.type.includes("m4a")
-            ? "m4a"
-            : blob.type.includes("ogg")
-              ? "ogg"
-              : "m4a";
-        const file = new File([blob], `admin-voice.${ext}`, {
-          type: blob.type || mime || "audio/m4a",
-        });
-        const input = fileRef.current;
-        if (input) {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          input.files = dt.files;
-        }
-        setPreviewBlob(blob);
-        const dur = Date.now() - startedAtRef.current;
-        setElapsedMs(Math.min(dur, MAX_MS));
+    });
 
-        if (variant === "standalone" || variant === "button") {
-          queueMicrotask(() => {
-            standaloneFormRef.current?.requestSubmit();
-          });
+    const statusTabs = [
+      { key: "all", label: "الكل" },
+      { key: "pending", label: "جديد" },
+      { key: "assigned", label: "مسند" },
+      { key: "delivering", label: "بالتوصيل" },
+      { key: "delivered", label: "مسلّم" },
+    ];
+
+    // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+    const safeTableRows = serializePrisma(tableRows);
+    const safeCouriers = serializePrisma(couriers);
+
+    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
+    const ALF_PER_DINAR = 1;
+    function numOrZero(v: unknown): number {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    const todayDate = new Date();
+    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
+    if (todayDate < shiftStartToday) {
+      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
+    }
+    const todayFrom = shiftStartToday;
+    const todayTo = new Date(todayFrom);
+    todayTo.setDate(todayTo.getDate() + 1);
+    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
+
+    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          status: "delivered",
+          createdAt: { gte: todayFrom, lte: todayTo }
+        },
+        select: {
+          deliveryPrice: true,
+          courierEarningDinar: true,
+          courier: { select: { zeroEarning: true, vehicleType: true } }
         }
-      };
-      startedAtRef.current = Date.now();
-      setRecording(true);
-      setElapsedMs(0);
-      mr.start(200);
-      tickRef.current = setInterval(() => {
-        const t = Date.now() - startedAtRef.current;
-        setElapsedMs(Math.min(t, MAX_MS));
-      }, 100);
-      maxTimerRef.current = setTimeout(() => {
-        finishRecording();
-      }, MAX_MS);
-    } catch (err: any) {
-      console.error("Audio recording error, triggering native mic fallback:", err);
-      setRecording(false);
-      if (nativeMicInputRef.current) {
-        nativeMicInputRef.current.click();
-      } else {
-        setError("لم نتمكن من الوصول للمايك. اسمح بالوصول من إعدادات المتصفح والتطبيق.");
+      }),
+      prisma.order.findMany({
+        where: {
+          createdAt: { gte: todayFrom, lte: todayTo },
+          preparerShoppingJson: { not: null as any },
+          status: { notIn: ["cancelled", "rejected"] },
+          shop: { name: { in: ADMIN_SHOP_NAMES } }
+        },
+        select: {
+          preparerShoppingJson: true
+        }
+      })
+    ]);
+
+    let todayDeliveryProfit = new Decimal(0);
+    for (const o of todayDeliveredOrders) {
+      if (o.deliveryPrice) {
+        let p = new Decimal(0);
+        if (o.courier) {
+          if (o.courier.zeroEarning) {
+            p = o.deliveryPrice;
+          } else {
+            if (o.courierEarningDinar != null) {
+              p = o.deliveryPrice.minus(o.courierEarningDinar);
+            } else {
+              const vehicle = o.courier.vehicleType || "car";
+              const earning = vehicle === "bike"
+                ? o.deliveryPrice.div(2)
+                : o.deliveryPrice.mul(2).div(3);
+              p = o.deliveryPrice.minus(earning);
+            }
+          }
+        } else {
+          if (o.courierEarningDinar != null) {
+            p = o.deliveryPrice.minus(o.courierEarningDinar);
+          } else {
+            p = o.deliveryPrice;
+          }
+        }
+        todayDeliveryProfit = todayDeliveryProfit.plus(p);
       }
     }
-  };
 
-  const cancelRecording = () => {
-    stopTimers();
-    const mr = mrRef.current;
-    if (mr && mr.state !== "inactive") {
-      mr.onstop = null;
-      try {
-        mr.stop();
-      } catch {
-        /* ignore */
+    let todayPrepProfit = new Decimal(0);
+    for (const o of todayPrepOrders) {
+      if (o.preparerShoppingJson) {
+        const j = o.preparerShoppingJson as any;
+        const products = Array.isArray(j?.products) ? j.products : [];
+        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
+        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
       }
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    mrRef.current = null;
-    chunksRef.current = [];
-    setRecording(false);
-    setElapsedMs(0);
-  };
-  const sec = (elapsedMs / 1000).toFixed(1);
 
-  const controls = (
-    <>
-      <input
-        ref={fileRef}
-        type="file"
-        name="adminVoice"
-        accept="audio/*"
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
-      />
-      <input
-        ref={nativeMicInputRef}
-        type="file"
-        accept="audio/*"
-        capture="microphone"
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
-        onChange={handleNativeMicFile}
-      />
-      {supported ? (
-        <div className="flex w-full flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {!recording ? (
-              <button
-                type="button"
-                onClick={() => void startRecording()}
-                className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-900 shadow-sm hover:bg-rose-100 disabled:opacity-60"
-              >
-                🎤 تسجيل صوتي
-              </button>
-            ) : (
-              <>
-                <span
-                  className="inline-flex items-center gap-2 rounded-xl border border-rose-400 bg-rose-100 px-3 py-2 text-sm font-bold text-rose-900 tabular-nums"
-                  aria-live="polite"
-                >
-                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-rose-600" />
-                  جارٍ التسجيل… {sec} / 10 ث
+    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
+
+    return (
+      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
+        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
+        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
+          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={SECRET_ADMIN_PATH}
+              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
+              title="العودة للرئيسية"
+            >
+              ←
+            </Link>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
+                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+              </h1>
+              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
+                {safeTableRows.length}
+              </span>
+            </div>
+          </div>
+
+          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* كبسولة أرباح اليوم الصافية المدمجة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
+              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
+            >
+              <span className="text-xs">💰</span>
+              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
+                {formatDinarAsAlfWithUnit(todayTotalProfit)}
+              </span>
+            </Link>
+
+            {/* زر طلب تيست التجريبي السريع */}
+            <QuickTestOrderButton variant="tracking" />
+
+            {/* زر إضافة طلب من الإدارة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/new`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
+              }}
+              title="إضافة طلب من الإدارة"
+            >
+              <span>➕</span>
+              <span className="hidden xs:inline">إضافة طلب</span>
+            </Link>
+
+            {/* زر الطلبات الجديدة */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/pending`}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
+              style={{
+                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
+              }}
+              title="الطلبات الجديدة المعلقة"
+            >
+              <span className="text-[#F5D77F]">✨</span>
+              <span className="hidden xs:inline">جديدة</span>
+              {pendingTabCount > 0 ? (
+                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
+                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
                 </span>
-                <button
-                  type="button"
-                  onClick={finishRecording}
-                  className="rounded-xl border border-emerald-500 bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700"
-                >
-                  إيقاف
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelRecording}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  إلغاء
-                </button>
-              </>
-            )}
-            {previewBlob && !recording ? (
-              <button
-                type="button"
-                onClick={clearFile}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                حذف التسجيل
-              </button>
-            ) : null}
+              ) : null}
+            </Link>
           </div>
-          {previewBlob && !recording ? (
-            <VoiceNotePreviewBlob
-              blob={previewBlob}
-              className="w-full max-w-md rounded-lg border border-amber-200 bg-amber-50/60 p-2"
-            />
-          ) : null}
-          {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
-          <p className="text-xs text-slate-500">أقصى مدة 10 ثوانٍ.</p>
         </div>
-      ) : (
-        <p className="text-xs text-amber-900">هذا المتصفح لا يدعم التسجيل الصوتي من المايك.</p>
-      )}
-    </>
-  );
 
-  const inner = (
-    <div className="rounded-2xl border-2 border-sky-100 bg-white p-3 shadow-sm">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-black text-sky-600 flex items-center gap-1"><span>🎧</span> بصمة الإدارة (النظام)</span>
-        {src ? <DeleteAdminVoiceNoteButton orderId={orderId} /> : null}
-      </div>
-
-      {src ? (
-        <div className="mb-3">
-          <VoiceNoteAudio
-            src={src}
-            streamKey={`${orderId}-admin-voice`}
-            className="w-full"
+        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
+        <div className="flex items-center gap-2">
+          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
+          <OrderTrackingFilterDropdown
+            currentStatus={statusFilter}
+            pendingCount={pendingTabCount}
+            wardFilter={wardFilter}
+            saderFilter={saderFilter}
+            searchQuery={q}
           />
-        </div>
-      ) : null}
 
-      <div className="flex flex-col gap-2">{controls}</div>
-    </div>
-  );
-
-  if (variant === "royal_circular" || variant === "button") {
-    return (
-      <form
-        ref={standaloneFormRef}
-        action={async (fd) => {
-          const r = await uploadAdminVoiceNote(fd);
-          if (r.error) {
-            window.alert(r.error);
-            return;
-          }
-          router.refresh();
-        }}
-        className="inline-flex items-center shrink-0"
-      >
-        <input type="hidden" name="orderId" value={orderId} />
-        <input
-          ref={fileRef}
-          type="file"
-          name="adminVoice"
-          accept="audio/*"
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden
-        />
-
-        {!recording ? (
-          <button
-            type="button"
-            onClick={() => void startRecording()}
-            className="w-[36px] h-[36px] rounded-full bg-[#E11D48] border border-[#BE123C] text-white flex items-center justify-center shadow-[0_3px_10px_rgba(225,29,72,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.95] shrink-0 cursor-pointer hover:bg-[#D0153D] transition-transform"
-            title={src ? "استبدال بصمة الصوت" : "تسجيل بصمة صوتية"}
+          {/* حقل البحث الفوري */}
+          <Suspense
+            fallback={
+              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
+            }
           >
-            <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 11c0 2.21-1.79 4-4 4s-4-1.79-4-4 1.79-4 4-4 4 1.79 4 4z" />
-              <path d="M12 7c0-2.21 1.79-4 4-4s4 1.79 4 4v4c0 4.42-3.58 8-8 8s-8-3.58-8-8" />
-              <path d="M8 15c0 2.21 1.79 4 4 4s4-1.79 4-4" />
-              <path d="M12 3v1" />
-              <path d="M16 11v2" />
-            </svg>
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={finishRecording}
-              className="h-[36px] px-2.5 rounded-full bg-emerald-600 text-white font-black text-[11px] flex items-center gap-1 shadow-md hover:bg-emerald-700 active:scale-95 cursor-pointer"
-              title="حفظ التسجيل"
-            >
-              <span>✔</span>
-              <span>({sec}ث)</span>
-            </button>
-            <button
-              type="button"
-              onClick={cancelRecording}
-              className="w-[28px] h-[28px] rounded-full bg-rose-100 text-rose-700 font-black text-xs flex items-center justify-center border border-rose-300 cursor-pointer"
-              title="إلغاء"
-            >
-              ✕
-            </button>
+            <OrderTrackingSearch
+              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
+              initialQ={q}
+              statusFilter={statusFilter}
+              wardFilter={wardFilter}
+              saderFilter={saderFilter}
+            />
+          </Suspense>
+        </div>
+
+        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
+        {statusFilter === "checkSader" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
+            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "lower"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أقل من البضاعة
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  saderFilter === "higher"
+                    ? "bg-emerald-700 text-white"
+                    : "bg-white text-emerald-900 border border-emerald-200"
+                }`}
+              >
+                أعلى من البضاعة
+              </Link>
+            </div>
           </div>
-        )}
-      </form>
-    );
-  }
+        ) : null}
 
-  if (variant === "standalone") {
+        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
+        {statusFilter === "checkWard" ? (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
+            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "lower"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أقل من المتوقع
+              </Link>
+              <Link
+                href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
+                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
+                  wardFilter === "higher"
+                    ? "bg-rose-700 text-white"
+                    : "bg-white text-rose-900 border border-rose-200"
+                }`}
+              >
+                أعلى من المتوقع
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
+      </div>
+    );
+  } catch (err: any) {
     return (
-      <form
-        ref={standaloneFormRef}
-        action={async (fd) => {
-          const r = await uploadAdminVoiceNote(fd);
-          if (r.error) {
-            window.alert(r.error);
-            return;
-          }
-          router.refresh();
-        }}
-        className="block w-full"
-      >
-        <input type="hidden" name="orderId" value={orderId} />
-        {inner}
-      </form>
+      <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
+        <h1 className="text-2xl font-bold">Runtime Error in OrderTrackingPage</h1>
+        <p>Please screenshot this page and show it to the developer.</p>
+        <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
+          {err.stack || err.message || String(err)}
+        </pre>
+      </div>
     );
   }
-
-  return inner;
 }

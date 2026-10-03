@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
@@ -62,7 +62,7 @@ export function StaffArchivedClient({ rows }: { rows: any[] }) {
              if (row.hasCourierUploadedLocation) {
                 return (
                   <a
-                    href={whatsappMeUrl(row.customerPhone, "مرحباً، نرجو تقييم خدمة التوصيل الخاص بطلبكم من وصلي للتوصيل. رأيكم يهمنا جداً لتطوير الخدمة.")}
+                    href={whatsappMeUrl(row.customerPhone, "مرحباً، نرجو تقييم خدمة التوصيل الخاص بطلبكم من وصلي. رأيكم يهمنا جداً لتطوير الخدمة.")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1 flex items-center justify-center gap-1 rounded-md border border-amber-400 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 shadow-sm transition hover:bg-amber-100 whitespace-nowrap"

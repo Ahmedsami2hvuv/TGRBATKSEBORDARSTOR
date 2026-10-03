@@ -1,7 +1,7 @@
 {
-  "name": "وصلي للتوصيل",
+  "name": "وصلي",
   "short_name": "وصلي",
-  "description": "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+  "description": "وصلي — توصيل أسرع .. لكل مكان",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
