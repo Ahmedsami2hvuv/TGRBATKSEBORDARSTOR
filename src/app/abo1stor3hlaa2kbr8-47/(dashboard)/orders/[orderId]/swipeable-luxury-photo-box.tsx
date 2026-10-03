@@ -62,23 +62,22 @@ export function SwipeableLuxuryPhotoBox({
         width: size,
         height: size,
         borderRadius: size <= 115 ? 18 : 22,
-        border: "2.5px solid #C9A86A",
-        backgroundColor: "#0E3D2B",
+        border: "2px solid #38BDF8",
+        backgroundColor: "#075985",
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='56' height='56' viewBox='0 0 56 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 0 L30.5 25.5 L56 28 L30.5 30.5 L28 56 L25.5 30.5 L0 28 L25.5 25.5 Z' fill='%231A4D3A' fill-opacity='0.28'/%3E%3Ccircle cx='28' cy='28' r='1.8' fill='%232A6A55' fill-opacity='0.22'/%3E%3C/svg%3E")`,
         backgroundRepeat: "repeat",
         boxShadow:
-          "0 4px 14px rgba(201,168,106,0.35), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 1px rgba(232,213,163,0.3) inset",
+          "0 4px 14px rgba(2,132,199,0.25), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 1px rgba(232,213,163,0.3) inset",
       }
     : {
         width: size,
         height: size,
         borderRadius: size <= 115 ? 18 : 22,
-        border: "2.5px solid #C9A86A",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 0 L26 21 L48 24 L26 27 L24 48 L22 27 L0 24 L22 21 Z' fill='%23C9A86A' fill-opacity='0.07'/%3E%3C/svg%3E"), linear-gradient(135deg, #FDF6E3 0%, #F5E6C0 50%, #E8D5A3 100%)`,
-        backgroundRepeat: "repeat, no-repeat",
-        backgroundColor: "#FDF6E3",
+        border: "2px solid #38BDF8",
+        backgroundImage: `linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 50%, #E0F2FE 100%)`,
+        backgroundColor: "#F0F9FF",
         boxShadow:
-          "0 4px 14px rgba(201,168,106,0.25), inset 0 1px 0 white, 0 0 0 1px rgba(232,213,163,0.5) inset",
+          "0 4px 14px rgba(2,132,199,0.15), inset 0 1px 0 white",
       };
 
   const iconCircleSize = size <= 110 ? 44 : 54;
@@ -92,7 +91,7 @@ export function SwipeableLuxuryPhotoBox({
       {/* المربع الرئيسي للصورة - انقر للمعاينة والتكبير */}
       <div
         onClick={onClickPreview}
-        className="group relative overflow-hidden cursor-pointer flex flex-col items-center justify-center transition-all duration-200 hover:shadow-[0_6px_20px_rgba(201,168,106,0.45)] hover:border-[#DFC082] active:scale-[0.98]"
+        className="group relative overflow-hidden cursor-pointer flex flex-col items-center justify-center transition-all duration-200 hover:shadow-[0_6px_20px_rgba(2,132,199,0.35)] hover:border-[#0284C7] active:scale-[0.98]"
         style={boxStyle}
         title="انقر لتكبير ومعاينة الصورة"
       >
@@ -106,7 +105,7 @@ export function SwipeableLuxuryPhotoBox({
               style={{ borderRadius: size <= 115 ? 15 : 19 }}
             />
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#0A3D2E]/90 border border-[#C9A86A] flex items-center justify-center shadow-lg text-[#E8C77E]">
+              <div className="w-8 h-8 rounded-full bg-[#0369A1]/90 border border-[#38BDF8] flex items-center justify-center shadow-lg text-[#FDE047]">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="7" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -133,7 +132,7 @@ export function SwipeableLuxuryPhotoBox({
             <span
               className={`font-black tracking-wide leading-none drop-shadow-xs ${
                 isSmall ? "text-[11.5px]" : "text-[13px]"
-              } ${isShop ? "text-[#FFFEF8]" : "text-[#0A3D2E]"}`}
+              } ${isShop ? "text-[#FFFEF8]" : "text-[#0369A1]"}`}
             >
               {label}
             </span>
@@ -160,12 +159,12 @@ export function SwipeableLuxuryPhotoBox({
               title="فتح الكاميرا والتقاط صورة مباشرة"
               className={`w-full ${
                 isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-              } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none ${
+              } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#FDE047] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none ${
                 isBusy ? "opacity-50 pointer-events-none" : ""
               }`}
             >
               <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#E8C77E]`}
+                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#FDE047]`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -195,10 +194,10 @@ export function SwipeableLuxuryPhotoBox({
               title="فتح الكاميرا والتقاط صورة مباشرة"
               className={`w-full ${
                 isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-              } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#E8C77E] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
+              } rounded-[9px] bg-gradient-to-b from-[#0E3D2B] via-[#0A3525] to-[#07281C] border border-[#C9A86A] text-[#FDE047] hover:text-[#FFF8E1] hover:border-[#E8C77E] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(10,46,32,0.3),inset_0_1px_0_rgba(232,199,126,0.2)] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
             >
               <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#E8C77E]`}
+                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#FDE047]`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -229,12 +228,12 @@ export function SwipeableLuxuryPhotoBox({
               title="اختيار صورة من المعرض أو الاستوديو"
               className={`w-full ${
                 isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-              } rounded-[9px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none ${
+              } rounded-[9px] bg-gradient-to-b from-[#FFFFFF] via-[#F0F9FF] to-[#E0F2FE] border border-[#38BDF8] text-[#0369A1] hover:text-[#0F172A] hover:border-[#0284C7] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(2,132,199,0.15),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none ${
                 isBusy ? "opacity-50 pointer-events-none" : ""
               }`}
             >
               <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#8B6A2A]`}
+                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#0284C7]`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -265,10 +264,10 @@ export function SwipeableLuxuryPhotoBox({
               title="اختيار صورة من المعرض أو الاستوديو"
               className={`w-full ${
                 isSmall ? "h-[28px] px-1" : "h-[31px] px-1.5"
-              } rounded-[9px] bg-gradient-to-b from-[#FFFDF9] via-[#FBF4E4] to-[#F3E7CA] border border-[#C9A86A] text-[#0A3D2E] hover:text-[#000] hover:border-[#8B6A2A] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(201,168,106,0.25),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
+              } rounded-[9px] bg-gradient-to-b from-[#FFFFFF] via-[#F0F9FF] to-[#E0F2FE] border border-[#38BDF8] text-[#0369A1] hover:text-[#0F172A] hover:border-[#0284C7] flex items-center justify-center gap-1 shadow-[0_2px_6px_rgba(2,132,199,0.15),inset_0_1px_0_white] active:scale-95 transition-all cursor-pointer select-none disabled:opacity-50`}
             >
               <svg
-                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#8B6A2A]`}
+                className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0 text-[#0284C7]`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

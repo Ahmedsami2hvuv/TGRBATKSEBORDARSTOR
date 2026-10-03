@@ -204,7 +204,7 @@ export function WaLocationCustomButtons({
             <button
               type="button"
               onClick={() => handleButtonClick(btn)}
-              className={`group relative flex w-full h-[42px] max-h-[42px] items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 text-[#0A3D2E] font-black text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] active:scale-[0.97] cursor-pointer overflow-hidden px-3 ${
+              className={`group relative flex w-full h-[42px] max-h-[42px] items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 text-[#FDE047] font-black text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_12px_rgba(2,132,199,0.3)] transition-all hover:shadow-[0_0_16px_rgba(56,189,248,0.5),0_3px_12px_rgba(2,132,199,0.4)] active:scale-[0.97] cursor-pointer overflow-hidden px-3 ${
                 compact ? "text-[11px] py-1 px-2" : "text-[13px]"
               }`}
               title={btn.label}

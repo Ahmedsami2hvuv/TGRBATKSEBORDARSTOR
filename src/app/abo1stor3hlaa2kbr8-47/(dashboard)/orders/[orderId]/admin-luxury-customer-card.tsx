@@ -318,21 +318,21 @@ export function AdminLuxuryCustomerCard({
       />
 
       {/* كارت الزبون الملكي الزمردي الفاخر كما في التصميم 3 والصور */}
-      <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
+      <div className="relative rounded-[22px] border-[1.5px] border-[#38BDF8]/40 bg-[#FFFFFF] shadow-[0_6px_20px_rgba(2,132,199,0.08)] overflow-hidden">
         {/* ترويسة الكارت الأرابيسكية */}
-        <div className="relative px-3.5 pt-3.5 pb-2.5 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] border-b border-[#C9A86A]/20 flex items-center justify-between gap-2">
+        <div className="relative px-3.5 pt-3.5 pb-2.5 bg-gradient-to-b from-[#F0F9FF] to-[#FFFFFF] border-b border-[#38BDF8]/20 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#E6F4EF] to-[#CDE7DC] flex items-center justify-center shadow-[0_2px_8px_rgba(17,87,64,0.15)] border border-[#115740]/10 shrink-0">
-              <svg className="w-[15px] h-[15px] text-[#115740]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#E0F2FE] to-[#BAE6FD] flex items-center justify-center shadow-[0_2px_8px_rgba(2,132,199,0.15)] border border-[#0284C7]/20 shrink-0">
+              <svg className="w-[15px] h-[15px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             </div>
             <div className="min-w-0">
-              <h2 className="text-[14px] font-black text-[#0A3D2E] leading-none truncate">
+              <h2 className="text-[14px] font-black text-[#0369A1] leading-none truncate">
                 {displayTitle}
               </h2>
-              <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#115740]/60 to-transparent rounded-full" />
+              <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#0284C7]/60 to-transparent rounded-full" />
             </div>
           </div>
 
@@ -350,20 +350,20 @@ export function AdminLuxuryCustomerCard({
             <div className="flex-1 min-w-0 flex flex-col gap-2">
               {/* اسم الزبون إن وجد */}
               {effectiveName && effectiveName !== "الزبون" && effectiveName !== "المستلم" && effectiveName !== "—" && (
-                <div className="text-[15px] font-black text-[#0A3D2E] leading-tight truncate">
+                <div className="text-[15px] font-black text-[#0F172A] leading-tight truncate">
                   {effectiveName}
                 </div>
               )}
 
               {/* شارة المنطقة */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDF6E3] border border-[#C9A86A]/20 shadow-[inset_0_1px_0_white] self-start">
-                <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shrink-0">
-                  <svg className="w-[9px] h-[9px] text-[#9C7D46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0F9FF] border border-[#38BDF8]/30 shadow-[inset_0_1px_0_white] self-start">
+                <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shrink-0">
+                  <svg className="w-[9px] h-[9px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                 </span>
-                <span className="text-[12px] font-bold text-[#3A2E1A] truncate">
+                <span className="text-[12px] font-bold text-[#0369A1] truncate">
                   {effectiveRegionName}
                 </span>
               </div>
@@ -371,15 +371,15 @@ export function AdminLuxuryCustomerCard({
               {/* أرقام الهواتف (الأساسي والبديل إن وجد) */}
               <div className="flex flex-col gap-1.5 w-full">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="w-[18px] h-[18px] rounded-full bg-[#0A3D2E] flex items-center justify-center shrink-0">
-                    <svg className="w-[10px] h-[10px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <span className="w-[18px] h-[18px] rounded-full bg-[#0284C7] flex items-center justify-center shrink-0">
+                    <svg className="w-[10px] h-[10px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   </span>
                   {cleanPhone ? (
                     <div className="flex items-center gap-1 flex-wrap">
                       {hasMultiplePhones && (
-                        <span className="text-[10px] font-black text-[#0A3D2E] px-1.5 py-0.5 rounded-[6px] bg-[#E6F4EF] border border-[#115740]/20 shadow-xs">
+                        <span className="text-[10px] font-black text-[#0284C7] px-1.5 py-0.5 rounded-[6px] bg-[#E0F2FE] border border-[#0284C7]/20 shadow-xs">
                           1️⃣ أساسي
                         </span>
                       )}
@@ -398,13 +398,13 @@ export function AdminLuxuryCustomerCard({
                       />
                     </div>
                   ) : (
-                    <span className="text-[12px] font-bold tracking-[0.02em] text-[#0A3D2E]">—</span>
+                    <span className="text-[12px] font-bold tracking-[0.02em] text-[#0369A1]">—</span>
                   )}
                 </div>
 
                 {hasMultiplePhones && (
                   <div className="flex items-center gap-1.5 flex-wrap pr-[22px]">
-                    <span className="text-[10px] font-black text-[#8B6A2A] px-1.5 py-0.5 rounded-[6px] bg-[#FFF8E1] border border-[#C9A86A]/40 shadow-xs">
+                    <span className="text-[10px] font-black text-[#854D0E] px-1.5 py-0.5 rounded-[6px] bg-[#FEF08A]/60 border border-[#FACC15]/50 shadow-xs">
                       2️⃣ بديل
                     </span>
                     <AdminCustomerPhoneInteractive
@@ -428,26 +428,26 @@ export function AdminLuxuryCustomerCard({
               <div
                 onClick={() => setLandmarkModalOpen(true)}
                 title="انقر لتعديل أو إضافة أقرب نقطة دالة"
-                className="group relative rounded-[12px] border-[1.5px] border-[#C9A86A] bg-gradient-to-br from-[#FFF8E1] via-[#FFFEF8] to-[#F6EED7] p-2.5 shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(201,168,106,0.25)] hover:border-[#8B6A2A] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
+                className="group relative rounded-[12px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
               >
-                <div className="absolute right-0 top-0 bottom-0 w-[3px] gold-grad" />
+                <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#0284C7] to-[#38BDF8]" />
                 <div className="flex items-start gap-2 w-full pr-1">
-                  <span className="w-[22px] h-[22px] rounded-full bg-white border border-[#C9A86A]/30 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.15)] shrink-0 mt-[1px] group-hover:bg-[#FDF6E3] transition">
-                    <svg className="w-[11px] h-[11px] text-[#8B6A2A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <span className="w-[22px] h-[22px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.15)] shrink-0 mt-[1px] group-hover:bg-[#F0F9FF] transition">
+                    <svg className="w-[11px] h-[11px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <div className="text-[9px] font-black text-[#8B6A2A]/70 leading-none tracking-wide">
+                      <div className="text-[9px] font-black text-[#0369A1]/80 leading-none tracking-wide">
                         أقرب نقطة دالة
                       </div>
-                      <span className="text-[9px] font-bold text-[#8B6A2A]/80 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[9px] font-bold text-[#0284C7] flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         ✏️ تعديل
                       </span>
                     </div>
-                    <p className="text-[11px] leading-[1.35] font-bold text-[#3A2E1A] text-right">
+                    <p className="text-[11px] leading-[1.35] font-bold text-[#1E293B] text-right">
                       {landmarkTextState || "لا توجد نقطة دالة مسجلة بعد (انقر للإضافة)"}
                     </p>
                   </div>
@@ -475,7 +475,7 @@ export function AdminLuxuryCustomerCard({
                 }
               }}
               fallbackIcon={
-                <svg className="w-[28px] h-[28px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-[28px] h-[28px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                   <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
@@ -491,9 +491,9 @@ export function AdminLuxuryCustomerCard({
                   href={effectiveLocationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-[42px] max-h-[42px] rounded-[12px] gold-grad border-[1.5px] border-[#9C7D46]/30 text-[#0A3D2E] font-black text-[13px] shadow-[0_4px_12px_rgba(201,168,106,0.28),inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform overflow-hidden px-2"
+                  className="w-full h-[42px] max-h-[42px] rounded-[12px] bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#0284C7] border-[1.5px] border-[#38BDF8] text-white font-black text-[13px] shadow-[0_4px_14px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform overflow-hidden px-2"
                 >
-                  <svg className="w-4 h-4 text-[#0A3D2E] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="w-4 h-4 text-[#FDE047] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
@@ -519,14 +519,14 @@ export function AdminLuxuryCustomerCard({
                 <button
                   type="button"
                   onClick={handleWhatsappClick}
-                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B] cursor-pointer"
+                  className="h-[42px] rounded-[12px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] text-[#FDE047] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.97] transition-all hover:bg-[#075985] cursor-pointer"
                 >
-                  <svg className="w-4 h-4 text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <svg className="w-4 h-4 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                   </svg>
                   <span>واتساب</span>
                   {hasMultiplePhones && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#E8C77E] text-[#0A3D2E] font-black leading-none shadow-xs">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FDE047] text-[#0369A1] font-black leading-none shadow-xs">
                       2
                     </span>
                   )}
@@ -534,15 +534,14 @@ export function AdminLuxuryCustomerCard({
 
                 <button
                   type="button"
-                  onClick={handleCallClick}
-                  className="h-[42px] rounded-[12px] bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] text-[#E8C77E] font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(232,199,126,0.15)] active:scale-[0.97] transition-all hover:bg-[#104D3B] cursor-pointer"
+                  onClick={handleCallClick} className="h-[42px] rounded-[12px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] text-white font-black text-[13px] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.97] transition-all hover:bg-[#075985] cursor-pointer"
                 >
-                  <svg className="w-4 h-4 text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <svg className="w-4 h-4 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
                   <span>اتصال</span>
                   {hasMultiplePhones && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#E8C77E] text-[#0A3D2E] font-black leading-none shadow-xs">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FDE047] text-[#0369A1] font-black leading-none shadow-xs">
                       2
                     </span>
                   )}
@@ -569,11 +568,11 @@ export function AdminLuxuryCustomerCard({
           }}
         >
           <div
-            className="w-full max-w-md rounded-[20px] border-[2px] border-[#C9A86A] bg-[#FFFEF8] p-4 sm:p-5 shadow-2xl text-right animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            className="w-full max-w-md rounded-[20px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-4 sm:p-5 shadow-2xl text-right animate-in zoom-in-95 duration-200 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#C9A86A]/20 pb-3 mb-3">
-              <h4 className="text-sm sm:text-base font-black text-[#0A3D2E] flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-[#38BDF8]/20 pb-3 mb-3">
+              <h4 className="text-sm sm:text-base font-black text-[#0369A1] flex items-center gap-2">
                 <span>📍</span>
                 <span>تعديل أقرب نقطة دالة ({isSecondDestination ? "المستلم" : "المرسل"})</span>
               </h4>
@@ -593,14 +592,14 @@ export function AdminLuxuryCustomerCard({
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-[#8B6A2A] block">نص النقطة الدالة:</label>
+              <label className="text-xs font-bold text-[#0369A1] block">نص النقطة الدالة:</label>
               <textarea
                 ref={landmarkInputRef}
                 rows={3}
                 value={landmarkTextState}
                 onChange={(e) => setLandmarkTextState(e.target.value)}
                 placeholder="اكتب أقرب نقطة دالة بالتفصيل..."
-                className="w-full rounded-xl border border-[#C9A86A] bg-white p-2.5 text-xs sm:text-sm font-bold text-[#0A3D2E] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/20 resize-none shadow-inner"
+                className="w-full rounded-xl border border-[#C9A86A] bg-white p-2.5 text-xs sm:text-sm font-bold text-[#0369A1] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/20 resize-none shadow-inner"
               />
             </div>
 
@@ -618,7 +617,7 @@ export function AdminLuxuryCustomerCard({
                 type="button"
                 onClick={handleSaveLandmark}
                 disabled={landmarkLoading}
-                className="px-5 py-2 rounded-xl gold-grad border border-[#9C7D46]/40 text-[#0A3D2E] font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-white font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
               >
                 {landmarkLoading ? "جاري الحفظ..." : "💾 حفظ النقطة الدالة"}
               </button>

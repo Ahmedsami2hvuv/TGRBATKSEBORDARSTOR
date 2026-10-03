@@ -209,7 +209,7 @@ export function AdminCustomerLocationQuick({
                 disabled={pending || locating}
                 onClick={requestLocation}
                 aria-busy={pending || locating}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] overflow-hidden cursor-pointer"
+                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_12px_rgba(2,132,199,0.3)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(56,189,248,0.5),0_3px_12px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
               >
                 <div
                   className="absolute inset-0 opacity-[0.09] pointer-events-none"
@@ -219,11 +219,11 @@ export function AdminCustomerLocationQuick({
                 />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                 <span className="relative flex flex-col items-center justify-center gap-[1px] leading-none px-[2px] text-center">
-                  <span className="flex items-center gap-[3px] text-[11px] font-black text-[#0A3D2E] tracking-tight">
+                  <span className="flex items-center gap-[3px] text-[11px] font-black text-white tracking-tight">
                     <span className="text-[11px]">📍</span>
                     <span>{locating ? "جارٍ الجلب…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن"}</span>
                   </span>
-                  <span className="text-[10px] font-black text-[#0A3D2E]/80 tracking-wide">(GPS)</span>
+                  <span className="text-[10px] font-black text-[#FDE047] tracking-wide">(GPS)</span>
                 </span>
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
               </button>
@@ -240,7 +240,7 @@ export function AdminCustomerLocationQuick({
                   setShowPaste(!showPaste);
                   setClientError("");
                 }}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#F0B547] via-[#E8A525] to-[#D4850F] border border-[#C9A86A]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_3px_12px_rgba(212,133,15,0.28)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(232,165,37,0.45),0_3px_12px_rgba(212,133,15,0.32)] overflow-hidden cursor-pointer"
+                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_12px_rgba(2,132,199,0.3)] active:scale-[0.97] transition-all hover:shadow-[0_0_16px_rgba(56,189,248,0.5),0_3px_12px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
               >
                 <div
                   className="absolute inset-0 opacity-[0.09] pointer-events-none"
@@ -251,7 +251,7 @@ export function AdminCustomerLocationQuick({
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                 <span className="relative flex items-center justify-center gap-1 text-center px-1">
                   <span className="text-[12px]">📋</span>
-                  <span className="text-[12px] font-black text-[#0A3D2E] leading-none">لصق لوكيشن</span>
+                  <span className="text-[12px] font-black text-white leading-none">لصق لوكيشن</span>
                 </span>
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
               </button>
@@ -277,7 +277,7 @@ export function AdminCustomerLocationQuick({
               <button
                 type="button"
                 onClick={handleRequestLocationWa}
-                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#E8A525] via-[#D4850F] to-[#B86D0A] border border-[#9C7D46]/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_4px_14px_rgba(184,109,10,0.32)] active:scale-[0.97] transition-all hover:shadow-[0_0_18px_rgba(212,133,15,0.5),0_4px_14px_rgba(184,109,10,0.38)] overflow-hidden cursor-pointer"
+                className="group relative w-full h-[44px] rounded-[12px] bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985] border border-[#38BDF8]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_14px_rgba(2,132,199,0.35)] active:scale-[0.97] transition-all hover:shadow-[0_0_18px_rgba(56,189,248,0.5),0_4px_14px_rgba(2,132,199,0.4)] overflow-hidden cursor-pointer"
               >
                 <div
                   className="absolute inset-0 opacity-[0.10] pointer-events-none"
@@ -287,7 +287,7 @@ export function AdminCustomerLocationQuick({
                 />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                 <span className="relative flex items-center justify-center gap-1 text-center px-1">
-                  <span className="text-[12px] font-black text-[#0A3D2E] leading-none">طلب لوكيشن</span>
+                  <span className="text-[12px] font-black text-white leading-none">طلب لوكيشن</span>
                   <span className="text-[12px]">💬</span>
                 </span>
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
@@ -302,7 +302,7 @@ export function AdminCustomerLocationQuick({
       {showPaste && (
         <form
           action={pasteAction}
-          className="mt-2.5 p-3 rounded-[16px] bg-gradient-to-b from-[#FFFEFB] to-[#FDF6E3] border-[1.5px] border-[#C9A86A]/70 shadow-[0_4px_18px_rgba(201,168,106,0.25)] space-y-2 animate-in slide-in-from-top-1 duration-200"
+          className="mt-2.5 p-3 rounded-[16px] bg-gradient-to-b from-[#FFFFFF] to-[#F0F9FF] border-[1.5px] border-[#38BDF8]/60 shadow-[0_4px_18px_rgba(2,132,199,0.15)] space-y-2 animate-in slide-in-from-top-1 duration-200"
         >
           <input type="hidden" name="target" value={target} />
           <div className="flex gap-2 items-center">
@@ -312,13 +312,13 @@ export function AdminCustomerLocationQuick({
               value={pastedUrl}
               onChange={(e) => setPastedUrl(e.target.value)}
               placeholder="الصق رابط خرائط قوقل ماب هنا..."
-              className="flex-1 min-h-[40px] rounded-[10px] border border-[#C9A86A]/60 bg-white text-[#0A3D2E] px-3 text-xs font-bold outline-none focus:border-[#0A3D2E] shadow-inner transition-all text-right [direction:ltr]"
+              className="flex-1 min-h-[40px] rounded-[10px] border border-[#38BDF8]/60 bg-white text-[#0369A1] px-3 text-xs font-bold outline-none focus:border-[#0284C7] shadow-inner transition-all text-right [direction:ltr]"
               required
             />
             <button
               type="submit"
               disabled={pending}
-              className="px-4 min-h-[40px] rounded-[10px] gold-grad border border-[#9C7D46]/40 text-[#0A3D2E] text-xs font-black shadow-[0_2px_8px_rgba(201,168,106,0.35)] hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
+              className="px-4 min-h-[40px] rounded-[10px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-white text-xs font-black shadow-[0_2px_8px_rgba(2,132,199,0.35)] hover:scale-105 active:scale-95 transition disabled:opacity-40 cursor-pointer"
             >
               {pastePending ? "حفظ…" : "حفظ الرابط"}
             </button>

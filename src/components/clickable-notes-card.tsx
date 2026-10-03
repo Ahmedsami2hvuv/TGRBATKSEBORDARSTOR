@@ -47,7 +47,7 @@ export function ClickableNotesCard({
         `group relative cursor-pointer select-none rounded-2xl border-2 transition-all active:scale-[0.99] ${
           copied
             ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 shadow-md ring-2 ring-emerald-400/30"
-            : "border-amber-200 bg-amber-50/40 text-slate-800 hover:border-amber-400 hover:bg-amber-100/50 shadow-sm hover:shadow-md"
+            : "border-sky-200 bg-sky-50/40 text-slate-800 hover:border-sky-400 hover:bg-sky-100/50 shadow-sm hover:shadow-md"
         }`
       }
     >
@@ -59,7 +59,7 @@ export function ClickableNotesCard({
           </span>
         ) : (
           showTitleNotice && (
-            <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[11px] font-bold text-amber-900 opacity-70 group-hover:opacity-100 transition-opacity">
+            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800 opacity-70 group-hover:opacity-100 transition-opacity">
               👆 انقر في أي مكان للنسخ
             </span>
           )

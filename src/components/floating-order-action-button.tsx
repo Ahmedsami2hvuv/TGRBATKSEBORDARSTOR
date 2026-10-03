@@ -311,18 +311,18 @@ export function FloatingOrderActionButton({
           onClick={() => setShowSettingsModal(false)}
         >
           <div
-            className="w-full max-w-sm rounded-[24px] border-[2px] border-[#C9A86A] bg-[#FFFEFB] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] text-right relative overflow-hidden"
+            className="w-full max-w-sm rounded-[24px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-5 shadow-[0_12px_40px_rgba(2,132,199,0.25)] text-right relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* هيدر نافذة الإعدادات */}
-            <div className="flex items-center justify-between border-b border-[#C9A86A]/30 pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-[#38BDF8]/30 pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] flex items-center justify-center shadow-md">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#38BDF8] to-[#0284C7] flex items-center justify-center shadow-md text-white">
                   <span className="text-base">⚙️</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-[#0A3D2E]">إعدادات الزر العائم</h4>
-                  <p className="text-[10px] font-bold text-[#8B6A2A]">تخصيص الحجم والموضع والشفافية</p>
+                  <h4 className="text-sm font-black text-[#0369A1]">إعدادات الزر العائم</h4>
+                  <p className="text-[10px] font-bold text-[#0284C7]">تخصيص الحجم والموضع والشفافية</p>
                 </div>
               </div>
 
@@ -339,11 +339,11 @@ export function FloatingOrderActionButton({
               {/* 1. التحكم بالحجم (تصغير / تكبير) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-black text-[#0A3D2E] flex items-center gap-1.5">
+                  <label className="text-xs font-black text-[#0369A1] flex items-center gap-1.5">
                     <span>🔍</span>
                     <span>حجم الزر العائم:</span>
                   </label>
-                  <span className="text-xs font-mono font-black text-[#8B6A2A] bg-[#FDF6E3] px-2 py-0.5 rounded-md border border-[#C9A86A]/40">
+                  <span className="text-xs font-mono font-black text-[#0369A1] bg-[#F0F9FF] px-2 py-0.5 rounded-md border border-[#38BDF8]/40">
                     {size}px
                   </span>
                 </div>
@@ -355,7 +355,7 @@ export function FloatingOrderActionButton({
                   step="2"
                   value={size}
                   onChange={(e) => saveSize(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0A3D2E]"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0284C7]"
                 />
 
                 {/* أزرار سريعة للحجم */}
@@ -365,8 +365,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveSize(58)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       size === 58
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     صغير (58px)
@@ -376,8 +376,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveSize(76)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       size === 76
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     افتراضي (76px)
@@ -387,8 +387,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveSize(96)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       size === 96
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     كبير (96px)
@@ -399,11 +399,11 @@ export function FloatingOrderActionButton({
               {/* 2. التحكم بالشفافية */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-black text-[#0A3D2E] flex items-center gap-1.5">
+                  <label className="text-xs font-black text-[#0369A1] flex items-center gap-1.5">
                     <span>👁️</span>
                     <span>معدل الشفافية:</span>
                   </label>
-                  <span className="text-xs font-mono font-black text-[#8B6A2A] bg-[#FDF6E3] px-2 py-0.5 rounded-md border border-[#C9A86A]/40">
+                  <span className="text-xs font-mono font-black text-[#0369A1] bg-[#F0F9FF] px-2 py-0.5 rounded-md border border-[#38BDF8]/40">
                     {opacity}%
                   </span>
                 </div>
@@ -415,7 +415,7 @@ export function FloatingOrderActionButton({
                   step="5"
                   value={opacity}
                   onChange={(e) => saveOpacity(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0A3D2E]"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0284C7]"
                 />
 
                 {/* أزرار سريعة للشفافية */}
@@ -425,8 +425,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveOpacity(45)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       opacity === 45
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     شفاف (45%)
@@ -436,8 +436,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveOpacity(75)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       opacity === 75
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     متوسط (75%)
@@ -447,8 +447,8 @@ export function FloatingOrderActionButton({
                     onClick={() => saveOpacity(100)}
                     className={`py-1 px-2 rounded-xl text-[11px] font-black border transition active:scale-95 ${
                       opacity === 100
-                        ? "bg-[#0A3D2E] text-white border-[#0A3D2E]"
-                        : "bg-white text-[#0A3D2E] border-[#C9A86A]/40 hover:bg-[#FDF6E3]"
+                        ? "bg-[#0284C7] text-white border-[#0284C7]"
+                        : "bg-white text-[#0369A1] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                     }`}
                   >
                     واضح (100%)
@@ -457,13 +457,13 @@ export function FloatingOrderActionButton({
               </div>
 
               {/* 3. أزرار إعادة الضبط السريعة */}
-              <div className="pt-2 border-t border-[#C9A86A]/20 space-y-2">
+              <div className="pt-2 border-t border-[#38BDF8]/20 space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   {/* زر الرجوع لمكانه الأصلي */}
                   <button
                     type="button"
                     onClick={resetPosition}
-                    className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0A3D2E] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+                    className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0369A1] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
                   >
                     <span>📍</span>
                     <span>الرجوع لمكانه الأصلي</span>
@@ -473,7 +473,7 @@ export function FloatingOrderActionButton({
                   <button
                     type="button"
                     onClick={resetSize}
-                    className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0A3D2E] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+                    className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0369A1] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
                   >
                     <span>🔄</span>
                     <span>الرجوع لحجمه الأصلي</span>
@@ -496,7 +496,7 @@ export function FloatingOrderActionButton({
                 <button
                   type="button"
                   onClick={() => setShowSettingsModal(false)}
-                  className="w-full py-2.5 rounded-xl gold-grad border border-[#9C7D46]/40 text-xs font-black text-[#0A3D2E] shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-xs font-black text-white shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer"
                 >
                   ✓ تم وحفظ الإعدادات
                 </button>
