@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { prisma } from "@/lib/prisma";
 import { PrepNoticeForm } from "./prep-notice-form";
@@ -6,7 +6,7 @@ import { PrepNoticeForm } from "./prep-notice-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إشعارات تجهيز المجهزين — وصلي",
+  title: "إشعارات تجهيز المجهزين — وصلي للتوصيل",
 };
 
 export default async function AdminPrepNoticesPage() {

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { ensureOutreachTablesExist } from "@/lib/db-self-heal-outreach";
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
 
     if (templateTexts.length === 0) {
       templateTexts.push(
-        "السلام عليكم ورحمة الله وبركاته 🌸\nمعك خدمات التوصيل السريع — وصلي ✨\nيسعدنا ويشرفنا حفظ رقمنا لديك لطلب خدمة التوصيل في أي وقت 📦🌹",
+        "السلام عليكم ورحمة الله وبركاته 🌸\nمعك خدمات التوصيل السريع — وصلي للتوصيل ✨\nيسعدنا ويشرفنا حفظ رقمنا لديك لطلب خدمة التوصيل في أي وقت 📦🌹",
         "مرحباً بك عزيزنا الزبون 🌹\nنرجو حفظ هذا الرقم للتواصل السريع وطلب خدمات التوصيل في بغداد والمحافظات 🚗📦\nنتشرف بخدمتكم دائماً ✨"
       );
     }

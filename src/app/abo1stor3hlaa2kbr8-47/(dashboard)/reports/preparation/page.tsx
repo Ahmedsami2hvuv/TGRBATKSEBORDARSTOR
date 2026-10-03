@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -10,7 +10,7 @@ import { ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير التجهيز حسب اليوم — وصلي",
+  title: "تقارير التجهيز حسب اليوم — وصلي للتوصيل",
 };
 
 // كلمات الاستبعاد (للتأكيد)

@@ -1,630 +1,598 @@
-﻿import Link from "next/link";
-import type { Prisma } from "@prisma/client";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { courierAssignableWhere } from "@/lib/courier-assignable";
-import { prisma } from "@/lib/prisma";
-import { ad } from "@/lib/admin-ui";
+"use client";
+
+import React, { useRef, useState, useActionState } from "react";
+import { useRouter } from "next/navigation";
+import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import {
-  isWardMismatch,
-  isSaderMismatch,
-  sumDeliveryInFromOrderMoneyEvents,
-  sumPickupOutFromOrderMoneyEvents,
-  sumCourierPickupOut,
-  sumPreparerPickupOut,
-  sumAdminPickupOut,
-} from "@/lib/mandoub-money";
-import { hasCustomerLocationUrl } from "@/lib/order-location";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { routeModeOrFromQuery } from "@/lib/admin-super-search";
-import { parseBaghdadDateRange } from "@/lib/order-date-search";
-import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
-import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { serializePrisma } from "@/lib/serialize-prisma";
-import { OrderTrackingSearch } from "./order-tracking-search";
-import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
-import { type TrackingTableRow } from "./order-tracking-table-body";
-import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
-import { Decimal } from "@prisma/client/runtime/library";
-import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
-import { QuickTestOrderButton } from "@/components/quick-test-order-button";
+  uploadShopDoorPhotoFromView,
+  deleteShopDoorPhotoAction,
+  type CustomerDoorPhotoState,
+} from "./customer-door-photo-actions";
+import {
+  compressImageForMandoubUpload,
+  assignFileToInput,
+} from "@/lib/client-image-compress";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
+import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
+import { updateShopPhoneAction, updateShopOwnerNameAction } from "@/app/actions/update-shop-phone";
 
+const initial: CustomerDoorPhotoState = {};
 
-const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
-
-// Smart cache window: minor field edits won't thrash tracking.
-// Urgent status transitions are pushed via targeted revalidatePath calls.
-export const revalidate = 60;
-
-export const metadata = {
-  title: "تتبع الطلبات — وصلي",
-};
-
-function formatShopWithCustomer(
-  shopName: string,
-  customerName: string | null | undefined,
-  routeMode?: string | null,
-  isPreparerOrder?: boolean,
-): string {
-  if (routeMode === "double") return "وجهتين";
-  if (isPreparerOrder) return "الإدارة";
-  return normalizeAdminShopName(shopName) || "—";
+function contactLine(phone: string): string {
+  const t = (phone || "").trim();
+  if (!t || t === "—" || t === "undefined" || t === "null") return "";
+  return t;
 }
 
-const STATUS_STANDARD = [
-  "all",
-  "pending",
-  "assigned",
-  "delivering",
-  "delivered",
-  "cancelled",
-  "checkSader",
-  "checkWard",
-] as const;
+export function AdminLuxuryShopCard({
+  order,
+  submitterName,
+  submitterPhone,
+  imgShopDoor,
+  setPreviewImageUrl,
+  isSystemAdminOrder = false,
+  isReverseOrder = false,
+  designerConfig,
+}: {
+  order: any;
+  submitterName: string;
+  submitterPhone: string;
+  imgShopDoor: string | null;
+  setPreviewImageUrl: (url: string | null) => void;
+  isSystemAdminOrder?: boolean;
+  isReverseOrder?: boolean;
+  designerConfig?: any;
+}) {
+  const router = useRouter();
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [phoneModalOpen, setPhoneModalOpen] = useState(false);
+  const [newPhoneInput, setNewPhoneInput] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-type Props = {
-  searchParams: Promise<{ status?: string; q?: string; wardFilter?: string; saderFilter?: string }>;
-};
+  const [ownerNameModalOpen, setOwnerNameModalOpen] = useState(false);
+  const [newOwnerNameInput, setNewOwnerNameInput] = useState("");
+  const [savingOwnerName, setSavingOwnerName] = useState(false);
+  const [ownerNameError, setOwnerNameError] = useState<string | null>(null);
 
-export default async function OrderTrackingPage({ searchParams }: Props) {
-  try {
-    const sp = await searchParams;
-    const rawStatus = ((sp.status ?? "all") as string).trim();
-    if (rawStatus === "archived") {
-      redirect(`${SECRET_ADMIN_PATH}/orders/archived`);
-    }
-    let statusFilter = rawStatus;
-    if (!STATUS_STANDARD.includes(statusFilter as (typeof STATUS_STANDARD)[number])) {
-      statusFilter = "all";
-    }
-    const q = (sp.q ?? "").trim();
-    const wardFilter: "lower" | "higher" =
-      sp.wardFilter === "higher" ? "higher" : "lower";
-    const saderFilter: "lower" | "higher" =
-      sp.saderFilter === "lower" ? "lower" : "higher";
+  const cameraFileRef = useRef<HTMLInputElement>(null);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
 
-    const where: Prisma.OrderWhereInput = {
-      orderType: { not: "دين" },
-    };
+  const [state, formAction, pending] = useActionState(
+    uploadShopDoorPhotoFromView.bind(null, order.id),
+    initial
+  );
+  const [deleting, setDeleting] = useState(false);
 
-    if (statusFilter === "checkSader" || statusFilter === "checkWard") {
-      where.status = "delivered";
-    } else if (
-      ["pending", "assigned", "delivering", "delivered", "cancelled"].includes(statusFilter)
-    ) {
-      where.status = statusFilter;
-    } else if (statusFilter === "all") {
-      where.status = { notIn: ["cancelled", "archived"] };
-    }
+  async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
+    if (!(file instanceof File) || file.size <= 0) return;
 
-    if (q) {
-      const asNum = parseInt(q, 10);
-      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
-      const dateRange = parseBaghdadDateRange(q);
-      const or: Prisma.OrderWhereInput[] = [
-        ...routeModeOrFromQuery(q),
-        { customerPhone: { contains: q } },
-        { orderType: { contains: q, mode: "insensitive" } },
-        { shop: { name: { contains: q, mode: "insensitive" } } },
-        { courier: { name: { contains: q, mode: "insensitive" } } },
-        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-        { customer: { name: { contains: q, mode: "insensitive" } } },
-        { orderNoteTime: { contains: q, mode: "insensitive" } },
-        { customerLandmark: { contains: q, mode: "insensitive" } },
-        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ];
-      if (numExact) {
-        or.unshift({ orderNumber: asNum });
-      }
-      if (dateRange) {
-        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
-      }
-      where.OR = or;
+    let photoToUpload = file;
+    try {
+      photoToUpload = await compressImageForMandoubUpload(file);
+      assignFileToInput(inputEl, photoToUpload);
+    } catch (err) {
+      console.error("خطأ في ضغط الصورة:", err);
     }
 
-    const pendingTabWhere: Prisma.OrderWhereInput = {
-      status: "pending",
-      orderType: { not: "دين" },
-    };
-    if (q) {
-      const asNum = parseInt(q, 10);
-      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
-      const dateRange = parseBaghdadDateRange(q);
-      const or: Prisma.OrderWhereInput[] = [
-        ...routeModeOrFromQuery(q),
-        { customerPhone: { contains: q } },
-        { orderType: { contains: q, mode: "insensitive" } },
-        { shop: { name: { contains: q, mode: "insensitive" } } },
-        { courier: { name: { contains: q, mode: "insensitive" } } },
-        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-        { customer: { name: { contains: q, mode: "insensitive" } } },
-        { orderNoteTime: { contains: q, mode: "insensitive" } },
-        { customerLandmark: { contains: q, mode: "insensitive" } },
-        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ];
-      if (numExact) {
-        or.unshift({ orderNumber: asNum });
-      }
-      if (dateRange) {
-        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
-      }
-      pendingTabWhere.OR = or;
+    const fd = new FormData();
+    fd.set("shopDoorPhoto", photoToUpload);
+    await formAction(fd);
+
+    if (inputEl) {
+      inputEl.value = "";
     }
-
-    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
-    let [orders, couriers, pendingTabCount] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        take: 150,
-        orderBy: { createdAt: "desc" },
-        include: {
-          shop: {
-            select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
-          },
-          customerRegion: true,
-          secondCustomerRegion: true,
-          courier: true,
-          customer: true,
-          moneyEvents: {
-            where: { deletedAt: null },
-            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
-          },
-        },
-      }),
-      prisma.courier.findMany({
-        where: courierAssignableWhere,
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
-      }),
-      prisma.order.count({ where: pendingTabWhere }),
-    ]);
-
-    const customerPhoneProfileKeys = new Map<string, { phone: string; regionId: string }>();
-    for (const order of orders) {
-      const normalizedPhone = normalizeIraqMobileLocal11(order.customerPhone);
-      if (!normalizedPhone || !order.customerRegionId) continue;
-      customerPhoneProfileKeys.set(`${normalizedPhone}_${order.customerRegionId}`, {
-        phone: normalizedPhone,
-        regionId: order.customerRegionId,
-      });
-    }
-
-    const customerPhoneProfiles =
-      customerPhoneProfileKeys.size > 0
-        ? await prisma.customerPhoneProfile.findMany({
-            where: {
-              OR: Array.from(customerPhoneProfileKeys.values()).map((profile) => ({
-                phone: profile.phone,
-                regionId: profile.regionId,
-              })),
-            },
-            select: {
-              phone: true,
-              regionId: true,
-              locationUrl: true,
-              photoUrl: true,
-            },
-          })
-        : [];
-
-    const customerPhoneProfileByKey = new Map(
-      customerPhoneProfiles.map((profile) => [
-        `${profile.phone}_${profile.regionId}`,
-        profile,
-      ]),
-    );
-
-    if (statusFilter === "checkSader") {
-      orders = orders.filter((o) => {
-        const type = isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type;
-        return saderFilter === "higher" ? type === "excess" : type === "deficit";
-      });
-    } else if (statusFilter === "checkWard") {
-      orders = orders.filter((o) => {
-        const type = isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type;
-        return wardFilter === "higher" ? type === "excess" : type === "deficit";
-      });
-    }
-
-    function statusPriority(s: string): number {
-      if (s === "pending") return 0;
-      if (s === "assigned") return 1;
-      if (s === "delivering") return 2;
-      if (s === "delivered") return 3;
-      if (s === "cancelled") return 4;
-      return 99;
-    }
-
-    if (statusFilter === "all") {
-      orders = orders.sort(
-        (a, b) =>
-          statusPriority(a.status) - statusPriority(b.status) ||
-          b.orderNumber - a.orderNumber,
-      );
-    } else {
-      orders = orders.sort((a, b) => b.orderNumber - a.orderNumber);
-    }
-
-    function hrefTracking(opts: {
-      status: string;
-      wardFilter?: "lower" | "higher";
-      saderFilter?: "lower" | "higher";
-    }): string {
-      const p = new URLSearchParams();
-      if (opts.status !== "all") p.set("status", opts.status);
-      if (opts.status === "checkWard" && opts.wardFilter) p.set("wardFilter", opts.wardFilter);
-      if (opts.status === "checkSader" && opts.saderFilter) p.set("saderFilter", opts.saderFilter);
-      if (q) p.set("q", q);
-      return p.toString() ? `${SECRET_ADMIN_PATH}/orders/tracking?${p}` : `${SECRET_ADMIN_PATH}/orders/tracking`;
-    }
-
-    const tableRows: TrackingTableRow[] = orders.map((o) => {
-      const phoneProfile = customerPhoneProfileByKey.get(
-        `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
-      );
-
-      const courierPickup = sumCourierPickupOut(o.moneyEvents);
-      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
-      const adminPickup = sumAdminPickupOut(o.moneyEvents);
-
-      const courierDeliveryEvents = o.moneyEvents.filter(
-        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
-      );
-      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
-
-      const preparerDeliveryEvents = o.moneyEvents.filter(
-        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
-      );
-      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
-
-      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
-      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
-      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
-      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
-      const hasDebt = calculatedDebt > 0;
-      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
-
-      return {
-        id: o.id,
-        orderNumber: o.orderNumber,
-        orderStatus: o.status,
-        assignedCourierId: o.assignedCourierId ?? null,
-        shopCustomerLabel: formatShopWithCustomer(
-          o.shop?.name ?? "غير معروف",
-          o.customer?.name,
-          o.routeMode,
-          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
-        ),
-        regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
-        orderType: o.orderType || "—",
-        routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
-        prepaidAll: o.prepaidAll,
-        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
-        deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
-        calculatedDebt: hasDebt ? calculatedDebt : null,
-        hasDebt: hasDebt,
-        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
-        customerPhone: o.customerPhone || "—",
-        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
-        courierName: o.courier?.name ?? "—",
-        orderNoteTime: o.orderNoteTime,
-        missingCustomerLocation: !hasCustomerLocationUrl(
-          o.customerLocationUrl,
-          o.customer?.customerLocationUrl,
-          phoneProfile?.locationUrl,
-        ),
-        hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
-        summary: o.summary,
-        preparerShoppingJson: o.preparerShoppingJson,
-        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
-        submissionSource: o.submissionSource,
-        wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
-        saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
-        noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
-        noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
-        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
-        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
-        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
-        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
-        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
-        createdAt: o.createdAt,
-        customerName: o.customer?.name || null,
-        // بيانات الوصول السريع
-        audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
-        adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
-        shopPhone: o.shop?.phone || "",
-        shopLocationUrl: o.shop?.locationUrl || "",
-        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
-        secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-        shopDoorPhotoUrl: resolvePublicAssetSrc(
-          o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
-        ),
-        customerDoorPhotoUrl: resolvePublicAssetSrc(
-          o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
-        ),
-        secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
-          o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
-        ),
-        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
-        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
-        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
-        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
-        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
-      };
-    });
-
-    const statusTabs = [
-      { key: "all", label: "الكل" },
-      { key: "pending", label: "جديد" },
-      { key: "assigned", label: "مسند" },
-      { key: "delivering", label: "بالتوصيل" },
-      { key: "delivered", label: "مسلّم" },
-    ];
-
-    // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
-    const safeTableRows = serializePrisma(tableRows);
-    const safeCouriers = serializePrisma(couriers);
-
-    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
-    const ALF_PER_DINAR = 1;
-    function numOrZero(v: unknown): number {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    const todayDate = new Date();
-    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
-    if (todayDate < shiftStartToday) {
-      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
-    }
-    const todayFrom = shiftStartToday;
-    const todayTo = new Date(todayFrom);
-    todayTo.setDate(todayTo.getDate() + 1);
-    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
-
-    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
-      prisma.order.findMany({
-        where: {
-          status: "delivered",
-          createdAt: { gte: todayFrom, lte: todayTo }
-        },
-        select: {
-          deliveryPrice: true,
-          courierEarningDinar: true,
-          courier: { select: { zeroEarning: true, vehicleType: true } }
-        }
-      }),
-      prisma.order.findMany({
-        where: {
-          createdAt: { gte: todayFrom, lte: todayTo },
-          preparerShoppingJson: { not: null as any },
-          status: { notIn: ["cancelled", "rejected"] },
-          shop: { name: { in: ADMIN_SHOP_NAMES } }
-        },
-        select: {
-          preparerShoppingJson: true
-        }
-      })
-    ]);
-
-    let todayDeliveryProfit = new Decimal(0);
-    for (const o of todayDeliveredOrders) {
-      if (o.deliveryPrice) {
-        let p = new Decimal(0);
-        if (o.courier) {
-          if (o.courier.zeroEarning) {
-            p = o.deliveryPrice;
-          } else {
-            if (o.courierEarningDinar != null) {
-              p = o.deliveryPrice.minus(o.courierEarningDinar);
-            } else {
-              const vehicle = o.courier.vehicleType || "car";
-              const earning = vehicle === "bike"
-                ? o.deliveryPrice.div(2)
-                : o.deliveryPrice.mul(2).div(3);
-              p = o.deliveryPrice.minus(earning);
-            }
-          }
-        } else {
-          if (o.courierEarningDinar != null) {
-            p = o.deliveryPrice.minus(o.courierEarningDinar);
-          } else {
-            p = o.deliveryPrice;
-          }
-        }
-        todayDeliveryProfit = todayDeliveryProfit.plus(p);
-      }
-    }
-
-    let todayPrepProfit = new Decimal(0);
-    for (const o of todayPrepOrders) {
-      if (o.preparerShoppingJson) {
-        const j = o.preparerShoppingJson as any;
-        const products = Array.isArray(j?.products) ? j.products : [];
-        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
-        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
-      }
-    }
-
-    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
-
-    return (
-      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
-        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
-        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
-          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
-          <div className="flex items-center gap-2">
-            <Link
-              href={SECRET_ADMIN_PATH}
-              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
-              title="العودة للرئيسية"
-            >
-              ←
-            </Link>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
-                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
-              </h1>
-              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
-                {safeTableRows.length}
-              </span>
-            </div>
-          </div>
-
-          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* كبسولة أرباح اليوم الصافية المدمجة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
-              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
-              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
-            >
-              <span className="text-xs">💰</span>
-              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
-                {formatDinarAsAlfWithUnit(todayTotalProfit)}
-              </span>
-            </Link>
-
-            {/* زر طلب تيست التجريبي السريع */}
-            <QuickTestOrderButton variant="tracking" />
-
-            {/* زر إضافة طلب من الإدارة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/new`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
-              }}
-              title="إضافة طلب من الإدارة"
-            >
-              <span>➕</span>
-              <span className="hidden xs:inline">إضافة طلب</span>
-            </Link>
-
-            {/* زر الطلبات الجديدة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/pending`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
-              }}
-              title="الطلبات الجديدة المعلقة"
-            >
-              <span className="text-[#F5D77F]">✨</span>
-              <span className="hidden xs:inline">جديدة</span>
-              {pendingTabCount > 0 ? (
-                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
-                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
-                </span>
-              ) : null}
-            </Link>
-          </div>
-        </div>
-
-        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
-        <div className="flex items-center gap-2">
-          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
-          <OrderTrackingFilterDropdown
-            currentStatus={statusFilter}
-            pendingCount={pendingTabCount}
-            wardFilter={wardFilter}
-            saderFilter={saderFilter}
-            searchQuery={q}
-          />
-
-          {/* حقل البحث الفوري */}
-          <Suspense
-            fallback={
-              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
-            }
-          >
-            <OrderTrackingSearch
-              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
-              initialQ={q}
-              statusFilter={statusFilter}
-              wardFilter={wardFilter}
-              saderFilter={saderFilter}
-            />
-          </Suspense>
-        </div>
-
-        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
-        {statusFilter === "checkSader" ? (
-          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
-            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
-            <div className="flex items-center gap-1.5">
-              <Link
-                href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  saderFilter === "lower"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-white text-emerald-900 border border-emerald-200"
-                }`}
-              >
-                أقل من البضاعة
-              </Link>
-              <Link
-                href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  saderFilter === "higher"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-white text-emerald-900 border border-emerald-200"
-                }`}
-              >
-                أعلى من البضاعة
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
-        {statusFilter === "checkWard" ? (
-          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
-            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
-            <div className="flex items-center gap-1.5">
-              <Link
-                href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  wardFilter === "lower"
-                    ? "bg-rose-700 text-white"
-                    : "bg-white text-rose-900 border border-rose-200"
-                }`}
-              >
-                أقل من المتوقع
-              </Link>
-              <Link
-                href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  wardFilter === "higher"
-                    ? "bg-rose-700 text-white"
-                    : "bg-white text-rose-900 border border-rose-200"
-                }`}
-              >
-                أعلى من المتوقع
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
-      </div>
-    );
-  } catch (err: any) {
-    return (
-      <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
-        <h1 className="text-2xl font-bold">Runtime Error in OrderTrackingPage</h1>
-        <p>Please screenshot this page and show it to the developer.</p>
-        <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
-          {err.stack || err.message || String(err)}
-        </pre>
-      </div>
-    );
+    router.refresh();
   }
+
+  async function handleDelete() {
+    if (!confirm("هل أنت متأكد من مسح صورة المحل؟")) return;
+    setDeleting(true);
+    try {
+      await deleteShopDoorPhotoAction(order.id);
+      setZoomOpen(false);
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const rawShopEmployeePhone = (order.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone || "";
+  const effectivePhone = contactLine(
+    order.shop?.phone ||
+    rawShopEmployeePhone ||
+    submitterPhone ||
+    order.submittedBy?.phone ||
+    order.submittedByCompanyPreparer?.phone ||
+    ""
+  );
+
+  const rawShopName = order.shop?.name?.trim() || "";
+  const rawOwnerName = order.shop?.ownerName?.trim() || "";
+  const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
+  const rawSubmitterName = submitterName?.trim() || "";
+  const rawOrderEmployee = order.submittedBy?.name?.trim() || "";
+  const rawOrderPreparer = order.submittedByCompanyPreparer?.name?.trim() || "";
+
+  // اسم المحل الأساسي يظهر دائماً كاسم المحل الفعلي
+  let shopName = rawShopName;
+  if (!shopName || shopName === "—" || shopName === "المحل") {
+    if (rawSubmitterName && rawSubmitterName !== "—" && rawSubmitterName !== "المسؤول") {
+      shopName = rawSubmitterName;
+    } else {
+      shopName = isSystemAdminOrder ? "الإدارة" : "المحل";
+    }
+  }
+
+  // اسم صاحب المحل أو العميل أو المسؤول يظهر تحته
+  let ownerName = "";
+  if (rawOwnerName && rawOwnerName !== shopName) {
+    ownerName = rawOwnerName;
+  } else if (rawShopEmployeeName && rawShopEmployeeName !== shopName) {
+    ownerName = rawShopEmployeeName;
+  } else if (rawSubmitterName && rawSubmitterName !== shopName && rawSubmitterName !== "—" && rawSubmitterName !== "الإدارة") {
+    ownerName = rawSubmitterName;
+  } else if (rawOrderEmployee && rawOrderEmployee !== shopName && rawOrderEmployee !== "الإدارة") {
+    ownerName = rawOrderEmployee;
+  } else if (rawOrderPreparer && rawOrderPreparer !== shopName && rawOrderPreparer !== "الإدارة") {
+    ownerName = rawOrderPreparer;
+  } else if (isSystemAdminOrder && shopName === "الإدارة") {
+    ownerName = rawSubmitterName || "المسؤول";
+  }
+
+  const regionName = order.shop?.region?.name || "السوق";
+  const hasLocation = Boolean(order.shop?.locationUrl && order.shop.locationUrl.trim());
+
+  const cameraInputUniqueId = `shop-door-cam-${order.id}`;
+  const galleryInputUniqueId = `shop-door-gal-${order.id}`;
+
+  const copyPhone = async () => {
+    if (!effectivePhone) return;
+    try {
+      await navigator.clipboard.writeText(effectivePhone);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!newPhoneInput.trim()) {
+      setPhoneError("يرجى كتابة رقم الهاتف");
+      return;
+    }
+    setSavingPhone(true);
+    setPhoneError(null);
+    try {
+      const targetShopId = order.shopId || order.shop?.id || "";
+      const res = await updateShopPhoneAction(order.id, targetShopId, newPhoneInput.trim());
+      if (res.ok) {
+        setPhoneModalOpen(false);
+        router.refresh();
+      } else {
+        setPhoneError(res.error || "تعذر حفظ رقم الهاتف");
+      }
+    } catch (err: any) {
+      setPhoneError(err?.message || "حدث خطأ غير متوقع");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleSaveOwnerName = async () => {
+    if (!newOwnerNameInput.trim()) {
+      setOwnerNameError("يرجى كتابة اسم العميل");
+      return;
+    }
+    setSavingOwnerName(true);
+    setOwnerNameError(null);
+    try {
+      const targetShopId = order.shopId || order.shop?.id || "";
+      const res = await updateShopOwnerNameAction(order.id, targetShopId, newOwnerNameInput.trim());
+      if (res.ok) {
+        setOwnerNameModalOpen(false);
+        router.refresh();
+      } else {
+        setOwnerNameError(res.error || "تعذر حفظ اسم العميل");
+      }
+    } catch (err: any) {
+      setOwnerNameError(err?.message || "حدث خطأ غير متوقع");
+    } finally {
+      setSavingOwnerName(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
+      {/* مدخلات الملفات للكاميرا والمعرض المربوطة بالأزرار مباشرة كـ Hardware Trigger */}
+      <input
+        id={cameraInputUniqueId}
+        ref={cameraFileRef}
+        type="file"
+        name="shopDoorPhotoCamera"
+        accept="image/*"
+        capture="environment"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          void handleFileSelected(file, cameraFileRef.current);
+        }}
+      />
+      <input
+        id={galleryInputUniqueId}
+        ref={galleryFileRef}
+        type="file"
+        name="shopDoorPhotoGallery"
+        accept="image/*"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          void handleFileSelected(file, galleryFileRef.current);
+        }}
+      />
+
+      <div className="relative mt-1 rounded-[20px] border-[1.5px] border-[#38BDF8]/40 bg-[#FFFFFF] shadow-[0_6px_20px_rgba(2,132,199,0.08)] overflow-hidden">
+        {/* معينات الزوايا */}
+        <div className="absolute top-[10px] right-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#38BDF8] to-[#0284C7] shadow-[0_1px_4px_rgba(2,132,199,0.4)] pointer-events-none" />
+        <div className="absolute top-[10px] left-[10px] w-[7px] h-[7px] rotate-45 bg-gradient-to-br from-[#38BDF8] to-[#0284C7] shadow-[0_1px_4px_rgba(2,132,199,0.4)] pointer-events-none" />
+
+        {/* ترويسة المحل */}
+        <div className="relative p-3.5 pt-5 bg-gradient-to-r from-[#F0F9FF] to-[#FFFFFF] border-b border-[#38BDF8]/20">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[62%] h-[14px] bg-gradient-to-b from-[#E0F2FE] to-transparent rounded-b-[14px] border-x border-b border-[#38BDF8]/15 pointer-events-none" />
+          <div className="flex items-center gap-2">
+            <div className="w-[30px] h-[30px] rounded-[10px] bg-gradient-to-br from-[#0284C7] to-[#0369A1] flex items-center justify-center shadow-[0_3px_10px_rgba(2,132,199,0.25),inset_0_1px_0_rgba(255,255,255,0.25)] border border-[#38BDF8]/40 shrink-0">
+              <svg className="w-[15px] h-[15px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                <path d="M2 7l4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                <path d="M2 7h20" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-[14px] font-black text-[#0369A1] leading-none">
+                {isReverseOrder ? "المحل / العميل (المستلم للطلب العكسي)" : "المحل (المرسل)"}
+              </h2>
+              <div className="mt-[3px] h-[2px] w-[78px] bg-gradient-to-l from-[#0284C7] to-transparent rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* محتوى المحل */}
+        <div className="p-3.5">
+          <div className="flex gap-3 items-start">
+            <div className="flex-1 min-w-0 space-y-2.5">
+              <div>
+                <div className="text-[16px] font-black text-[#0F172A] leading-tight truncate">
+                  {shopName}
+                </div>
+                {ownerName ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewOwnerNameInput(ownerName);
+                      setOwnerNameError(null);
+                      setOwnerNameModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 mt-1 hover:opacity-80 transition cursor-pointer text-right group"
+                    title="انقر لتعديل اسم العميل / صاحب المحل"
+                  >
+                    <span className="w-[18px] h-[18px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center shrink-0">
+                      <svg className="w-[10px] h-[10px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </span>
+                    <span className="text-[12px] font-bold text-[#0369A1] truncate group-hover:text-[#0284C7]">{ownerName}</span>
+                    <span className="text-[10px] text-amber-700 opacity-60 group-hover:opacity-100">✏️</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewOwnerNameInput("");
+                      setOwnerNameError(null);
+                      setOwnerNameModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 mt-1 rounded-lg border border-dashed border-[#38BDF8]/60 bg-[#F0F9FF] hover:bg-[#E0F2FE] px-2 py-0.5 text-[11px] font-bold text-[#0369A1] transition cursor-pointer"
+                    title="إضافة اسم العميل / صاحب المحل"
+                  >
+                    <span>➕ إضافة اسم العميل</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[12px] text-[#5A6E68]">
+                  <span className="w-[18px] h-[18px] rounded-full bg-[#E0F2FE] flex items-center justify-center shrink-0">
+                    <svg className="w-[10px] h-[10px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </span>
+                  <span className="font-medium">{regionName}</span>
+                </div>
+
+                {/* رقم هاتف المحل / العميل التفاعلي */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="w-[18px] h-[18px] rounded-full bg-[#0284C7] flex items-center justify-center shrink-0">
+                    <svg className="w-[10px] h-[10px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </span>
+                  {effectivePhone ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPhoneInput(effectivePhone);
+                        setPhoneError(null);
+                        setPhoneModalOpen(true);
+                      }}
+                      className="group inline-flex items-center gap-1.5 rounded-xl border border-sky-300 bg-sky-50/90 hover:bg-sky-100 active:scale-95 px-2.5 py-0.5 text-xs font-black text-sky-950 transition-all cursor-pointer shadow-2xs"
+                      title="انقر لخيارات هاتف العميل (المحل)"
+                    >
+                      <span className="font-mono text-slate-900 font-extrabold" dir="ltr">{effectivePhone}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPhoneInput("");
+                        setPhoneError(null);
+                        setPhoneModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-xl border border-dashed border-sky-400 bg-sky-50/70 hover:bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-800 transition cursor-pointer"
+                      title="إضافة رقم هاتف العميل"
+                    >
+                      <span>➕ إضافة رقم هاتف العميل</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* صورة المحل 130x130 مع زري الكاميرا والمعرض الفاخرين المباشرين */}
+            <SwipeableLuxuryPhotoBox
+              size={130}
+              variant="shop"
+              imageUrl={imgShopDoor}
+              label="صورة المحل"
+              isBusy={pending}
+              cameraInputId={cameraInputUniqueId}
+              galleryInputId={galleryInputUniqueId}
+              onCameraClick={() => cameraFileRef.current?.click()}
+              onGalleryClick={() => galleryFileRef.current?.click()}
+              onClickPreview={() => {
+                if (imgShopDoor) {
+                  setPreviewImageUrl(imgShopDoor);
+                  setZoomOpen(true);
+                } else {
+                  cameraFileRef.current?.click();
+                }
+              }}
+              fallbackIcon={
+                <svg className="w-[32px] h-[32px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                  <path d="M2 7l4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                  <path d="M2 7h20" />
+                </svg>
+              }
+            />
+          </div>
+
+          {/* أزرار موقع المحل وواتس واتصال */}
+          <div className="mt-3.5 space-y-2">
+            {hasLocation ? (
+              <a
+                href={order.shop?.locationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-[40px] rounded-full bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#0284C7] relative overflow-hidden shadow-[0_4px_14px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.4)] border border-[#38BDF8] active:scale-[0.99] flex items-center justify-center gap-1.5 text-[13px] font-black text-white"
+              >
+                <svg className="w-[14px] h-[14px] text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>موقع المحل</span>
+              </a>
+            ) : null}
+
+            {/* أزرار الواتس والاتصال بالعميل - تظهر دائماً وتعمل بمرونة تامة */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (effectivePhone) {
+                    const url = whatsappMeUrl(effectivePhone);
+                    if (url && url !== "#") window.open(url, "_blank");
+                  } else {
+                    setNewPhoneInput("");
+                    setPhoneError(null);
+                    setPhoneModalOpen(true);
+                  }
+                }}
+                className="h-[40px] rounded-[12px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] text-[#FDE047] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.98] transition hover:bg-[#075985] cursor-pointer"
+                title="مراسلة العميل عبر الواتساب"
+              >
+                <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                </svg>
+                <span className="text-[12px] font-black">واتس العميل</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (effectivePhone) {
+                    window.location.href = telHref(effectivePhone);
+                  } else {
+                    setNewPhoneInput("");
+                    setPhoneError(null);
+                    setPhoneModalOpen(true);
+                  }
+                }}
+                className="h-[40px] rounded-[12px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] text-[#FDE047] flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-[0.98] transition hover:bg-[#075985] cursor-pointer"
+                title="اتصال بالعميل هاتفياً"
+              >
+                <svg className="w-[14px] h-[14px] text-[#E8C77E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                <span className="text-[12px] font-black">اتصال بالعميل</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* نافذة خيارات وتعديل رقم هاتف العميل / المحل */}
+      {phoneModalOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-150 text-right">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>🏪</span>
+                  <span>هاتف العميل ({shopName})</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  {effectivePhone ? `الرقم الحالي: ${effectivePhone}` : "لا يوجد رقم مسجل للعميل"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhoneModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {phoneError && (
+              <div className="mb-3 rounded-2xl bg-rose-50 border border-rose-200 p-2.5 text-center text-xs font-bold text-rose-700 shadow-2xs">
+                ⚠️ {phoneError}
+              </div>
+            )}
+
+            {effectivePhone && (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={copyPhone}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 hover:bg-slate-200 p-2 text-xs font-black text-slate-800 transition-all cursor-pointer"
+                >
+                  <span>{copied ? "✅" : "📋"}</span>
+                  <span>{copied ? "تم النسخ" : "نسخ الرقم"}</span>
+                </button>
+                <a
+                  href={telHref(effectivePhone)}
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-sky-600 hover:bg-sky-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>📞</span>
+                  <span>اتصال</span>
+                </a>
+                <a
+                  href={whatsappMeUrl(effectivePhone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 p-2 text-xs font-black text-white transition-all shadow-xs"
+                >
+                  <span>💬</span>
+                  <span>واتس</span>
+                </a>
+              </div>
+            )}
+
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <label className="block text-xs font-black text-slate-700">
+                {effectivePhone ? "تعديل أو تحديث رقم هاتف العميل:" : "أدخل رقم هاتف العميل لحفظه:"}
+              </label>
+              <input
+                type="tel"
+                value={newPhoneInput}
+                onChange={(e) => setNewPhoneInput(e.target.value)}
+                placeholder="مثال: 07701234567"
+                dir="ltr"
+                className="w-full text-center font-mono font-bold text-base px-3.5 py-2.5 rounded-2xl border-2 border-[#C9A86A]/50 focus:border-[#C9A86A] focus:outline-hidden bg-slate-50 text-slate-900 shadow-inner"
+              />
+              <button
+                type="button"
+                disabled={savingPhone}
+                onClick={handleSavePhone}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0A3D2E] to-[#115740] hover:bg-[#115740] text-[#E8C77E] font-black text-sm border border-[#C9A86A] shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              >
+                {savingPhone ? "جاري الحفظ..." : "💾 حفظ رقم هاتف العميل"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة خيارات وتعديل اسم العميل / صاحب المحل */}
+      {ownerNameModalOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" dir="rtl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 animate-in zoom-in-95 duration-150 text-right">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>👤</span>
+                  <span>اسم العميل ({shopName})</span>
+                </h3>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  {ownerName ? `الاسم الحالي: ${ownerName}` : "لا يوجد اسم مسجل للعميل"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOwnerNameModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {ownerNameError && (
+              <div className="mb-3 rounded-2xl bg-rose-50 border border-rose-200 p-2.5 text-center text-xs font-bold text-rose-700 shadow-2xs">
+                ⚠️ {ownerNameError}
+              </div>
+            )}
+
+            <div className="space-y-3 pt-2">
+              <label className="block text-xs font-black text-slate-700">
+                {ownerName ? "تعديل اسم العميل أو صاحب المحل:" : "أدخل اسم العميل لحفظه:"}
+              </label>
+              <input
+                type="text"
+                value={newOwnerNameInput}
+                onChange={(e) => setNewOwnerNameInput(e.target.value)}
+                placeholder="مثال: أم زيون أو اسم صاحب المحل"
+                className="w-full text-right font-bold text-base px-3.5 py-2.5 rounded-2xl border-2 border-[#C9A86A]/50 focus:border-[#C9A86A] focus:outline-hidden bg-slate-50 text-slate-900 shadow-inner"
+              />
+              <button
+                type="button"
+                disabled={savingOwnerName}
+                onClick={handleSaveOwnerName}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0A3D2E] to-[#115740] hover:bg-[#115740] text-[#E8C77E] font-black text-sm border border-[#C9A86A] shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              >
+                {savingOwnerName ? "جاري الحفظ..." : "💾 حفظ اسم العميل"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {zoomOpen && imgShopDoor && (
+        <ImageZoomModal
+          imageUrl={imgShopDoor}
+          onClose={() => setZoomOpen(false)}
+          title="صورة المحل"
+          uploadedByName={order.shopDoorPhotoUploadedByName}
+          onDelete={handleDelete}
+          deleteLabel="مسح صورة المحل"
+          isDeleting={deleting}
+        />
+      )}
+    </div>
+  );
 }

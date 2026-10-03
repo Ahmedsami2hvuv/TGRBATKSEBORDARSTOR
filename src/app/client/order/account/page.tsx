@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { EmployeeOrderPortalVerifyReason } from "@/lib/employee-order-portal-link";
 import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link";
 import { clientOrderFormPath, clientOrderHistoryPath } from "@/lib/client-order-portal-nav";
@@ -10,7 +10,7 @@ import { getPartnerDetails } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credi
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "سجل الديون والإحصائيات — وصلي",
+  title: "سجل الديون والإحصائيات — وصلي للتوصيل",
 };
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {

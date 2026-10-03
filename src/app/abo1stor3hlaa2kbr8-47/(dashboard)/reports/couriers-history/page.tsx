@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
@@ -7,7 +7,7 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "سجل أرباح المندوبين — وصلي",
+  title: "سجل أرباح المندوبين — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -12,7 +12,7 @@ import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "لوحة المندوب (منذ التصفير) — وصلي",
+  title: "لوحة المندوب (منذ التصفير) — وصلي للتوصيل",
 };
 
 function vehicleAr(v: string) {

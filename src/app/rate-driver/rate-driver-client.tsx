@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import {
@@ -282,7 +282,7 @@ export function RateDriverClient({
 
             <div className="mt-5 text-[11px] font-bold text-white/30 flex items-center justify-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>وصلي — أبي الخصيب</span>
+              <span>وصلي للتوصيل — أبي الخصيب</span>
             </div>
           </div>
         </div>

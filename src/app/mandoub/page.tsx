@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
@@ -49,7 +49,7 @@ import type { MandoubWalletLedgerLine } from "./mandoub-wallet-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "لوحة المندوب — وصلي",
+  title: "لوحة المندوب — وصلي للتوصيل",
 };
 
 /** حالات تظهر للمندوب في القائمة النشطة */

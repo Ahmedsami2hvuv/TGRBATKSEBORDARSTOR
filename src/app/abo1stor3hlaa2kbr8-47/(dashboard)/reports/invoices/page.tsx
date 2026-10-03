@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { formatYMDLocal } from "@/lib/report-dates";
@@ -7,7 +7,7 @@ import InvoiceReportSearch from "./InvoiceReportSearch";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير الفواتير — وصلي",
+  title: "تقارير الفواتير — وصلي للتوصيل",
 };
 
 type Props = {

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { getPublicAppUrl } from "@/lib/app-url";
@@ -15,7 +15,7 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "المندوبين — وصلي",
+  title: "المندوبين — وصلي للتوصيل",
 };
 
 import { serializePrisma } from "@/lib/serialize-prisma";

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { formatYMDLocal } from "@/lib/report-dates";
@@ -15,7 +15,7 @@ import { ProfitsAnalyticsClient } from "../profits/profits-analytics-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقرير الأرباح الشامل (التوصيل والتجهيز) — وصلي",
+  title: "تقرير الأرباح الشامل (التوصيل والتجهيز) — وصلي للتوصيل",
 };
 
 type Props = {

@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import Link from "next/link";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -10,7 +10,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "مهمة مراسلة الزبائن وتخزين الأرقام — وصلي",
+  title: "مهمة مراسلة الزبائن وتخزين الأرقام — وصلي للتوصيل",
 };
 
 export default async function StaffOutreachPage({

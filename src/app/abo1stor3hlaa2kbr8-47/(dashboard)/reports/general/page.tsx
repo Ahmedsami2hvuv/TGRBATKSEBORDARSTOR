@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { GeneralReportsClient } from "./general-reports-client";
@@ -6,7 +6,7 @@ import { GeneralReportsClient } from "./general-reports-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "التقارير العامة والإحصائيات — وصلي",
+  title: "التقارير العامة والإحصائيات — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

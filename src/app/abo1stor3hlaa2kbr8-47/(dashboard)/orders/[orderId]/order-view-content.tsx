@@ -1,630 +1,1109 @@
-﻿import Link from "next/link";
-import type { Prisma } from "@prisma/client";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { courierAssignableWhere } from "@/lib/courier-assignable";
-import { prisma } from "@/lib/prisma";
-import { ad } from "@/lib/admin-ui";
-import {
-  isWardMismatch,
-  isSaderMismatch,
-  sumDeliveryInFromOrderMoneyEvents,
-  sumPickupOutFromOrderMoneyEvents,
-  sumCourierPickupOut,
-  sumPreparerPickupOut,
-  sumAdminPickupOut,
-} from "@/lib/mandoub-money";
-import { hasCustomerLocationUrl } from "@/lib/order-location";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { routeModeOrFromQuery } from "@/lib/admin-super-search";
-import { parseBaghdadDateRange } from "@/lib/order-date-search";
-import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
-import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { serializePrisma } from "@/lib/serialize-prisma";
-import { OrderTrackingSearch } from "./order-tracking-search";
-import { OrderTrackingFilterDropdown } from "./order-tracking-filter-dropdown";
-import { type TrackingTableRow } from "./order-tracking-table-body";
-import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
-import { Decimal } from "@prisma/client/runtime/library";
-import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
-import { QuickTestOrderButton } from "@/components/quick-test-order-button";
+"use client";
 
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
+import { ad } from "@/lib/admin-ui";
+import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
+import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
+import { quickAssignOrderCourier } from "../actions";
+import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-// Smart cache window: minor field edits won't thrash tracking.
-// Urgent status transitions are pushed via targeted revalidatePath calls.
-export const revalidate = 60;
+import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { formatDinarAsAlfWithUnit, formatDinarAsAlf } from "@/lib/money-alf";
+import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
+import { TwoWayOrderActionButtons } from "@/components/two-way-order-action-buttons";
+import { WaLocationCustomButtons, type WaButtonNextItem } from "@/components/wa-location-custom-buttons";
+import { OrderTypeDetailBlock } from "@/components/order-type-line";
+import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { formatBaghdadDateTime } from "@/lib/baghdad-time";
+import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
+import {
+  orderStatusBadgeClass,
+  orderStatusBadgeClassPrepaid,
+  orderStatusDetailSurfaceClass,
+  orderStatusStartStripeClass,
+} from "@/lib/order-status-style";
+import { CustomerDoorPhotoQuick } from "./customer-door-photo-quick";
+import { AdminOrderPhotoQuick } from "./admin-order-photo-quick";
+import { AdminCustomerLocationQuick } from "./admin-customer-location-quick";
+import { ImageUploaderCaption } from "@/components/image-uploader-caption";
+import { VoiceNoteAudio } from "@/components/voice-note-audio";
+import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
+import { DeleteAdminVoiceNoteButton } from "./edit/delete-admin-voice-note-button";
+import { AdminCustomerOrderHistory, AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
+import { ClickableNotesCard } from "@/components/clickable-notes-card";
+import { AdminPricingPanel } from "../pending/pending-orders-client";
+import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
+import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
+import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
+import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
+import { FloatingOrderActionButton } from "@/components/floating-order-action-button";
 
-export const metadata = {
-  title: "تتبع الطلبات — وصلي",
+const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
+const squarePhotoImg = "h-full w-full object-cover";
+const squarePhotoContain = "h-full w-full object-contain";
+const gridInfoPhoto = "grid grid-cols-[minmax(0,1fr)_minmax(0,12rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.32fr)] sm:gap-6";
+const compactPhoneText = "font-mono text-base font-black text-emerald-900 tabular-nums sm:text-lg [direction:ltr] break-all";
+
+const STATUS_AR: Record<string, string> = {
+  pending: "قيد الانتظار", assigned: "مسند للمندوب", delivering: "قيد التوصيل",
+  delivered: "تم التسليم", cancelled: "ملغى", archived: "مؤرشف",
 };
 
-function formatShopWithCustomer(
-  shopName: string,
-  customerName: string | null | undefined,
-  routeMode?: string | null,
-  isPreparerOrder?: boolean,
-): string {
-  if (routeMode === "double") return "وجهتين";
-  if (isPreparerOrder) return "الإدارة";
-  return normalizeAdminShopName(shopName) || "—";
+const SYSTEM_ADMIN_PHONE = "07733921568";
+
+function contactLine(phone: string): string {
+  const t = (phone || "").trim();
+  if (!t || t === "—" || t === "undefined") return "";
+  return t;
 }
 
-const STATUS_STANDARD = [
-  "all",
-  "pending",
-  "assigned",
-  "delivering",
-  "delivered",
-  "cancelled",
-  "checkSader",
-  "checkWard",
-] as const;
+/** بيانات JSON للتسعير/المتجر — قد تكون نصاً غير صالح أو شكلاً غير متوقع بعد التخزين */
+function parsePreparerShoppingJson(raw: unknown): Record<string, unknown> | null {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw.length > 0 ? ({ products: raw } as Record<string, unknown>) : null;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.products)) return obj.products.length > 0 ? obj : null;
+    if (Array.isArray(obj.items)) return obj.items.length > 0 ? obj : null;
+    return Object.keys(obj).length > 0 ? obj : null;
+  }
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t || t === "{}" || t === "[]" || t === "null" || t.length <= 2) return null;
+    try {
+      const v = JSON.parse(t) as unknown;
+      if (Array.isArray(v)) return v.length > 0 ? ({ products: v } as Record<string, unknown>) : null;
+      if (typeof v === "object" && v !== null) {
+        const obj = v as Record<string, unknown>;
+        if (Array.isArray(obj.products)) return obj.products.length > 0 ? obj : null;
+        if (Array.isArray(obj.items)) return obj.items.length > 0 ? obj : null;
+        return Object.keys(obj).length > 0 ? obj : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
-type Props = {
-  searchParams: Promise<{ status?: string; q?: string; wardFilter?: string; saderFilter?: string }>;
+type OrderViewModel = {
+  id: string; orderNumber: number; status: string; orderType: string; summary: string;
+  customerPhone: string; routeMode: "single" | "double"; adminOrderCode: string;
+  alternatePhone: string | null; secondCustomerPhone: string | null;
+  secondCustomerLocationUrl: string; secondCustomerLandmark: string;
+  secondSmartHintLine?: string;
+  secondCustomerDoorPhotoUrl: string | null; secondCustomerDoorPhotoUploadedByName: string | null;
+  secondCustomerRegion: { name: string } | null;
+  orderNoteTime: string | null; imageUrl: string | null; orderImageUploadedByName: string | null;
+  voiceNoteUrl: string | null; adminVoiceNoteUrl: string | null; shopDoorPhotoUrl: string | null;
+  shopDoorPhotoUploadedByName: string | null; customerDoorPhotoUrl: string | null;
+  customerDoorPhotoUploadedByName: string | null; customerLandmark: string;
+  smartHintLine?: string;
+  orderSubtotal: string | null; deliveryPrice: string | null; totalAmount: string | null;
+  submissionSource: string; createdAt: string; prepaidAll: boolean; reversePickup: boolean;
+  shop: { name: string; phone: string; ownerName: string; region?: { name: string } | null };
+  shopPhotoUrl: string; shopLocationUrl: string; customerLocationUrl: string;
+  customerLocationUploadedByName: string | null; customerRegion: { name: string } | null;
+  customerRegionId: string | null;
+  customerProfileId: string | null;
+  isBlocked: boolean;
+  courier: { name: string; phone: string } | null; customer: { name: string } | null;
+  submittedBy: { name: string; phone: string } | null;
+  submittedByCompanyPreparer: { name: string; phone: string } | null;
+  preparerShoppingJson: any;
+  customerLocationSetByCourierAt?: string | Date | null;
+  secondCustomerLocationSetByCourierAt?: string | Date | null;
+  secondCustomerAlternatePhone?: string | null;
+  customerPhone2?: string | null;
+  totalPrice?: number | string | null;
+  secondCustomerRegionId?: string | null;
 };
 
-export default async function OrderTrackingPage({ searchParams }: Props) {
-  try {
-    const sp = await searchParams;
-    const rawStatus = ((sp.status ?? "all") as string).trim();
-    if (rawStatus === "archived") {
-      redirect(`${SECRET_ADMIN_PATH}/orders/archived`);
-    }
-    let statusFilter = rawStatus;
-    if (!STATUS_STANDARD.includes(statusFilter as (typeof STATUS_STANDARD)[number])) {
-      statusFilter = "all";
-    }
-    const q = (sp.q ?? "").trim();
-    const wardFilter: "lower" | "higher" =
-      sp.wardFilter === "higher" ? "higher" : "lower";
-    const saderFilter: "lower" | "higher" =
-      sp.saderFilter === "lower" ? "lower" : "higher";
+export function OrderViewContent({
+  order,
+  preparers = [],
+  customWaButtons,
+  waButtonSettings,
+  storeProducts = [],
+  twoWayTemplates,
+  couriers = [],
+  phoneProfile,
+  secondPhoneProfile,
+  designerConfig,
+  initialCustomerDebt = null,
+}: {
+  order: OrderViewModel;
+  preparers?: { id: string; name: string }[];
+  customWaButtons?: Array<{
+    id: string;
+    label: string;
+    iconKey: string;
+    messages: string[];
+  }>;
+  waButtonSettings?: WaButtonNextItem[];
+  storeProducts?: any[];
+  twoWayTemplates?: any;
+  couriers?: { id: string; name: string; phone?: string }[];
+  phoneProfile?: any;
+  secondPhoneProfile?: any;
+  designerConfig?: any;
+  initialCustomerDebt?: number | null;
+}) {
+  const router = useRouter();
+  const [designerConfigState, setDesignerConfigState] = useState(designerConfig);
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
+  const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
+  const [isSenderExpanded, setIsSenderExpanded] = useState(false);
 
-    const where: Prisma.OrderWhereInput = {
-      orderType: { not: "دين" },
-    };
-
-    if (statusFilter === "checkSader" || statusFilter === "checkWard") {
-      where.status = "delivered";
-    } else if (
-      ["pending", "assigned", "delivering", "delivered", "cancelled"].includes(statusFilter)
-    ) {
-      where.status = statusFilter;
-    } else if (statusFilter === "all") {
-      where.status = { notIn: ["cancelled", "archived"] };
+  // تحديث حالة التصميم إذا تغيرت الخصائص القادمة
+  useEffect(() => {
+    if (designerConfig) {
+      setDesignerConfigState(designerConfig);
     }
+  }, [designerConfig]);
 
-    if (q) {
-      const asNum = parseInt(q, 10);
-      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
-      const dateRange = parseBaghdadDateRange(q);
-      const or: Prisma.OrderWhereInput[] = [
-        ...routeModeOrFromQuery(q),
-        { customerPhone: { contains: q } },
-        { orderType: { contains: q, mode: "insensitive" } },
-        { shop: { name: { contains: q, mode: "insensitive" } } },
-        { courier: { name: { contains: q, mode: "insensitive" } } },
-        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-        { customer: { name: { contains: q, mode: "insensitive" } } },
-        { orderNoteTime: { contains: q, mode: "insensitive" } },
-        { customerLandmark: { contains: q, mode: "insensitive" } },
-        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ];
-      if (numExact) {
-        or.unshift({ orderNumber: asNum });
+  // حالات مودال تغيير المندوب المباشر
+  const [showAssignCourierModal, setShowAssignCourierModal] = useState(false);
+  const [directReceipt, setDirectReceipt] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [selectedCourierId, setSelectedCourierId] = useState<string | null>(null);
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
+
+  const handleAssignCourier = async (courierId: string | null) => {
+    setAssignLoading(true);
+    setSelectedCourierId(courierId);
+    try {
+      const res = await quickAssignOrderCourier(order.id, courierId, directReceipt);
+      if (res.error) {
+        alert(res.error);
+      } else {
+        setShowAssignCourierModal(false);
+        const msg = courierId 
+          ? `✅ تم تغيير المندوب بنجاح إلى: ${res.courierName || "المندوب الجديد"}` 
+          : `✅ تم سحب الطلبية وإلغاء إسناد المندوب بنجاح.`;
+        setToastSuccess(msg);
+        router.refresh();
+        setTimeout(() => setToastSuccess(null), 5000);
       }
-      if (dateRange) {
-        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
-      }
-      where.OR = or;
+    } catch (e: any) {
+      alert("حدث خطأ غير متوقع: " + (e.message || e));
+    } finally {
+      setAssignLoading(false);
+      setSelectedCourierId(null);
     }
+  };
 
-    const pendingTabWhere: Prisma.OrderWhereInput = {
-      status: "pending",
-      orderType: { not: "دين" },
-    };
-    if (q) {
-      const asNum = parseInt(q, 10);
-      const numExact = !Number.isNaN(asNum) && String(asNum) === q;
-      const dateRange = parseBaghdadDateRange(q);
-      const or: Prisma.OrderWhereInput[] = [
-        ...routeModeOrFromQuery(q),
-        { customerPhone: { contains: q } },
-        { orderType: { contains: q, mode: "insensitive" } },
-        { shop: { name: { contains: q, mode: "insensitive" } } },
-        { courier: { name: { contains: q, mode: "insensitive" } } },
-        { customerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { secondCustomerRegion: { name: { contains: q, mode: "insensitive" } } },
-        { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
-        { customer: { name: { contains: q, mode: "insensitive" } } },
-        { orderNoteTime: { contains: q, mode: "insensitive" } },
-        { customerLandmark: { contains: q, mode: "insensitive" } },
-        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ];
-      if (numExact) {
-        or.unshift({ orderNumber: asNum });
-      }
-      if (dateRange) {
-        or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
-      }
-      pendingTabWhere.OR = or;
+  const imgOrder = resolvePublicAssetSrc(order.imageUrl);
+  const voiceSrc = resolvePublicAssetSrc(order.voiceNoteUrl);
+  const adminVoiceSrc = resolvePublicAssetSrc(order.adminVoiceNoteUrl);
+  const imgShopDoor = resolvePublicAssetSrc(order.shopPhotoUrl || order.shopDoorPhotoUrl || null);
+  const imgCustDoor = resolvePublicAssetSrc(order.customerDoorPhotoUrl);
+  const imgCustDoor2 = resolvePublicAssetSrc(order.secondCustomerDoorPhotoUrl);
+
+
+  const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);
+  const isSystemAdminOrder =
+    isAdminShopName(order.shop?.name) ||
+    (!order.shop?.name && order.submissionSource === "admin_portal");
+  const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
+
+  const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
+
+  const rawShopEmployeeName = (order.shop as any)?.employees?.find((e: any) => e.name?.trim())?.name?.trim() || "";
+  const rawShopEmployeePhone = (order.shop as any)?.employees?.find((e: any) => e.phone?.trim())?.phone?.trim() || "";
+
+  const submitterName =
+    order.shop?.ownerName?.trim() ||
+    rawShopEmployeeName ||
+    order.submittedBy?.name?.trim() ||
+    order.submittedByCompanyPreparer?.name?.trim() ||
+    order.shop?.name?.trim() ||
+    (isSystemAdminOrder ? "الإدارة" : "المحل");
+
+  const submitterPhone =
+    order.shop?.phone?.trim() ||
+    rawShopEmployeePhone ||
+    order.submittedByCompanyPreparer?.phone?.trim() ||
+    order.submittedBy?.phone?.trim() ||
+    (isSystemAdminOrder ? SYSTEM_ADMIN_PHONE : "");
+  const currentTotalPriceStr = String(order.totalAmount || order.totalPrice || "");
+  const currentCourierName = order.courier?.name || "المندوب";
+  const isSenderPickedUp = isDoubleRoute && (order.status === "delivering" || order.status === "delivered");
+  const shouldCollapseSender = isDoubleRoute && isSenderPickedUp && !isSenderExpanded;
+
+  const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
+
+  const isPreparationOrder = Boolean(
+    order.submittedByCompanyPreparer ||
+    order.submissionSource === "company_preparer" ||
+    order.submissionSource === "preparer" ||
+    order.submissionSource === "staff_portal" ||
+    order.orderType === "preparation" ||
+    order.orderType?.includes("تجهيز") ||
+    parsedShoppingJson
+  );
+
+  const isSmartHintValid = (s: string | null | undefined) => {
+    if (!s) return false;
+    const t = s.trim();
+    if (!t || t === "—" || t.startsWith("—")) return false;
+    return true;
+  };
+
+  const [customerDebt, setCustomerDebt] = useState<number | null>(initialCustomerDebt ?? null);
+
+  useEffect(() => {
+    if (initialCustomerDebt !== null && initialCustomerDebt !== undefined) {
+      setCustomerDebt(initialCustomerDebt);
     }
+  }, [initialCustomerDebt]);
 
-    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
-    let [orders, couriers, pendingTabCount] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        take: 150,
-        orderBy: { createdAt: "desc" },
-        include: {
-          shop: {
-            select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
-          },
-          customerRegion: true,
-          secondCustomerRegion: true,
-          courier: true,
-          customer: true,
-          moneyEvents: {
-            where: { deletedAt: null },
-            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
-          },
-        },
-      }),
-      prisma.courier.findMany({
-        where: courierAssignableWhere,
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
-      }),
-      prisma.order.count({ where: pendingTabWhere }),
-    ]);
+  return (
+    <>
+      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#C9A86A]/50 bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0A3D2E] shadow-[0_10px_35px_rgba(201,168,106,0.15)] text-base leading-relaxed select-none" dir="rtl">
 
-    const customerPhoneProfileKeys = new Map<string, { phone: string; regionId: string }>();
-    for (const order of orders) {
-      const normalizedPhone = normalizeIraqMobileLocal11(order.customerPhone);
-      if (!normalizedPhone || !order.customerRegionId) continue;
-      customerPhoneProfileKeys.set(`${normalizedPhone}_${order.customerRegionId}`, {
-        phone: normalizedPhone,
-        regionId: order.customerRegionId,
-      });
-    }
+        {/* زخرفة دمشقية مذهبة في أعلى الصفحة */}
+        <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-90 pointer-events-none" />
 
-    const customerPhoneProfiles =
-      customerPhoneProfileKeys.size > 0
-        ? await prisma.customerPhoneProfile.findMany({
-            where: {
-              OR: Array.from(customerPhoneProfileKeys.values()).map((profile) => ({
-                phone: profile.phone,
-                regionId: profile.regionId,
-              })),
-            },
-            select: {
-              phone: true,
-              regionId: true,
-              locationUrl: true,
-              photoUrl: true,
-            },
-          })
-        : [];
-
-    const customerPhoneProfileByKey = new Map(
-      customerPhoneProfiles.map((profile) => [
-        `${profile.phone}_${profile.regionId}`,
-        profile,
-      ]),
-    );
-
-    if (statusFilter === "checkSader") {
-      orders = orders.filter((o) => {
-        const type = isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type;
-        return saderFilter === "higher" ? type === "excess" : type === "deficit";
-      });
-    } else if (statusFilter === "checkWard") {
-      orders = orders.filter((o) => {
-        const type = isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type;
-        return wardFilter === "higher" ? type === "excess" : type === "deficit";
-      });
-    }
-
-    function statusPriority(s: string): number {
-      if (s === "pending") return 0;
-      if (s === "assigned") return 1;
-      if (s === "delivering") return 2;
-      if (s === "delivered") return 3;
-      if (s === "cancelled") return 4;
-      return 99;
-    }
-
-    if (statusFilter === "all") {
-      orders = orders.sort(
-        (a, b) =>
-          statusPriority(a.status) - statusPriority(b.status) ||
-          b.orderNumber - a.orderNumber,
-      );
-    } else {
-      orders = orders.sort((a, b) => b.orderNumber - a.orderNumber);
-    }
-
-    function hrefTracking(opts: {
-      status: string;
-      wardFilter?: "lower" | "higher";
-      saderFilter?: "lower" | "higher";
-    }): string {
-      const p = new URLSearchParams();
-      if (opts.status !== "all") p.set("status", opts.status);
-      if (opts.status === "checkWard" && opts.wardFilter) p.set("wardFilter", opts.wardFilter);
-      if (opts.status === "checkSader" && opts.saderFilter) p.set("saderFilter", opts.saderFilter);
-      if (q) p.set("q", q);
-      return p.toString() ? `${SECRET_ADMIN_PATH}/orders/tracking?${p}` : `${SECRET_ADMIN_PATH}/orders/tracking`;
-    }
-
-    const tableRows: TrackingTableRow[] = orders.map((o) => {
-      const phoneProfile = customerPhoneProfileByKey.get(
-        `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
-      );
-
-      const courierPickup = sumCourierPickupOut(o.moneyEvents);
-      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
-      const adminPickup = sumAdminPickupOut(o.moneyEvents);
-
-      const courierDeliveryEvents = o.moneyEvents.filter(
-        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
-      );
-      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
-
-      const preparerDeliveryEvents = o.moneyEvents.filter(
-        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
-      );
-      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
-
-      const orderSubtotalNum = o.orderSubtotal ? Number(o.orderSubtotal) : 0;
-      const deliveryPriceNum = o.deliveryPrice ? Number(o.deliveryPrice) : 0;
-      const totalAmountNum = o.totalAmount ? Number(o.totalAmount) : 0;
-      const calculatedDebt = totalAmountNum - (orderSubtotalNum + deliveryPriceNum);
-      const hasDebt = calculatedDebt > 0;
-      const priceWithDebt = orderSubtotalNum + (hasDebt ? calculatedDebt : 0);
-
-      return {
-        id: o.id,
-        orderNumber: o.orderNumber,
-        orderStatus: o.status,
-        assignedCourierId: o.assignedCourierId ?? null,
-        shopCustomerLabel: formatShopWithCustomer(
-          o.shop?.name ?? "غير معروف",
-          o.customer?.name,
-          o.routeMode,
-          Boolean(o.submittedByCompanyPreparerId || o.submissionSource === "company_preparer" || (o.submittedByCompanyPreparer?.name && o.shop?.name && o.shop.name.trim() === o.submittedByCompanyPreparer.name.trim()))
-        ),
-        regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
-        orderType: o.orderType || "—",
-        routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
-        prepaidAll: o.prepaidAll,
-        totalLabel: o.prepaidAll ? "كل شي واصل" : (o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—"),
-        deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
-        calculatedDebt: hasDebt ? calculatedDebt : null,
-        hasDebt: hasDebt,
-        priceWithDebtLabel: priceWithDebt > 0 ? formatDinarAsAlf(new Decimal(priceWithDebt)) : "—",
-        customerPhone: o.customerPhone || "—",
-        customerAlternatePhone: (o.routeMode === "double" || !!o.secondCustomerPhone) ? (o.alternatePhone || "—") : (o.alternatePhone || o.secondCustomerPhone || "—"),
-        courierName: o.courier?.name ?? "—",
-        orderNoteTime: o.orderNoteTime,
-        missingCustomerLocation: !hasCustomerLocationUrl(
-          o.customerLocationUrl,
-          o.customer?.customerLocationUrl,
-          phoneProfile?.locationUrl,
-        ),
-        hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
-        summary: o.summary,
-        preparerShoppingJson: o.preparerShoppingJson,
-        submittedByCompanyPreparerId: o.submittedByCompanyPreparerId,
-        submissionSource: o.submissionSource,
-        wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
-        saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
-        noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
-        noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
-        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
-        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
-        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
-        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
-        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
-        createdAt: o.createdAt,
-        customerName: o.customer?.name || null,
-        // بيانات الوصول السريع
-        audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
-        adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
-        shopPhone: o.shop?.phone || "",
-        shopLocationUrl: o.shop?.locationUrl || "",
-        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
-        secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-        shopDoorPhotoUrl: resolvePublicAssetSrc(
-          o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
-        ),
-        customerDoorPhotoUrl: resolvePublicAssetSrc(
-          o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
-        ),
-        secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
-          o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
-        ),
-        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
-        orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
-        totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
-        purchasePriceDinar: o.purchasePrice != null ? Number(o.purchasePrice) : null,
-        deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
-      };
-    });
-
-    const statusTabs = [
-      { key: "all", label: "الكل" },
-      { key: "pending", label: "جديد" },
-      { key: "assigned", label: "مسند" },
-      { key: "delivering", label: "بالتوصيل" },
-      { key: "delivered", label: "مسلّم" },
-    ];
-
-    // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
-    const safeTableRows = serializePrisma(tableRows);
-    const safeCouriers = serializePrisma(couriers);
-
-    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
-    const ALF_PER_DINAR = 1;
-    function numOrZero(v: unknown): number {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    const todayDate = new Date();
-    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
-    if (todayDate < shiftStartToday) {
-      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
-    }
-    const todayFrom = shiftStartToday;
-    const todayTo = new Date(todayFrom);
-    todayTo.setDate(todayTo.getDate() + 1);
-    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
-
-    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
-      prisma.order.findMany({
-        where: {
-          status: "delivered",
-          createdAt: { gte: todayFrom, lte: todayTo }
-        },
-        select: {
-          deliveryPrice: true,
-          courierEarningDinar: true,
-          courier: { select: { zeroEarning: true, vehicleType: true } }
-        }
-      }),
-      prisma.order.findMany({
-        where: {
-          createdAt: { gte: todayFrom, lte: todayTo },
-          preparerShoppingJson: { not: null as any },
-          status: { notIn: ["cancelled", "rejected"] },
-          shop: { name: { in: ADMIN_SHOP_NAMES } }
-        },
-        select: {
-          preparerShoppingJson: true
-        }
-      })
-    ]);
-
-    let todayDeliveryProfit = new Decimal(0);
-    for (const o of todayDeliveredOrders) {
-      if (o.deliveryPrice) {
-        let p = new Decimal(0);
-        if (o.courier) {
-          if (o.courier.zeroEarning) {
-            p = o.deliveryPrice;
-          } else {
-            if (o.courierEarningDinar != null) {
-              p = o.deliveryPrice.minus(o.courierEarningDinar);
-            } else {
-              const vehicle = o.courier.vehicleType || "car";
-              const earning = vehicle === "bike"
-                ? o.deliveryPrice.div(2)
-                : o.deliveryPrice.mul(2).div(3);
-              p = o.deliveryPrice.minus(earning);
-            }
+        {/* قواعد التصميم الملكي الزمردي الإسلامي */}
+        <style>{`
+          .gold-foil {
+            background: linear-gradient(180deg, #E8C77E 0%, #C9A86A 45%, #9C7D46 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 1px 0 rgba(156,125,70,0.3));
           }
-        } else {
-          if (o.courierEarningDinar != null) {
-            p = o.deliveryPrice.minus(o.courierEarningDinar);
-          } else {
-            p = o.deliveryPrice;
+          .gold-grad {
+            background: linear-gradient(180deg, #F1D99A 0%, #E8C77E 15%, #C9A86A 55%, #A8864A 100%);
           }
-        }
-        todayDeliveryProfit = todayDeliveryProfit.plus(p);
-      }
-    }
+          .emerald-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A86A' fill-opacity='0.08'%3E%3Cpath d='M40 0L42.5 15.5L55 10L45 20L60 28L45 30L55 45L42.5 36L40 52L37.5 36L25 45L35 30L20 28L35 20L25 10L37.5 15.5L40 0Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          }
+          .islamic-border {
+            background-image: 
+              linear-gradient(90deg, transparent 0%, #C9A86A 50%, transparent 100%),
+              url("data:image/svg+xml,%3Csvg width='24' height='6' viewBox='0 0 24 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 3 L6 0 L12 3 L18 0 L24 3 L18 6 L12 3 L6 6 Z' fill='%23C9A86A' fill-opacity='0.6'/%3E%3C/svg%3E");
+          }
+          @keyframes animated-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .prepaid-rgb-block {
+            background: linear-gradient(120deg, #059669, #0891b2, #2563eb, #7c3aed, #db2777, #059669);
+            background-size: 300% 300%;
+            animation: animated-gradient 8s ease infinite;
+          }
+        `}</style>
 
-    let todayPrepProfit = new Decimal(0);
-    for (const o of todayPrepOrders) {
-      if (o.preparerShoppingJson) {
-        const j = o.preparerShoppingJson as any;
-        const products = Array.isArray(j?.products) ? j.products : [];
-        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
-        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
-      }
-    }
-
-    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
-
-    return (
-      <div className="space-y-2.5 sm:space-y-3" dir="rtl">
-        {/* الترويسة العلوية الفائقة الصغر والمضغوطة */}
-        <div className="flex items-center justify-between gap-2 border-b border-[#C9A86A]/20 pb-2">
-          {/* يمين: زر العودة + عنوان الصفحة + عدد الطلبات */}
-          <div className="flex items-center gap-2">
-            <Link
-              href={SECRET_ADMIN_PATH}
-              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
-              title="العودة للرئيسية"
-            >
-              ←
-            </Link>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
-                {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
-              </h1>
-              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
-                {safeTableRows.length}
-              </span>
+        {/* --- بلوك كلشي واصل المشع والمتحرك (RGB) --- */}
+        {order.prepaidAll && (
+          <div className="relative mb-4 overflow-hidden rounded-2xl p-5 shadow-xl text-white prepaid-rgb-block border-2 border-[#F5D77F]/60">
+            <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start z-10">
+              <div className="flex size-[4rem] shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-md border border-white/20">
+                <svg className="size-10 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div className="text-center sm:text-right">
+                <p className="text-xl font-black sm:text-2xl drop-shadow-md">الطلب واصل اخذ التوصيل من العميل</p>
+                <p className="text-xs font-bold text-white/90 mt-1 drop-shadow-sm">تنبيه: لا تقبض سعر البضاعة من العميل، فقط أجور التوصيل.</p>
+              </div>
             </div>
+            {/* لمعة زجاجية خفيفة */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
           </div>
+        )}
 
-          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* كبسولة أرباح اليوم الصافية المدمجة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
-              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
-              title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
-            >
-              <span className="text-xs">💰</span>
-              <span className="text-[11px] sm:text-xs font-black whitespace-nowrap">
-                {formatDinarAsAlfWithUnit(todayTotalProfit)}
-              </span>
-            </Link>
-
-            {/* زر طلب تيست التجريبي السريع */}
-            <QuickTestOrderButton variant="tracking" />
-
-            {/* زر إضافة طلب من الإدارة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/new`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
-              }}
-              title="إضافة طلب من الإدارة"
-            >
-              <span>➕</span>
-              <span className="hidden xs:inline">إضافة طلب</span>
-            </Link>
-
-            {/* زر الطلبات الجديدة */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/pending`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
-              }}
-              title="الطلبات الجديدة المعلقة"
-            >
-              <span className="text-[#F5D77F]">✨</span>
-              <span className="hidden xs:inline">جديدة</span>
-              {pendingTabCount > 0 ? (
-                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
-                  {pendingTabCount > 99 ? "99+" : pendingTabCount}
-                </span>
-              ) : null}
-            </Link>
+        {customerDebt !== null && customerDebt > 0 && (
+          <div className="mb-4 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] p-4 text-right shadow-xl animate-pulse text-white">
+            <p className="text-base font-black text-[#F5D77F] flex items-center gap-2 drop-shadow-md">
+              <span>⚠️ تنبيه مالي للزبون:</span>
+              نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* شريط البحث والفلترة الموحد المدمج (Unified Compact Filter & Search Toolbar) */}
-        <div className="flex items-center gap-2">
-          {/* زر فلتر الحالات الموحد الفاخر المنسدل */}
-          <OrderTrackingFilterDropdown
-            currentStatus={statusFilter}
-            pendingCount={pendingTabCount}
-            wardFilter={wardFilter}
-            saderFilter={saderFilter}
-            searchQuery={q}
-          />
-
-          {/* حقل البحث الفوري */}
-          <Suspense
-            fallback={
-              <div className="h-10 flex-1 animate-pulse rounded-2xl bg-amber-50" aria-hidden />
-            }
+        {order.isBlocked && (
+          <div
+            className="mb-4 animate-pulse rounded-2xl border-2 border-rose-500 bg-rose-950/90 p-4 text-center text-xl font-black text-rose-200 shadow-xl"
+            role="alert"
           >
-            <OrderTrackingSearch
-              key={`${statusFilter}-${wardFilter}-${saderFilter}`}
-              initialQ={q}
-              statusFilter={statusFilter}
-              wardFilter={wardFilter}
-              saderFilter={saderFilter}
-            />
-          </Suspense>
+            🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
+          </div>
+        )}
+
+        {/* --- بطاقة ترويسة الطلبية الملكية الثابتة في الأعلى (Sticky Header) --- */}
+        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB]/95 backdrop-blur-md p-3.5 shadow-[0_8px_25px_rgba(201,168,106,0.22)] select-none mb-3.5" dir="rtl">
+          {/* معينات الزوايا الذهبية الأربعة */}
+          <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+          <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+
+          {/* السطر الأول: رقم الطلب والحالة (يمين) | الإسناد والإغلاق (يسار) */}
+          <div className="flex items-center justify-between gap-2">
+            {/* جهة اليمين: رقم الطلب + شارة الحالة */}
+            <div className="flex items-center gap-[6px] flex-nowrap shrink-0">
+              {/* صندوق رقم الطلب الذهبي */}
+              <div
+                className="inline-flex items-center justify-center rounded-[10px] border-[2px] border-[#C9A86A] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] shrink-0"
+                style={{ background: "linear-gradient(135deg, #FDF6E3 0%, #F7E9B0 100%)", height: "32px", minWidth: "64px" }}
+              >
+                <span className="font-mono text-[18px] font-black leading-none text-[#8B6A2A] tracking-wide [direction:ltr]">
+                  #{order.orderNumber}
+                </span>
+              </div>
+
+              {/* شارة حالة الطلب */}
+              <div
+                className="inline-flex items-center gap-1.5 px-[10px] rounded-full bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A] font-black shadow-[inset_0_1px_0_white] shrink-0"
+                style={{ whiteSpace: "nowrap", height: "30px", fontSize: "11px" }}
+              >
+                <div className="w-[6px] h-[6px] rounded-full bg-[#D4A017] animate-pulse shadow-[0_0_6px_#E8C77E] shrink-0" />
+                <span style={{ whiteSpace: "nowrap" }}>
+                  {STATUS_AR[order.status] ?? order.status}
+                </span>
+              </div>
+            </div>
+
+            {/* جهة اليسار: زر الإسناد + زر الإغلاق X */}
+            <div className="flex items-center gap-[6px] shrink-0 flex-nowrap">
+              {order.courier ? (
+                <button
+                  type="button"
+                  id="assignBtnTop"
+                  onClick={() => setShowAssignCourierModal(true)}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#C9A86A] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(10,61,46,0.15)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "#0A3D2E", color: "#E8C77E", whiteSpace: "nowrap" }}
+                >
+                  {order.courier.name}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id="assignBtnTop"
+                  onClick={() => setShowAssignCourierModal(true)}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(201,168,106,0.25)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "linear-gradient(180deg, #E8C77E 0%, #C9A86A 100%)", borderColor: "#0A3D2E", color: "#0A3D2E", whiteSpace: "nowrap" }}
+                >
+                  إسناد
+                </button>
+              )}
+
+              {/* زر الإغلاق الدائري الوردي X */}
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/tracking`}
+                className="w-[28px] h-[28px] rounded-full bg-white border border-[#FF8A8A]/50 flex items-center justify-center shadow-[0_1px_4px_rgba(197,48,48,0.12)] active:scale-90 shrink-0 cursor-pointer hover:bg-rose-50 transition"
+                title="إغلاق عرض الطلب"
+              >
+                <svg className="w-[13px] h-[13px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* الفاصل الأرابيسك المذهب في المنتصف */}
+          <div className="relative my-[10px] flex items-center justify-center w-full">
+            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-[#E8D5A3] w-full" />
+            <div className="relative z-10 w-[12px] h-[12px] bg-[#FFFEFB] border border-[#E8D5A3] rotate-45 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.2)]">
+              <div className="w-[4px] h-[4px] bg-[#C9A86A] rotate-45" />
+            </div>
+          </div>
+
+          {/* السطر الثاني: زر التعديل + زر تعديل التسعير + زر البصمة + التاريخ + الوقت */}
+          <div className="flex items-center justify-center gap-[8px] w-full flex-wrap sm:flex-nowrap">
+            {/* زر تعديل الطلب */}
+            <Link
+              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition"
+            >
+              <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل</span>
+              <span
+                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+              >
+                <svg className="w-[10px] h-[10px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              </span>
+            </Link>
+
+            {/* زر تعديل التسعير للطلبات القادمة من تجهيز الطلبات */}
+            {isPreparationOrder && (
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                className="h-[34px] rounded-full bg-gradient-to-r from-[#0A3D2E] to-[#06281D] border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
+                title="تعديل أسعار ومواد التجهيز"
+              >
+                <span className="text-[12px] font-black text-[#F5D77F] leading-none whitespace-nowrap">تعديل التسعير</span>
+                <span
+                  className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#C9A86A]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
+                  style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                >
+                  <span className="text-[11px] leading-none">🏷️</span>
+                </span>
+              </Link>
+            )}
+
+            {/* زر البصمة الدائري الأحمر المشع */}
+            <div className="shrink-0">
+              <AdminVoiceNoteSection
+                variant="royal_circular"
+                orderId={order.id}
+                defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl}
+              />
+            </div>
+
+            {/* شارة وقت الطلب (فوري أو الدقائق) */}
+            <div
+              className="px-[8px] rounded-full bg-[#FFF5F5] border border-[#C9A86A]/30 text-[#C53030] text-[11px] font-black flex items-center gap-1.5 whitespace-nowrap shadow-[inset_0_1px_0_white] shrink-0"
+              style={{ height: "32px" }}
+            >
+              <span className="font-mono text-[#C53030] text-[12px] font-black">
+                {order.orderNoteTime || "فوري"}
+              </span>
+              <span className="w-[16px] h-[16px] rounded-full bg-white border border-[#FFB4B4]/50 flex items-center justify-center shrink-0">
+                <svg className="w-[10px] h-[10px] text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* تنبيه مصغر جداً لفحص الصادر إذا كان نشطاً */}
-        {statusFilter === "checkSader" ? (
-          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-1.5 text-xs text-emerald-950">
-            <span className="font-black">⚖️ فحص الصادر: فروقات دفع المحل</span>
-            <div className="flex items-center gap-1.5">
-              <Link
-                href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  saderFilter === "lower"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-white text-emerald-900 border border-emerald-200"
-                }`}
-              >
-                أقل من البضاعة
-              </Link>
-              <Link
-                href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  saderFilter === "higher"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-white text-emerald-900 border border-emerald-200"
-                }`}
-              >
-                أعلى من البضاعة
-              </Link>
+        {/* بصمات الصوت المسجلة إن وجدت بتصميم دمشقي مذهب */}
+        {(voiceSrc || adminVoiceSrc) && (
+          <div className="mb-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {voiceSrc && (
+              <div className="rounded-2xl border-2 border-[#C9A86A]/70 bg-[#0A241C]/90 p-3 shadow-md">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-black text-[#F5D77F] flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+                </div>
+                <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
+              </div>
+            )}
+            {adminVoiceSrc && (
+              <div className="rounded-2xl border-2 border-[#C9A86A]/70 bg-[#0A241C]/90 p-3 shadow-md">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-xs font-black text-rose-300 flex items-center gap-1"><span>🎧</span> بصمة المدير (المسجلة)</span>
+                  <DeleteAdminVoiceNoteButton orderId={order.id} compact />
+                </div>
+                <VoiceNoteAudio src={adminVoiceSrc} streamKey={`${order.id}-admin-voice`} className="w-full" />
+              </div>
+            )}
+          </div>
+        )}
+
+      <div className="mt-1.5 space-y-3 sm:space-y-4">
+        {/* --- بطاقات الطلب الفاخرة (كارت المحل / العميل ثم كارت الزبون مباشرة شبه ملاصق ومترابط) --- */}
+        <div className="flex flex-col gap-0 w-full">
+          {!isDoubleRoute && isReversePickup && !shouldCollapseSender ? (
+            <>
+              {/* في الطلب العكسي: بطاقة الزبون بالأعلى للاستلام */}
+              <div className="w-full">
+                <AdminLuxuryCustomerCard
+                  order={order}
+                  customerName={(order as any).customerName || order.customer?.name || "الزبون"}
+                  customerPhone={order.customerPhone}
+                  customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                  alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
+                  imgCustomerDoor={imgCustDoor}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isDoubleRoute={isDoubleRoute}
+                  cardTitle="الزبون (استلام الطلب العكسي)"
+                  designerConfig={designerConfigState}
+                  phoneProfile={phoneProfile}
+                  userRole="admin"
+                  headerAction={
+                    <OtherRegionsCustomerDetails
+                      phone={order.customerPhone}
+                      currentRegionId={order.customerRegionId}
+                      currentRegionName={order.customerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={false}
+                      designerConfig={designerConfigState}
+                    />
+                  }
+                  smartHintNode={
+                    isSmartHintValid(order.smartHintLine) ? (
+                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                        <div className="flex-1 text-right">
+                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                            <span>💡 الاستدلال الذكي</span>
+                          </p>
+                          <p className="text-xs font-black text-white mt-1">
+                            {order.smartHintLine!.trim()}
+                          </p>
+                        </div>
+                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                          💡
+                        </div>
+                      </div>
+                    ) : null
+                  }
+                >
+                  <div className="w-full">
+                    <AdminCustomerLocationQuick
+                      orderId={order.id}
+                      customerPhone={order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                      hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                      userRole="admin"
+                      templateVars={{
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                        city: order.customerRegion?.name || "—",
+                        total_price: currentTotalPriceStr,
+                        total: currentTotalPriceStr,
+                        delivery: currentCourierName,
+                        courier: currentCourierName,
+                        courierName: currentCourierName,
+                        deliveryName: currentCourierName,
+                        location_url: order.customerLocationUrl || "",
+                        landmark: order.customerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                        driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
+                      }}
+                      customButtons={waButtonSettings}
+                      designerConfig={designerConfigState}
+                    />
+                  </div>
+                </AdminLuxuryCustomerCard>
+              </div>
+
+              {/* الفاصل الأرابيسك المذهب */}
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                  </div>
+                </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+              </div>
+
+              {/* بطاقة المحل / العميل بالأسفل للتسليم */}
+              <AdminLuxuryShopCard
+                order={order}
+                submitterName={submitterName}
+                submitterPhone={submitterPhone}
+                imgShopDoor={imgShopDoor}
+                setPreviewImageUrl={setPreviewImageUrl}
+                isSystemAdminOrder={isSystemAdminOrder}
+                isReverseOrder={true}
+                designerConfig={designerConfigState}
+              />
+            </>
+          ) : (
+            <>
+              {/* في الطلب العادي: بطاقة المحل أولاً */}
+              {!isDoubleRoute && (
+                <AdminLuxuryShopCard
+                  order={order}
+                  submitterName={submitterName}
+                  submitterPhone={submitterPhone}
+                  imgShopDoor={imgShopDoor}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isSystemAdminOrder={isSystemAdminOrder}
+                  isReverseOrder={false}
+                  designerConfig={designerConfigState}
+                />
+              )}
+
+              {/* الفاصل الأرابيسك المذهب بين كارت المحل وكارت الزبون */}
+              {!isDoubleRoute && !shouldCollapseSender && (
+                <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                  <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                  <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                    <div className="w-[12px] h-[12px] relative">
+                      <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                      <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                    </div>
+                  </div>
+                  <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+                </div>
+              )}
+
+              {shouldCollapseSender && (
+                <div
+                  onClick={() => setIsSenderExpanded(true)}
+                  className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-1 active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] flex items-center justify-center font-black text-sm shadow-md">✓</span>
+                    <div>
+                      <h4 className="text-sm font-black text-[#F5D77F]">
+                        المرسل (الوجهة الأولى) - تم الاستلام بنجاح ✅
+                      </h4>
+                      <p className="text-xs font-bold text-emerald-200">
+                        📍 {order.customerRegion?.name || "منطقة المرسل"} {order.customerPhone ? `| 📞 ${contactLine(order.customerPhone)}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <button type="button" className="px-3.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] rounded-xl text-xs font-black text-[#F5D77F] shadow-sm border border-[#C9A86A]">
+                    عرض التفاصيل 🔽
+                  </button>
+                </div>
+              )}
+
+              {!shouldCollapseSender && (
+                <div className="w-full">
+                  <AdminLuxuryCustomerCard
+                    order={order}
+                    customerName={(order as any).customerName || order.customer?.name || "الزبون"}
+                    customerPhone={order.customerPhone}
+                    customerPhone2={order.customerPhone2 || order.alternatePhone || phoneProfile?.alternatePhone}
+                    alternatePhone={order.alternatePhone || order.customerPhone2 || phoneProfile?.alternatePhone}
+                    imgCustomerDoor={imgCustDoor}
+                    setPreviewImageUrl={setPreviewImageUrl}
+                    isDoubleRoute={isDoubleRoute}
+                    designerConfig={designerConfigState}
+                    phoneProfile={phoneProfile}
+                    userRole="admin"
+                    headerAction={
+                      <OtherRegionsCustomerDetails
+                        phone={order.customerPhone}
+                        currentRegionId={order.customerRegionId}
+                        currentRegionName={order.customerRegion?.name}
+                        orderId={order.id}
+                        isSecondDestination={false}
+                        designerConfig={designerConfigState}
+                      />
+                    }
+                    smartHintNode={
+                      isSmartHintValid(order.smartHintLine) ? (
+                        <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                          <div className="flex-1 text-right">
+                            <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                              <span>💡 الاستدلال الذكي</span>
+                            </p>
+                            <p className="text-xs font-black text-white mt-1">
+                              {order.smartHintLine!.trim()}
+                            </p>
+                          </div>
+                          <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                            💡
+                          </div>
+                        </div>
+                      ) : null
+                    }
+                  >
+                    {/* أزرار اللوكيشن الملكية الثلاثة المذهبة أو زر تبليغ الزبون بجانب اللوكيشن */}
+                    <div className="w-full">
+                      <AdminCustomerLocationQuick
+                        orderId={order.id}
+                        customerPhone={order.customerPhone}
+                        customerPhone2={order.customerPhone2 || undefined}
+                        shopPhone={submitterPhone || undefined}
+                        orderStatus={order.status}
+                        hasCustomerLocation={Boolean(order.customerLocationUrl)}
+                        hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+                        userRole="admin"
+                        templateVars={{
+                          clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                          city: order.customerRegion?.name || "—",
+                          total_price: currentTotalPriceStr,
+                          total: currentTotalPriceStr,
+                          delivery: currentCourierName,
+                          courier: currentCourierName,
+                          courierName: currentCourierName,
+                          deliveryName: currentCourierName,
+                          location_url: order.customerLocationUrl || "",
+                          landmark: order.customerLandmark || "",
+                          order_number: String(order.orderNumber || ""),
+                          customer_phone: order.customerPhone || "",
+                          customer_phone2: order.customerPhone2 || "",
+                          shop_phone: submitterPhone || "",
+                          driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
+                        }}
+                        customButtons={waButtonSettings}
+                        designerConfig={designerConfigState}
+                      />
+                    </div>
+                  </AdminLuxuryCustomerCard>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* كارت معلومات الطلب مدمج ومترابط مع فاصل أرابيسك مذهب في الطلب العادي */}
+          {!isDoubleRoute && designerConfigState?.enabledPortals?.admin !== false && (
+            <>
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                  </div>
+                </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+              </div>
+              <div className="w-full">
+                <AdminLuxuryOrderInfoCard
+                  order={order}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  designerConfig={designerConfigState || undefined}
+                  hideSubtotalInfo={false}
+                  isMandoubPortal={false}
+                />
+              </div>
+            </>
+          )}
+
+          {/* --- بطاقة المستلم (الوجهة الثانية) في حالة الطلب ذو الوجهتين بنفس كارت الزبون الملكي الفاخر كلياً --- */}
+          {isDoubleRoute && (
+            <>
+              {/* فاصل أرابيسك مذهب ملكي بين المرسل والمستلم */}
+              <div className="flex items-center justify-center gap-2 py-2.5 my-1">
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-l from-[#C9A86A] to-transparent" />
+                <div className="px-3 py-1 rounded-full border border-[#C9A86A]/40 bg-gradient-to-r from-[#FFF8E1] via-[#FFFEF8] to-[#FFF8E1] shadow-[0_2px_8px_rgba(201,168,106,0.18)] flex items-center gap-1.5">
+                  <span className="text-[11px] font-black text-[#8B6A2A]">⮯ الوجهة الثانية للتسليم (المستلم)</span>
+                </div>
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-r from-[#C9A86A] to-transparent" />
+              </div>
+
+              <div className="w-full">
+                <AdminLuxuryCustomerCard
+                  order={order}
+                  customerName={order.secondCustomerName || "المستلم"}
+                  customerPhone={order.secondCustomerPhone}
+                  customerPhone2={order.secondCustomerPhone2 || order.secondCustomerAlternatePhone || order.customerPhone2}
+                  imgCustomerDoor={imgCustDoor2}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  isDoubleRoute={true}
+                  isSecondDestination={true}
+                  cardTitle="المستلم (الوجهة الثانية)"
+                  customerRegionName={order.secondCustomerRegion?.name}
+                  customerRegionId={order.secondCustomerRegionId}
+                  landmark={order.secondCustomerLandmark}
+                  locationUrl={order.secondCustomerLocationUrl}
+                  alternatePhone={order.secondCustomerAlternatePhone || order.secondCustomerPhone2 || order.alternatePhone}
+                  customerProfileId={order.secondCustomerProfileId}
+                  doorPhotoUploadedByName={order.secondCustomerDoorPhotoUploadedByName}
+                  designerConfig={designerConfigState}
+                  headerAction={
+                    <OtherRegionsCustomerDetails
+                      phone={order.secondCustomerPhone || order.customerPhone}
+                      currentRegionId={order.secondCustomerRegionId}
+                      currentRegionName={order.secondCustomerRegion?.name}
+                      orderId={order.id}
+                      isSecondDestination={true}
+                      designerConfig={designerConfigState}
+                    />
+                  }
+                  smartHintNode={
+                    isSmartHintValid(order.secondSmartHintLine) ? (
+                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
+                        <div className="flex-1 text-right">
+                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                            <span>💡 الاستدلال الذكي (المستلم)</span>
+                          </p>
+                          <p className="text-xs font-black text-white mt-1">
+                            {order.secondSmartHintLine!.trim()}
+                          </p>
+                        </div>
+                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                          💡
+                        </div>
+                      </div>
+                    ) : null
+                  }
+                >
+                  <div className="w-full">
+                    <AdminCustomerLocationQuick
+                      orderId={order.id}
+                      target="second"
+                      customerPhone={order.secondCustomerPhone || order.customerPhone}
+                      customerPhone2={order.customerPhone2 || undefined}
+                      shopPhone={submitterPhone || undefined}
+                      orderStatus={order.status}
+                      hasCustomerLocation={Boolean(order.secondCustomerLocationUrl)}
+                      userRole="admin"
+                      templateVars={{
+                        clientshop: order.shop?.name || (isSystemAdminOrder ? "الإدارة" : "المحل"),
+                        city: order.secondCustomerRegion?.name || "—",
+                        total_price: currentTotalPriceStr,
+                        total: currentTotalPriceStr,
+                        delivery: currentCourierName,
+                        courier: currentCourierName,
+                        courierName: currentCourierName,
+                        deliveryName: currentCourierName,
+                        location_url: order.secondCustomerLocationUrl || "",
+                        landmark: order.secondCustomerLandmark || "",
+                        order_number: String(order.orderNumber || ""),
+                        customer_phone: order.secondCustomerPhone || order.customerPhone || "",
+                        customer_phone2: order.customerPhone2 || "",
+                        shop_phone: submitterPhone || "",
+                        driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
+                      }}
+                      customButtons={waButtonSettings}
+                      designerConfig={designerConfigState}
+                    />
+                  </div>
+                </AdminLuxuryCustomerCard>
+              </div>
+
+              {/* فاصل أرابيسك مذهب بين المستلم وكارت تفاصيل الطلب */}
+              <div className="flex items-center justify-center gap-2 py-2 my-0.5">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="w-[12px] h-[12px] relative">
+                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                  </div>
+                </div>
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+              </div>
+
+              <div className="w-full">
+                <AdminLuxuryOrderInfoCard
+                  order={order}
+                  setPreviewImageUrl={setPreviewImageUrl}
+                  designerConfig={designerConfigState || undefined}
+                  hideSubtotalInfo={false}
+                  isMandoubPortal={false}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* --- تفاصيل الطلب والأسعار وصورة الطلب (في حالة التصميم القديم أو عدم تفعيل الواجهة الفاخرة) --- */}
+        {designerConfigState?.enabledPortals?.admin === false ? (
+          <div className={gridInfoPhoto}>
+            <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
+              <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+
+              {/* نوع الطلب */}
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#F5D77F] whitespace-nowrap">الطلب:</span>
+                <div className="text-left font-black text-white text-xs sm:text-sm">
+                  <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl text-xs sm:text-sm shadow-md inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-white" />
+                </div>
+              </div>
+
+              {/* وقت الطلب */}
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#F5D77F]">الوقت:</span>
+                <span className="text-xs sm:text-sm font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-1 rounded-xl border border-[#C9A86A]/60 shadow-inner">
+                  {order.orderNoteTime || "فوري"}
+                </span>
+              </div>
+
+              {/* سعر البضاعة والتوصيل والدين */}
+              {(() => {
+                const parseNum = (val: string | null | undefined): number => {
+                  if (!val) return 0;
+                  const clean = val.replace(/[^\d.]/g, "");
+                  const num = parseFloat(clean);
+                  return isNaN(num) ? 0 : num;
+                };
+
+                const subRaw = parseNum(order.orderSubtotal);
+                const delRaw = parseNum(order.deliveryPrice);
+                const totRaw = parseNum(order.totalAmount);
+                
+                const calculatedDebt = totRaw - (subRaw + delRaw);
+                const hasDebt = calculatedDebt > 0;
+
+                return (
+                  <div className="relative z-10 space-y-2.5 pt-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-white">سعر البضاعة:</span>
+                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.orderSubtotal || "0"}</span>
+                    </div>
+
+                    {hasDebt && (
+                      <div className="flex items-center justify-between gap-2 rounded-xl border border-rose-500/80 bg-rose-950/50 px-3 py-1 shadow-md">
+                        <span className="text-xs font-black text-rose-300">الدين:</span>
+                        <span className="font-mono text-base font-black text-rose-200 animate-pulse">{calculatedDebt}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-white">التوصيل:</span>
+                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.deliveryPrice || "0"}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* المبلغ الكلي أو كلشي واصل */}
+              <div className={`relative z-10 rounded-2xl border-2 p-3 shadow-xl flex items-center justify-between gap-2 mt-2 ${order.prepaidAll ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#1B4D3E] text-[#F5D77F]" : "border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#F5D77F]"}`}>
+                <span className="text-xs sm:text-sm font-black">
+                  {order.prepaidAll ? "حالة الدفع:" : "المبلغ الكلي:"}
+                </span>
+                <span className="font-mono text-xl sm:text-2xl font-black tabular-nums drop-shadow-md">
+                  {order.prepaidAll ? (
+                    <span className="text-[#F5D77F] font-black animate-pulse">كل شي واصل ✓</span>
+                  ) : (
+                    order.totalAmount || "—"
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="self-start rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md">
+              <p className="mb-2 text-xs sm:text-sm font-black text-[#F5D77F]">صورة الطلبية</p>
+              {imgOrder ? (
+                <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
+                  <img
+                    src={imgOrder}
+                    alt=""
+                    className="h-full w-full object-contain cursor-zoom-in hover:scale-105 transition duration-300"
+                    onClick={() => {
+                      setPreviewImageUrl(imgOrder);
+                      setPreviewUploadedByName(order.orderImageUploadedByName || null);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-square w-full flex items-center justify-center bg-[#06281D]/80 rounded-2xl border-2 border-dashed border-[#C9A86A]/50 text-xs text-[#F5D77F]/70 font-bold text-center p-2">
+                  لا توجد صورة
+                </div>
+              )}
+              <div className="mt-3 space-y-2">
+                <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
+              </div>
             </div>
           </div>
         ) : null}
+      </div>
 
-        {/* تنبيه مصغر جداً لفحص الوارد إذا كان نشطاً */}
-        {statusFilter === "checkWard" ? (
-          <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-rose-300 bg-rose-50/90 px-3 py-1.5 text-xs text-rose-950">
-            <span className="font-black">📥 فحص الوارد: فروقات استلام الزبون</span>
-            <div className="flex items-center gap-1.5">
-              <Link
-                href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  wardFilter === "lower"
-                    ? "bg-rose-700 text-white"
-                    : "bg-white text-rose-900 border border-rose-200"
-                }`}
-              >
-                أقل من المتوقع
-              </Link>
-              <Link
-                href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
-                className={`rounded-lg px-2 py-0.5 text-[11px] font-black transition ${
-                  wardFilter === "higher"
-                    ? "bg-rose-700 text-white"
-                    : "bg-white text-rose-900 border border-rose-200"
-                }`}
-              >
-                أعلى من المتوقع
-              </Link>
+      {(() => {
+        const hasNotes = Boolean(order.summary?.trim());
+        const cartItems =
+          parsedShoppingJson &&
+          Array.isArray(parsedShoppingJson.webStoreCart)
+            ? (parsedShoppingJson.webStoreCart as any[])
+            : [];
+        const hasCart = cartItems.length > 0;
+        if (!hasNotes && !hasCart) return null;
+        return (
+          <div className="mt-6 border-t-2 border-[#C9A86A]/30 pt-5">
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+              <p className="text-xs font-black text-[#F5D77F] uppercase tracking-widest flex items-center gap-2">
+                <span>📜</span>
+                <span>قائمة المواد والملاحظات</span>
+              </p>
+              {isPreparationOrder && (
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] text-[#06281D] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
+                >
+                  <span>🏷️</span>
+                  <span>تعديل التسعير والمواد</span>
+                </Link>
+              )}
             </div>
-          </div>
-        ) : null}
 
-        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
-      </div>
-    );
-  } catch (err: any) {
-    return (
-      <div className="p-8 space-y-4 bg-red-50 text-red-900 min-h-screen" dir="ltr">
-        <h1 className="text-2xl font-bold">Runtime Error in OrderTrackingPage</h1>
-        <p>Please screenshot this page and show it to the developer.</p>
-        <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
-          {err.stack || err.message || String(err)}
-        </pre>
-      </div>
-    );
-  }
+            {hasCart && (
+              <div className="mb-4 space-y-2.5">
+                <p className="text-[11px] font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl shadow-md w-fit">تفاصيل السلة (المتجر)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {cartItems.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center p-3.5 rounded-2xl border-2 border-[#C9A86A]/60 bg-gradient-to-r from-[#0A3D2E] to-[#06281D] shadow-lg">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-white">{item.name} ×{item.quantity}</span>
+                          {item.quantity > 1 && (
+                            <span className="text-xs font-black text-rose-300 bg-rose-950/80 px-1.5 py-0.5 rounded-lg border border-rose-500/80 animate-pulse">
+                              ×{item.quantity}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-[#F5D77F]/80">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
+                      </div>
+                      <span className="text-sm font-mono font-black text-[#F5D77F]">{(item.price * item.quantity).toLocaleString()} د.ع</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hasNotes && (
+              <ClickableNotesCard text={order.summary ?? ""}>
+                <div className="whitespace-pre-wrap p-4 pt-9 text-sm font-bold text-white leading-relaxed bg-gradient-to-br from-[#0A3D2E]/90 to-[#06281D]/90 rounded-2xl border-2 border-[#C9A86A]/60 shadow-lg">
+                  {normalizeOrderSummaryText(order.summary)}
+                </div>
+              </ClickableNotesCard>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* مودال معاينة الصور التفاعلي الأنيق الداعم للتكبير بالإصبعين والسحب */}
+      {previewImageUrl && (
+        <ImageZoomModal
+          imageUrl={previewImageUrl}
+          uploadedByName={previewUploadedByName}
+          onClose={() => {
+            setPreviewImageUrl(null);
+            setPreviewUploadedByName(null);
+          }}
+        />
+      )}
+
+
+
+      {/* توست التأكيد الإيجابي الأخضر لنجاح تغيير المندوب */}
+      {toastSuccess && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 rounded-2xl bg-emerald-900 text-white px-5 py-3.5 shadow-2xl border-2 border-emerald-400 animate-in slide-in-from-top duration-300">
+          <span className="text-2xl">🎉</span>
+          <span className="font-black text-sm sm:text-base">{toastSuccess}</span>
+          <button onClick={() => setToastSuccess(null)} className="mr-2 text-white/80 hover:text-white font-bold text-lg">✕</button>
+        </div>
+      )}
+
+      {/* --- MODAL FOR CHANGING / ASSIGNING COURIER --- */}
+      {showAssignCourierModal && (
+        <LuxuryAssignCourierModal
+          orderId={order.id}
+          orderNumber={order.orderNumber}
+          currentCourierId={order.courier?.id}
+          currentCourierName={order.courier?.name}
+          couriers={couriers}
+          isPending={assignLoading}
+          onAssign={async (courierId, direct) => {
+            setDirectReceipt(direct);
+            await handleAssignCourier(courierId);
+            setShowAssignCourierModal(false);
+          }}
+          onClose={() => setShowAssignCourierModal(false)}
+        />
+      )}
+
+      {/* الزر العائم القابل للتحريك لعمليتي الاستلام والتسليم مع الترقية التلقائية للحالة في الإدارة */}
+      <FloatingOrderActionButton
+        orderId={order.id}
+        status={order.status}
+        isMandoub={false}
+        storageKeyPrefix="admin_floating_action_btn"
+      />
+
+    </div>
+
+    </>
+  );
 }

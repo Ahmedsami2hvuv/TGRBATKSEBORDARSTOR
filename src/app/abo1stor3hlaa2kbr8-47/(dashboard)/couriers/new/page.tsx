@@ -1,9 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { CourierForm } from "../courier-form";
 
 export const metadata = {
-  title: "مندوب جديد — وصلي",
+  title: "مندوب جديد — وصلي للتوصيل",
 };
 
 export default function NewCourierPage() {

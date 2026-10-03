@@ -1,4 +1,4 @@
-﻿/**
+/**
  * تطبيع أرقام الهاتف لروابط واتساب: يقبل أي شكل (مسافات، +، أصفار أولية…).
  * الافتراضي: العراق 964 — عيّن NEXT_PUBLIC_WHATSAPP_DEFAULT_CC لتغيير كود الدولة.
  *
@@ -221,7 +221,7 @@ export function buildStaffEmployeeShareMessage(opts: {
   const { staffEmployeeName, staffPortalUrl } = opts;
   return [
     "السلام عليكم ورحمة الله وبركاته",
-    "وصلي",
+    "وصلي للتوصيل",
     "",
     "رابط بوابة الموظف:",
     staffPortalUrl,
@@ -238,7 +238,7 @@ export function buildCourierShareMessage(opts: {
   const { courierName, delegatePortalUrl } = opts;
   return [
     "السلام عليكم ورحمة الله وبركاته",
-    "وصلي",
+    "وصلي للتوصيل",
     "",
     "رابط لوحة المندوب — الطلبات التي تُحوَّل إليك من الإدارة:",
     delegatePortalUrl,
@@ -259,5 +259,5 @@ export function buildEmployeeChatGreeting(opts: { employeeName: string }): strin
   if (line) {
     return line.replaceAll("{employee}", employeeName);
   }
-  return `السلام عليكم، معك ${employeeName} من وصلي.\nكيف يمكننا خدمتك؟`;
+  return `السلام عليكم، معك ${employeeName} من وصلي للتوصيل.\nكيف يمكننا خدمتك؟`;
 }

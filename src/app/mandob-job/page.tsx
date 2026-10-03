@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { submitJobApplication } from "@/app/actions/job-applications";
@@ -110,7 +110,7 @@ ${formData.hasCommitment ? "عندي التزام بوقت" : "ما عندي ا�
               إعلان وظيفة: مندوب توصيل
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-              بخدمة وصلي
+              بخدمة وصلي للتوصيل
             </p>
             <p className="text-lg md:text-xl text-white/80 mt-4 max-w-2xl mx-auto leading-relaxed">
               حيا الله الشباب، الي ديستفسرون عن تفاصيل الشغل، هذا شرح كامل لطبيعة العمل والأجور وأوقات الدوام والشروط 👇

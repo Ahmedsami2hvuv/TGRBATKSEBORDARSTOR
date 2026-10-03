@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { prisma } from "@/lib/prisma";
 
@@ -39,7 +39,7 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
         <OneSignalInitializer externalId={v.staffEmployeeId} />
         <div className="kse-app-inner mx-auto max-w-md">
           <div className="kse-glass-dark rounded-3xl border border-sky-200 p-8 text-center shadow-xl">
-            <p className="text-xs font-black uppercase tracking-widest text-sky-800/60">وصلي</p>
+            <p className="text-xs font-black uppercase tracking-widest text-sky-800/60">وصلي للتوصيل</p>
             <h1 className="mt-4 text-2xl font-black text-slate-900">بوابة الموظف</h1>
             <p className="mt-2 text-sm font-bold text-slate-500">أهلاً بك، <span className="text-sky-900">{emp.name}</span></p>
 

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -38,7 +38,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "تتبع الطلبات — وصلي",
+  title: "تتبع الطلبات — وصلي للتوصيل",
 };
 
 function formatShopWithCustomer(

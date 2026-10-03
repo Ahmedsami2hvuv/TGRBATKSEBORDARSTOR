@@ -1,8 +1,8 @@
-﻿import { ad } from "@/lib/admin-ui";
+import { ad } from "@/lib/admin-ui";
 import { LoginForm } from "./login-form";
 
 export const metadata = {
-  title: "دخول الإدارة — وصلي",
+  title: "دخول الإدارة — وصلي للتوصيل",
 };
 
 export default function AdminLoginPage() {
@@ -15,7 +15,7 @@ export default function AdminLoginPage() {
           className="w-20 h-20 object-contain mb-3 rounded-full shadow-md"
         />
         <p className={`text-center text-base font-extrabold text-[#0088ff]`}>
-          وصلي
+          وصلي للتوصيل
         </p>
         <h1 className="mt-1 text-center text-lg font-bold text-slate-800">لوحة الإدارة</h1>
         <p className={`mt-1 text-center ${ad.muted}`}>ادخل كلمة المرور</p>

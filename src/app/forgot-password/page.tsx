@@ -1,7 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export const metadata = {
-  title: "نسيت الرمز — وصلي",
+  title: "نسيت الرمز — وصلي للتوصيل",
 };
 
 export default function ForgotPasswordPage() {

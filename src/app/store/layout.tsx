@@ -1,4 +1,4 @@
-﻿import { Metadata } from "next";
+import { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { DraggableBackButton } from "@/components/draggable-back-button";
@@ -7,21 +7,21 @@ import { StoreSidePanels } from "@/components/store-side-panels";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aboakbr.com"),
   title: {
-    default: "متجر وصلي",
+    default: "متجر وصلي للتوصيل",
     template: "%s | وصلي",
   },
   description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
   openGraph: {
-    title: "متجر وصلي",
+    title: "متجر وصلي للتوصيل",
     description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
     url: "https://aboakbr.com/store",
-    siteName: "وصلي",
+    siteName: "وصلي للتوصيل",
     images: [
       {
         url: "https://aboakbr.com/images/wasly-logo.png",
         width: 800,
         height: 800,
-        alt: "شعار وصلي",
+        alt: "شعار وصلي للتوصيل",
       },
     ],
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "متجر وصلي",
+    title: "متجر وصلي للتوصيل",
     description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
     images: ["https://aboakbr.com/images/wasly-logo.png"],
   },

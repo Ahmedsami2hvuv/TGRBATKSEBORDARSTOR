@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -609,7 +609,7 @@ async function legacyPost(req: Request) {
     ])
 
     const systemPrompt = `
-أنت عقل نظام وصلي، عايش داخل قاعدة بيانات Supabase مباشرة.
+أنت عقل نظام وصلي للتوصيل، عايش داخل قاعدة بيانات Supabase مباشرة.
 تفهم كلام المستخدم العراقي بذكاء وتستكشف وتنفذ مباشرة في الجداول.
 
 البيانات الحية المتاحة حالياً في Supabase:

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { StaffEmployeesManager } from "./staff-employees-manager";
@@ -12,7 +12,7 @@ import { serializePrisma } from "@/lib/serialize-prisma";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الموظفين — وصلي",
+  title: "الموظفين — وصلي للتوصيل",
 };
 
 export default async function AdminEmployeesHubPage() {

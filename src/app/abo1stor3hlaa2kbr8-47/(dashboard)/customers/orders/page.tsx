@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
@@ -13,7 +13,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "طلبات الزبون — وصلي",
+  title: "طلبات الزبون — وصلي للتوصيل",
 };
 
 type Props = { searchParams: Promise<{ phone?: string }> };

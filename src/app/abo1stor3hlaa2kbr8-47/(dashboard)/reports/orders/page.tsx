@@ -1,10 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقرير الطلبات — وصلي",
+  title: "تقرير الطلبات — وصلي للتوصيل",
 };
 
 type Props = { searchParams: Promise<{ from?: string; to?: string }> };

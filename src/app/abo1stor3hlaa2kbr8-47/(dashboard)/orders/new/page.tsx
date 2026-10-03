@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { prisma } from "@/lib/prisma";
 import { AdminCreateOrderForm } from "./admin-create-order-form";
@@ -16,7 +16,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إضافة طلب من الإدارة — وصلي",
+  title: "إضافة طلب من الإدارة — وصلي للتوصيل",
 };
 
 export default async function AdminCreateOrderPage() {

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
@@ -10,7 +10,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الطلبات المؤرشفة — وصلي",
+  title: "الطلبات المؤرشفة — وصلي للتوصيل",
 };
 
 type Props = {

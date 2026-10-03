@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { CustomerProfileUpsertForm } from "../customer-profile-upsert-form";
@@ -6,7 +6,7 @@ import { CustomerProfileUpsertForm } from "../customer-profile-upsert-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إضافة زبون مرجعي جديد — وصلي",
+  title: "إضافة زبون مرجعي جديد — وصلي للتوصيل",
 };
 
 export default async function NewCustomerProfilePage() {
