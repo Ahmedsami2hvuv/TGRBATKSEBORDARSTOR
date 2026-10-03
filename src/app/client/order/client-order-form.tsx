@@ -209,13 +209,19 @@ function ClientOrderFormInner({
   const STORAGE_KEY_FEEDBACK_SEEN = "kse_client_seen_feedback_modal_v1";
 
   const [floatingPos, setFloatingPos] = useState<{ x: number; y: number }>({ x: 20, y: 500 });
+  const floatingPosRef = useRef(floatingPos);
+  floatingPosRef.current = floatingPos;
+
   const [isDragging, setIsDragging] = useState(false);
   const [showNewBtnHint, setShowNewBtnHint] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [lastWaUrl, setLastWaUrl] = useState<string | null>(null);
+
   const isDraggingRef = useRef(false);
+  const hasMovedRef = useRef(false);
   const dragOffsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -249,6 +255,77 @@ function ClientOrderFormInner({
     }
   }, []);
 
+  // معالجة اللمس المباشر على الهاتف المحمول مع منع السحب لإعادة التحميل (pull-to-refresh)
+  useEffect(() => {
+    const btn = fabRef.current;
+    if (!btn) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (pending || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      isDraggingRef.current = true;
+      hasMovedRef.current = false;
+      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+      dragOffsetRef.current = {
+        offsetX: touch.clientX - floatingPosRef.current.x,
+        offsetY: touch.clientY - floatingPosRef.current.y,
+      };
+      setIsDragging(true);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current || e.touches.length !== 1) return;
+
+      // منع السحب الافتراضي للمتصفح والتحديث (pull-to-refresh) نهائياً
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopPropagation();
+
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartPosRef.current.x;
+      const deltaY = touch.clientY - touchStartPosRef.current.y;
+      if (Math.hypot(deltaX, deltaY) > 5) {
+        hasMovedRef.current = true;
+      }
+
+      const newX = touch.clientX - dragOffsetRef.current.offsetX;
+      const newY = touch.clientY - dragOffsetRef.current.offsetY;
+      const btnW = btn.offsetWidth || 96;
+      const btnH = btn.offsetHeight || 96;
+      const maxX = Math.max(5, window.innerWidth - btnW - 5);
+      const maxY = Math.max(5, window.innerHeight - btnH - 5);
+      const clampedX = Math.max(5, Math.min(newX, maxX));
+      const clampedY = Math.max(5, Math.min(newY, maxY));
+
+      setFloatingPos({ x: clampedX, y: clampedY });
+    };
+
+    const onTouchEnd = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+
+      if (hasMovedRef.current) {
+        try {
+          localStorage.setItem(STORAGE_KEY_BTN, JSON.stringify(floatingPosRef.current));
+        } catch {}
+      }
+    };
+
+    btn.addEventListener("touchstart", onTouchStart, { passive: false });
+    btn.addEventListener("touchmove", onTouchMove, { passive: false });
+    btn.addEventListener("touchend", onTouchEnd, { passive: false });
+    btn.addEventListener("touchcancel", onTouchEnd, { passive: false });
+
+    return () => {
+      btn.removeEventListener("touchstart", onTouchStart);
+      btn.removeEventListener("touchmove", onTouchMove);
+      btn.removeEventListener("touchend", onTouchEnd);
+      btn.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [pending]);
+
   const handleAcknowledgeBtnHint = () => {
     setShowNewBtnHint(false);
     try {
@@ -258,10 +335,13 @@ function ClientOrderFormInner({
     }
   };
 
+  // دعم السحب بواسطة الماوس لأجهزة سطح المكتب
   const handlePointerDown = (ev: React.PointerEvent<HTMLButtonElement>) => {
-    if (pending) return;
+    if (pending || ev.pointerType === "touch") return;
     isDraggingRef.current = true;
+    hasMovedRef.current = false;
     setIsDragging(true);
+    touchStartPosRef.current = { x: ev.clientX, y: ev.clientY };
     dragOffsetRef.current = {
       offsetX: ev.clientX - floatingPos.x,
       offsetY: ev.clientY - floatingPos.y,
@@ -270,24 +350,31 @@ function ClientOrderFormInner({
   };
 
   const handlePointerMove = (ev: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || ev.pointerType === "touch") return;
+    const deltaX = ev.clientX - touchStartPosRef.current.x;
+    const deltaY = ev.clientY - touchStartPosRef.current.y;
+    if (Math.hypot(deltaX, deltaY) > 5) {
+      hasMovedRef.current = true;
+    }
     const newX = ev.clientX - dragOffsetRef.current.offsetX;
     const newY = ev.clientY - dragOffsetRef.current.offsetY;
-    const maxX = Math.max(10, window.innerWidth - 100);
-    const maxY = Math.max(10, window.innerHeight - 100);
-    const clampedX = Math.max(10, Math.min(newX, maxX));
-    const clampedY = Math.max(10, Math.min(newY, maxY));
+    const maxX = Math.max(5, window.innerWidth - 100);
+    const maxY = Math.max(5, window.innerHeight - 100);
+    const clampedX = Math.max(5, Math.min(newX, maxX));
+    const clampedY = Math.max(5, Math.min(newY, maxY));
     setFloatingPos({ x: clampedX, y: clampedY });
   };
 
   const handlePointerUp = (ev: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || ev.pointerType === "touch") return;
     isDraggingRef.current = false;
     setIsDragging(false);
-    try {
-      localStorage.setItem(STORAGE_KEY_BTN, JSON.stringify(floatingPos));
-    } catch {
-      // ignore
+    if (hasMovedRef.current) {
+      try {
+        localStorage.setItem(STORAGE_KEY_BTN, JSON.stringify(floatingPos));
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -500,6 +587,10 @@ function ClientOrderFormInner({
       <style jsx global>{`
         * {
           font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+        }
+        html, body {
+          overscroll-behavior-y: contain !important;
+          overscroll-behavior: contain !important;
         }
         .islamic-pattern {
           background-image: radial-gradient(rgba(2, 132, 199, 0.08) 1.5px, transparent 1.5px);
@@ -1286,19 +1377,28 @@ function ClientOrderFormInner({
         </div>
       </div>
 
-      {/* الزر العائم لرفع الطلب بالختم الملكي الذهبي الفاخر AK */}
+      {/* الزر العائم لرفع الطلب بهوية وصلي */}
       <button
         ref={fabRef}
         type="button"
+        draggable={false}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onClick={() => handleSubmitAttempt()}
+        onClick={() => {
+          if (hasMovedRef.current) {
+            hasMovedRef.current = false;
+            return;
+          }
+          handleSubmitAttempt();
+        }}
         disabled={pending}
         style={{
           left: `${floatingPos.x}px`,
           top: `${floatingPos.y}px`,
           touchAction: "none",
+          userSelect: "none",
+          WebkitUserSelect: "none",
           animation: isDragging
             ? "none"
             : showNewBtnHint
