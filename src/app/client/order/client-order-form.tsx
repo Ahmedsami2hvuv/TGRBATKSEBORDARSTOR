@@ -662,7 +662,7 @@ function ClientOrderFormInner({
 
             <div className="flex items-center gap-[6px] shrink-0">
               <div className="h-[28px] px-[10px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/35 flex items-center gap-[5px] shadow-sm">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
+                <span className="w-[6px] h-[6px] rounded-full bg-[#0284C7] shadow-[0_0_8px_#0284C7]" />
                 <span className="text-[#0369A1] text-[11px] font-bold">
                   {shopRegionName || "المنصور"}
                 </span>
@@ -1121,7 +1121,7 @@ function ClientOrderFormInner({
                   onClick={() => setIsReverse(!isReverse)}
                   className={`relative w-[44px] h-[26px] rounded-full border transition-colors ${
                     isReverse
-                      ? "bg-[#6D28D9] border-[#38BDF8]/50"
+                      ? "bg-[#0369A1] border-[#38BDF8]/50"
                       : "bg-[#E2E8F0] border-[#CBD5E1]"
                   }`}
                 >
@@ -1135,7 +1135,7 @@ function ClientOrderFormInner({
             </div>
 
             {/* القائمة المنسدلة: تفاصيل أخرى (اختياري) */}
-            <div className="mt-[14px] rounded-[18px] overflow-hidden border border-[#38BDF8]/30 bg-gradient-to-r from-[#FFFFFF] via-[#F0F9FF] to-[#FDF6E8] p-[1px]">
+            <div className="mt-[14px] rounded-[18px] overflow-hidden border border-[#38BDF8]/30 bg-gradient-to-r from-[#FFFFFF] via-[#F0F9FF] to-[#F0F9FF] p-[1px]">
               <button
                 type="button"
                 onClick={() => setIsOtherDetailsOpen(!isOtherDetailsOpen)}
@@ -1150,7 +1150,7 @@ function ClientOrderFormInner({
                   </span>
                 </div>
                 <div className="flex items-center gap-[8px]">
-                  <span className="text-[10px] font-bold text-[#8B6B2A] bg-white border border-[#38BDF8]/30 px-[8px] py-[2px] rounded-full">
+                  <span className="text-[10px] font-bold text-[#0369A1] bg-white border border-[#38BDF8]/30 px-[8px] py-[2px] rounded-full">
                     {isOtherDetailsOpen ? "إخفاء" : "عرض"}
                   </span>
                   <span
@@ -1414,7 +1414,7 @@ function ClientOrderFormInner({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#075985]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
           <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#38BDF8] bg-gradient-to-b from-[#FFFFFF] via-[#FFFDF7] to-[#F8FAFC] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
             {/* أيقونة الختم الملكي مع هالة ذهبية */}
-            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#E0F2FE] to-[#E8D39E] border-2 border-[#38BDF8] flex items-center justify-center shadow-lg mb-[14px]">
+            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#E0F2FE] to-[#FDE047] border-2 border-[#38BDF8] flex items-center justify-center shadow-lg mb-[14px]">
               <div className="relative w-full h-full rounded-full overflow-hidden">
                 <Image
                   src="/images/wasly-submit-btn.png"
@@ -1440,7 +1440,7 @@ function ClientOrderFormInner({
               <button
                 type="button"
                 onClick={handleAcknowledgeBtnHint}
-                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#38BDF8] text-[#FDE047] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0369A1] via-[#075985] to-[#0369A1] border-2 border-[#38BDF8] text-[#FDE047] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>حسناً، فهمت</span>
                 <span className="text-base">👍</span>
@@ -1545,7 +1545,7 @@ function ClientOrderFormInner({
               </div>
               <div>
                 <p className="text-[9px] font-bold text-[#94A3B8]">الإجمالي</p>
-                <p className="text-[13px] font-black text-[#8B6B2A] mt-[2px]">
+                <p className="text-[13px] font-black text-[#0369A1] mt-[2px]">
                   {lastSubmittedOrder.totalAlf} الف
                 </p>
               </div>
