@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import { getDefaultStoreMetadata } from "@/lib/store-meta";
 
 export const metadata: Metadata = getDefaultStoreMetadata(
-  "جميع الأقسام | خصيب ستور — وصلي للتوصيل",
+  "جميع الأقسام | وصلي ستور — وصلي للتوصيل",
   "تصفح جميع أقسام وفئات متجر وصلي للتوصيل وتسوق كل ما تحتاجه بسهولة."
 );
 

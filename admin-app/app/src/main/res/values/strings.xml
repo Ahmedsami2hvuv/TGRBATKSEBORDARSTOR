@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">أبو الأكبر للإدارة</string>
+    <string name="app_name">وصلي للإدارة</string>
     <string name="title_admin">لوحة الإدارة</string>
     <string name="enter_passcode">ادخل رمز المرور السري للدخول</string>
     <string name="biometric_title">تسجيل الدخول بالبصمة</string>
@@ -15,7 +15,7 @@
     <string name="shortcut_add_order_long">➕ إضافة طلب جديد</string>
     <string name="shortcut_orders">الطلبات</string>
     <string name="shortcut_orders_long">📦 إدارة الطلبات</string>
-    <string name="app_widget_title">أبو الأكبر - لوحة التحكم</string>
+    <string name="app_widget_title">وصلي - لوحة التحكم</string>
     <string name="floating_widget_permission_required">يرجى تفعيل صلاحية الظهور فوق التطبيقات لإظهار الزر العائم</string>
     <string name="floating_widget_started">تم تفعيل الزر العائم بنجاح</string>
     <string name="floating_widget_stopped">تم إخفاء الزر العائم</string>

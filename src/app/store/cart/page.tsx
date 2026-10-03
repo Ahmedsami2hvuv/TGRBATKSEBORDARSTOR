@@ -141,7 +141,7 @@ export default function CartPage() {
     if (activeAddId || (state.whatsappMessage && (state.whatsappMessage.includes("أضفت") || state.whatsappMessage.includes("إضافة")))) {
       const addedProductLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
-        `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${orderNo}`,
+        `لقد أضفت منتجات من وصلي ستور لطلبي المرقم ${orderNo}`,
         "المنتجات المضافة هي:",
         ...addedProductLines
       ].join("\n");
@@ -159,7 +159,7 @@ export default function CartPage() {
     } else {
       const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
       finalWhatsappMessage = [
-        `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي`,
+        `لقد قمت بالطلب من وصلي ستور ارجو تجهيز طلبي`,
         `رقم طلبي هو: ${orderNo}`,
         `المنتجات:`,
         ...productLines

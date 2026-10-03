@@ -14,12 +14,38 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://aboakbr.com"),
   title: "وصلي للتوصيل",
   description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
   manifest: "/site.webmanifest",
-  icons: { icon: "/icon.png", apple: "/apple-icon.png" },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
+  openGraph: {
+    title: "وصلي للتوصيل",
+    description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+    url: "https://aboakbr.com",
+    siteName: "وصلي للتوصيل",
+    images: [
+      {
+        url: "/images/wasly-logo.png",
+        width: 1024,
+        height: 1024,
+        alt: "وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+      },
+    ],
+    locale: "ar_IQ",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "وصلي للتوصيل",
+    description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
+    images: ["/images/wasly-logo.png"],
+  },
   appleWebApp: { capable: true, title: "وصلي للتوصيل", statusBarStyle: "default" },
-  // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.5
 };
 
 export const viewport: Viewport = {

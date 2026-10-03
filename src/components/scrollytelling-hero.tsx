@@ -138,7 +138,7 @@ export default function ScrollytellingHero() {
             <Bike className="w-[32px] h-[32px] text-[#5FA8D3]" strokeWidth={1.5} />
           </div>
           <h2 className="font-bold text-[32px] md:text-[42px] text-[#22323F] tracking-tight">إحنا خدمة توصيل شاملة</h2>
-          <p className="text-[#5FA8D3] font-bold text-[18px] md:text-[20px] mb-2">مدعومة بمتجر تسوق شامل (خصيبي ستور).</p>
+          <p className="text-[#5FA8D3] font-bold text-[18px] md:text-[20px] mb-2">مدعومة بمتجر تسوق شامل (متجر وصلي).</p>
           <div className="w-[80px] h-[3px] rounded-full bg-[#BFE0F2] mx-auto mb-2" />
           <p className="text-[#22323F]/90 text-[16px] md:text-[18px] max-w-[600px] font-bold leading-loose">
             إحنا خدمة توصيل شاملة داخل أبي الخصيب... يعني وأنت بالبيت، بالدوام، أو طالع تفتح واتساب تراسلني تطلب أي شي (أي شي!) راح أشتريه ونوصله إلك للبيت.

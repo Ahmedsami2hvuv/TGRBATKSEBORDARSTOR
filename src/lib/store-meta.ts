@@ -93,7 +93,7 @@ export async function getStoreCategoryMetadata(
         const title = `${branch.name} — ${branch.category?.name || "المتجر"} | ${SITE_NAME}`;
         const description = branch.notes?.trim()
           ? branch.notes
-          : `تصفح جميع منتجات وأصناف ${branch.name} في ${branch.category?.name || "خصيب ستور"} — اطلب الآن مع أسرع توصيل.`;
+          : `تصفح جميع منتجات وأصناف ${branch.name} في ${branch.category?.name || "وصلي ستور"} — اطلب الآن مع أسرع توصيل.`;
         const canonicalUrl = `https://aboakbr.com/store/c/${categoryId}?b=${activeBranchId}`;
 
         return {

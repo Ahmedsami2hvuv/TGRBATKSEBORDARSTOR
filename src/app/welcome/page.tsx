@@ -597,7 +597,7 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* 8. الفوتر ومتجر خصيبي ستور وتذكير حفظ الرقم */}
+      {/* 8. الفوتر ومتجر متجر وصلي وتذكير حفظ الرقم */}
       <footer className="pt-14 pb-12 bg-[#080C0F]">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           
@@ -636,7 +636,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          {/* بطاقة متجر خصيبي ستور */}
+          {/* بطاقة متجر متجر وصلي */}
           <div className="bg-gradient-to-r from-[#0F171B] to-[#142028] border border-white/15 rounded-[32px] p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
               <div className="font-mono text-[#CCFF00] text-xs font-bold tracking-widest mb-2">WASLY STORE // متجر وصلي</div>

@@ -190,7 +190,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         ok: true,
         orderNumber: targetOrderNumber,
         whatsappMessage: [
-          `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${targetOrderNumber}`,
+          `لقد أضفت منتجات من وصلي ستور لطلبي المرقم ${targetOrderNumber}`,
           "المنتجات المضافة هي:",
           ...addedLines
         ].join("\n"),
@@ -232,7 +232,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
             ok: true,
             orderNumber: targetOrderNumber,
             whatsappMessage: [
-              `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${targetOrderNumber}`,
+              `لقد أضفت منتجات من وصلي ستور لطلبي المرقم ${targetOrderNumber}`,
               "المنتجات المضافة هي:",
               ...addedLines
             ].join("\n"),
@@ -302,11 +302,11 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     const isAddition = Boolean(addToOrderId);
 
     const whatsappMessage = isAddition ? [
-      `لقد أضفت منتجات من خصيب ستور لطلبي المرقم ${numericOrderNumber}`,
+      `لقد أضفت منتجات من وصلي ستور لطلبي المرقم ${numericOrderNumber}`,
       "المنتجات المضافة هي:",
       ...productLines,
     ].join("\n") : [
-      sharedCartId ? "لقد قمنا بالطلب من السلة المشتركة للعائلة في خصيب ستور ارجو تجهيز طلبي" : "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
+      sharedCartId ? "لقد قمنا بالطلب من السلة المشتركة للعائلة في وصلي ستور ارجو تجهيز طلبي" : "لقد قمت بالطلب من وصلي ستور ارجو تجهيز طلبي",
       `رقم طلبي هو: ${numericOrderNumber}`,
       "المنتجات:",
       ...productLines,
