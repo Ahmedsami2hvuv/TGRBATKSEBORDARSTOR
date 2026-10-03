@@ -226,7 +226,7 @@ export function ClientVoiceNoteField({
           <button
             type="button"
             onClick={() => void startRecording()}
-            className="rounded-xl border border-[#C9A86A]/50 bg-[#FFF8F0] px-3.5 py-2 text-xs font-black text-[#0A3D2E] shadow-2xs hover:bg-[#FDF8EE] active:scale-95 transition"
+            className="rounded-xl border border-[#38BDF8]/50 bg-[#F0F9FF] px-3.5 py-2 text-xs font-black text-[#0369A1] shadow-2xs hover:bg-[#FDF8EE] active:scale-95 transition"
           >
             🎤 بدء تسجيل صوتي
           </button>
@@ -242,7 +242,7 @@ export function ClientVoiceNoteField({
             <button
               type="button"
               onClick={finishRecording}
-              className="rounded-xl border border-[#C9A86A] bg-[#0A3D2E] px-3 py-1.5 text-xs font-black text-[#F5D77F] hover:bg-[#06281D] active:scale-95 transition"
+              className="rounded-xl border border-[#38BDF8] bg-[#0369A1] px-3 py-1.5 text-xs font-black text-[#FDE047] hover:bg-[#06281D] active:scale-95 transition"
             >
               حفظ
             </button>
@@ -267,7 +267,7 @@ export function ClientVoiceNoteField({
       </div>
       {error ? <p className="text-xs font-bold text-rose-600">{error}</p> : null}
       {previewBlob && !recording ? (
-        <VoiceNotePreviewBlob key={`preview-${recordingId}`} blob={previewBlob} className="w-full rounded-xl border border-[#C9A86A]/40 bg-[#FFF8F0] p-2 text-xs" />
+        <VoiceNotePreviewBlob key={`preview-${recordingId}`} blob={previewBlob} className="w-full rounded-xl border border-[#38BDF8]/40 bg-[#F0F9FF] p-2 text-xs" />
       ) : null}
       <p className="text-[10px] font-bold text-slate-400">
         أقصى مدة 10 ثوانٍ. يُرفَع مع الطلب للمندوب والإدارة.

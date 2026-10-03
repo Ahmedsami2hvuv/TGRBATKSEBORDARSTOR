@@ -494,20 +494,21 @@ function ClientOrderFormInner({
   const currentTotalDeliveryAlf = (deliveryPriceAdd !== null ? deliveryPriceAdd : baseDeliveryAlf);
 
   return (
-    <div dir="rtl" className="min-h-screen w-full bg-[#FFFEFB] relative overflow-x-hidden">
+    <div dir="rtl" className="min-h-screen w-full bg-[#FFFFFF] relative overflow-x-hidden">
       {/* الأنماط الخاصة بالتصميم المرجعي */}
       <style jsx global>{`
         * {
           font-family: 'Cairo', system-ui, -apple-system, sans-serif;
         }
         .islamic-pattern {
-          background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C9A86A' fill-opacity='0.06'%3E%3Cpath d='M40 0l5 15 15 5-15 5-5 15-5-15L20 20l15-5L40 0zM0 40l15-5 5-15 5 15 15 5-15 5-5 15-5-15L0 40zM80 40l-15-5-5-15-5 15-15 5 15 5 5 15 5-15L80 40zM40 80l-5-15-15-5 15-5 5-15 5 15 15 5-15 5-5 15z'/%3E%3C/g%3E%3C/svg%3E");
+          background-image: radial-gradient(rgba(2, 132, 199, 0.08) 1.5px, transparent 1.5px);
+          background-size: 24px 24px;
         }
         .card-gold {
-          background: #FFFEFB;
-          border: 2px solid rgba(201, 168, 106, 0.4);
+          background: #FFFFFF;
+          border: 2px solid rgba(2, 132, 199, 0.22);
           border-radius: 28px;
-          box-shadow: 0 8px 32px rgba(5, 40, 28, 0.12), 0 2px 0 0 rgba(201, 168, 106, 0.15) inset;
+          box-shadow: 0 10px 35px rgba(2, 132, 199, 0.07), 0 2px 0 0 rgba(2, 132, 199, 0.1) inset;
           position: relative;
         }
         .card-gold::before {
@@ -515,12 +516,12 @@ function ClientOrderFormInner({
           position: absolute;
           inset: 2px;
           border-radius: 26px;
-          border: 1px solid rgba(201, 168, 106, 0.25);
+          border: 1px solid rgba(2, 132, 199, 0.15);
           pointer-events: none;
         }
         .focus-ring:focus {
-          border-color: #0A3D2E !important;
-          box-shadow: 0 0 0 3px rgba(10, 61, 46, 0.18), 0 0 0 6px rgba(201, 168, 106, 0.18);
+          border-color: #0284C7 !important;
+          box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18), 0 0 0 6px rgba(186, 230, 253, 0.4);
         }
         @keyframes goldShimmer {
           0% { transform: translateX(-120%) skewX(-12deg); }
@@ -532,8 +533,12 @@ function ClientOrderFormInner({
         }
         @keyframes fabGlow {
           0%, 100% {
-            filter: drop-shadow(0 0 10px rgba(245, 215, 127, 0.45));
+            filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.45));
           }
+          50% {
+            filter: drop-shadow(0 0 22px rgba(0, 136, 255, 0.75));
+          }
+        }
           50% {
             filter: drop-shadow(0 0 18px rgba(201, 168, 106, 0.75));
           }
@@ -547,33 +552,28 @@ function ClientOrderFormInner({
       `}</style>
 
       {/* خلفية التدرج والزخرفة */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFEFB] via-[#FFFFFF] to-[#FFF8F0] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#F0F9FF] via-[#FFFFFF] to-[#F8FAFC] pointer-events-none" />
       <div className="absolute inset-0 islamic-pattern opacity-[0.22] pointer-events-none" />
-      <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[900px] h-[420px] bg-gradient-to-b from-[#C9A86A]/12 via-[#F5D77F]/10 to-transparent blur-[70px] pointer-events-none" />
+      <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[900px] h-[420px] bg-gradient-to-b from-[#0284C7]/12 via-[#38BDF8]/10 to-transparent blur-[70px] pointer-events-none" />
 
       {/* الحاوية الأساسية */}
       <div className="relative mx-auto max-w-[480px] px-[14px] py-[14px] pb-[140px]">
         {/* الهيدر العلوي */}
-        <div className="rounded-[20px] bg-[#FFFFFF] border border-[#C9A86A]/25 shadow-[0_4px_20px_rgba(5,40,28,0.06)] px-[12px] py-[10px] mb-[12px]">
+        <div className="rounded-[20px] bg-[#FFFFFF] border border-[#0284C7]/20 shadow-[0_4px_20px_rgba(5,40,28,0.06)] px-[12px] py-[10px] mb-[12px]">
           <div className="flex items-center justify-between gap-[8px]">
             <div className="flex items-center gap-[8px] min-w-0">
-              <div className="relative w-[34px] h-[34px] rounded-full overflow-hidden border-[1.5px] border-[#C9A86A]/60 shadow-sm flex items-center justify-center shrink-0">
-                <Image
-                  src="/images/order-luxury/ak-submit-btn-v3.webp"
-                  alt="أبو ألأكبر للتوصيل الشامل"
-                  fill
-                  className="object-contain"
-                />
+              <div className="relative w-[34px] h-[34px] rounded-full overflow-hidden border-[1.5px] border-[#0284C7]/40 shadow-sm flex items-center justify-center shrink-0">
+                <Image src="/images/wasly-client-header-icon.png" alt="وصلي" fill className="object-contain" />
               </div>
-              <span className="text-[#0A3D2E] font-black text-[13.5px] sm:text-[14px] tracking-tight whitespace-nowrap truncate">
-                أبو ألأكبر للتوصيل الشامل
+              <span className="text-[#0369A1] font-black text-[13.5px] sm:text-[14px] tracking-tight whitespace-nowrap truncate">
+                وصلي
               </span>
             </div>
 
             <div className="flex items-center gap-[6px] shrink-0">
-              <div className="h-[28px] px-[10px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/35 flex items-center gap-[5px] shadow-sm">
+              <div className="h-[28px] px-[10px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/35 flex items-center gap-[5px] shadow-sm">
                 <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
-                <span className="text-[#0A3D2E] text-[11px] font-bold">
+                <span className="text-[#0369A1] text-[11px] font-bold">
                   {shopRegionName || "المنصور"}
                 </span>
               </div>
@@ -582,10 +582,10 @@ function ClientOrderFormInner({
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(true)}
-                className="h-[28px] w-[28px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2E] hover:bg-white hover:border-[#C9A86A] active:scale-90 transition shadow-sm"
+                className="h-[28px] w-[28px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center text-[#0369A1] hover:bg-white hover:border-[#38BDF8] active:scale-90 transition shadow-sm"
                 title="إعدادات صفحة العميل"
               >
-                <Settings className="w-[14.5px] h-[14.5px] text-[#0A3D2E]" />
+                <Settings className="w-[14.5px] h-[14.5px] text-[#0369A1]" />
               </button>
             </div>
           </div>
@@ -594,7 +594,7 @@ function ClientOrderFormInner({
         {/* بطاقة الترحيب بالمحل والمستخدم */}
         <div className="card-gold p-[14px] flex items-center gap-[14px] mb-[10px]">
           <div className="relative shrink-0">
-            <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-[2.5px] border-[#C9A86A] shadow-[0_4px_16px_rgba(201,168,106,0.35)] bg-[#FFF8F0] flex items-center justify-center">
+            <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-[2.5px] border-[#38BDF8] shadow-[0_4px_16px_rgba(201,168,106,0.35)] bg-[#F0F9FF] flex items-center justify-center">
               {photoUrl ? (
                 <img
                   src={resolvePublicImageSrc(photoUrl)}
@@ -602,28 +602,28 @@ function ClientOrderFormInner({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Store className="w-[32px] h-[32px] text-[#0A3D2E]" />
+                <Store className="w-[32px] h-[32px] text-[#0369A1]" />
               )}
             </div>
-            <div className="absolute -bottom-[4px] -right-[2px] w-[22px] h-[22px] rounded-full bg-[#0A3D2E] border-[2px] border-[#F5D77F] flex items-center justify-center shadow-sm">
-              <Check className="w-[12px] h-[12px] text-[#F5D77F] stroke-[3]" />
+            <div className="absolute -bottom-[4px] -right-[2px] w-[22px] h-[22px] rounded-full bg-[#0369A1] border-[2px] border-[#FDE047] flex items-center justify-center shadow-sm">
+              <Check className="w-[12px] h-[12px] text-[#FDE047] stroke-[3]" />
             </div>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-[#0A3D2E] font-black text-[18px] leading-[1.1] truncate">
+            <h1 className="text-[#0369A1] font-black text-[18px] leading-[1.1] truncate">
               {shopName || "محلات وصلي"}
             </h1>
             <p className="text-[#1E293B]/70 font-bold text-[12px] mt-[2px]">
               أهلاً يا{" "}
-              <span className="text-[#0A3D2E] font-black underline decoration-[#C9A86A] decoration-2 underline-offset-[4px]">
+              <span className="text-[#0369A1] font-black underline decoration-[#38BDF8] decoration-2 underline-offset-[4px]">
                 {greetingName}
               </span>
             </p>
             {/* شريط العبارة المضيئة المشرقة */}
-            <div className="mt-[8px] h-[28px] rounded-full bg-gradient-to-r from-[#C9A86A]/15 via-[#F5D77F]/25 to-[#C9A86A]/15 border border-[#C9A86A]/30 flex items-center justify-center px-[10px] relative overflow-hidden">
+            <div className="mt-[8px] h-[28px] rounded-full bg-gradient-to-r from-[#38BDF8]/15 via-[#FDE047]/25 to-[#38BDF8]/15 border border-[#38BDF8]/30 flex items-center justify-center px-[10px] relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent w-[45%] animate-[goldShimmer_2.8s_ease-in-out_infinite]" />
-              <span className="text-[#0A3D2E] font-black text-[11px] tracking-wide relative z-10">
+              <span className="text-[#0369A1] font-black text-[11px] tracking-wide relative z-10">
                 خدمتكم تسعدنا وطلباتكم أمانة لدينا
               </span>
             </div>
@@ -631,22 +631,22 @@ function ClientOrderFormInner({
         </div>
 
         {/* أزرار الوصول السريع الثلاثية */}
-        <div className="rounded-[16px] bg-[#FFFEFB] border border-[#C9A86A]/15 p-[8px] mb-[12px]">
+        <div className="rounded-[16px] bg-[#FFFFFF] border border-[#38BDF8]/15 p-[8px] mb-[12px]">
           <div className="flex items-center gap-[8px]">
             <Link
               href={`/client/order/account?e=${e}&exp=${exp}&s=${sig}`}
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#C9A86A]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#C9A86A]/60"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#38BDF8]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
             >
-              <CreditCard className="w-[16px] h-[16px] text-[#0A3D2E]" />
-              <span className="text-[#0A3D2E] font-bold text-[12px]">سجل الديون</span>
+              <CreditCard className="w-[16px] h-[16px] text-[#0369A1]" />
+              <span className="text-[#0369A1] font-bold text-[12px]">سجل الديون</span>
             </Link>
 
             <Link
               href={`/client/order/history?e=${e}&exp=${exp}&s=${sig}`}
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#C9A86A]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#C9A86A]/60"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#38BDF8]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
             >
-              <FileText className="w-[16px] h-[16px] text-[#0A3D2E]" />
-              <span className="text-[#0A3D2E] font-bold text-[12px]">السجل</span>
+              <FileText className="w-[16px] h-[16px] text-[#0369A1]" />
+              <span className="text-[#0369A1] font-bold text-[12px]">السجل</span>
             </Link>
 
             <a
@@ -657,10 +657,10 @@ function ClientOrderFormInner({
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#C9A86A]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#C9A86A]/60"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#38BDF8]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
             >
-              <Headphones className="w-[16px] h-[16px] text-[#0A3D2E]" />
-              <span className="text-[#0A3D2E] font-bold text-[12px]">الدعم</span>
+              <Headphones className="w-[16px] h-[16px] text-[#0369A1]" />
+              <span className="text-[#0369A1] font-bold text-[12px]">الدعم</span>
             </a>
           </div>
         </div>
@@ -693,25 +693,25 @@ function ClientOrderFormInner({
             {/* رأس البطاقة */}
             <div className="flex items-center justify-between mb-[14px]">
               <div className="flex items-center gap-[8px]">
-                <div className="w-[28px] h-[28px] rounded-[9px] bg-[#0A3D2E] border border-[#C9A86A]/50 flex items-center justify-center">
-                  <Package className="w-[14px] h-[14px] text-[#F5D77F]" />
+                <div className="w-[28px] h-[28px] rounded-[9px] bg-[#0369A1] border border-[#38BDF8]/50 flex items-center justify-center">
+                  <Package className="w-[14px] h-[14px] text-[#FDE047]" />
                 </div>
-                <h2 className="text-[#0A3D2E] font-black text-[14px]">
+                <h2 className="text-[#0369A1] font-black text-[14px]">
                   بيانات الطلبية الجديدة
                 </h2>
               </div>
-              <span className="text-[10px] font-bold text-[#C9A86A] bg-[#FFF8F0] border border-[#C9A86A]/30 px-[8px] py-[2px] rounded-full">
+              <span className="text-[10px] font-bold text-[#38BDF8] bg-[#F0F9FF] border border-[#38BDF8]/30 px-[8px] py-[2px] rounded-full">
                 * مطلوب
               </span>
             </div>
 
-            <div className="h-[2px] w-full bg-gradient-to-r from-[#C9A86A] via-[#F5D77F]/60 to-transparent rounded-full mb-[14px]" />
+            <div className="h-[2px] w-full bg-gradient-to-r from-[#38BDF8] via-[#FDE047]/60 to-transparent rounded-full mb-[14px]" />
 
             {/* مناطق سابقة لهذا الزبون إن وجدت - بالأعلى */}
             {previousRegions.length > 0 && (
-              <div className="mb-[12px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/40 p-[8px] animate-in fade-in slide-in-from-top-2">
-                <p className="text-[10px] font-black text-[#0A3D2E] mb-[6px] flex items-center gap-[4px]">
-                  <Sparkles className="w-[10px] h-[10px] text-[#C9A86A]" />
+              <div className="mb-[12px] rounded-[14px] bg-[#F0F9FF] border border-[#38BDF8]/40 p-[8px] animate-in fade-in slide-in-from-top-2">
+                <p className="text-[10px] font-black text-[#0369A1] mb-[6px] flex items-center gap-[4px]">
+                  <Sparkles className="w-[10px] h-[10px] text-[#38BDF8]" />
                   مناطق سابقة لهذا الزبون:
                 </p>
                 <div className="flex flex-wrap gap-[6px]">
@@ -726,8 +726,8 @@ function ClientOrderFormInner({
                       }}
                       className={`px-[10px] py-[5px] rounded-full text-[11px] font-black border transition flex items-center gap-[4px] ${
                         selected?.id === reg.id
-                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                          : "bg-white text-[#1E293B] border-[#C9A86A]/40 hover:bg-[#FFF8F0]"
+                          ? "bg-[#0369A1] text-[#FDE047] border-[#38BDF8]"
+                          : "bg-white text-[#1E293B] border-[#38BDF8]/40 hover:bg-[#F0F9FF]"
                       }`}
                     >
                       <MapPin className="w-[10px] h-[10px]" />
@@ -743,8 +743,8 @@ function ClientOrderFormInner({
               {/* رقم الزبون (مكبر ومريح) */}
               <div className="flex flex-col gap-[6px]">
                 <label className="text-[11px] font-black text-[#1E293B] pr-[4px] flex items-center gap-[4px]">
-                  <span className="w-[14px] h-[14px] rounded-[5px] bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center">
-                    <Phone className="w-[9px] h-[9px] text-[#0A3D2E]" />
+                  <span className="w-[14px] h-[14px] rounded-[5px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center">
+                    <Phone className="w-[9px] h-[9px] text-[#0369A1]" />
                   </span>
                   رقم الزبون
                 </label>
@@ -759,7 +759,7 @@ function ClientOrderFormInner({
                     onBlur={() => handlePhoneBlur(customerPhone, setCustomerPhone)}
                     placeholder="07XXXXXXXX"
                     inputMode="numeric"
-                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#C9A86A]/40 bg-white px-[8px] text-center font-mono font-black text-[14px] text-[#1E293B] outline-none placeholder:text-[#94A3B8] placeholder:font-bold"
+                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#38BDF8]/40 bg-white px-[8px] text-center font-mono font-black text-[14px] text-[#1E293B] outline-none placeholder:text-[#94A3B8] placeholder:font-bold"
                   />
                   <span className="pointer-events-none absolute left-[8px] top-1/2 -translate-y-1/2 opacity-60">
                     <Phone className="w-[12px] h-[12px] text-[#94A3B8]" />
@@ -771,13 +771,13 @@ function ClientOrderFormInner({
               <div className="flex flex-col gap-[6px] relative" ref={regionContainerRef}>
                 <div className="flex items-center justify-between pr-[4px]">
                   <label className="text-[11px] font-black text-[#1E293B] flex items-center gap-[4px]">
-                    <span className="w-[14px] h-[14px] rounded-[5px] bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center">
-                      <MapPin className="w-[9px] h-[9px] text-[#0A3D2E]" />
+                    <span className="w-[14px] h-[14px] rounded-[5px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center">
+                      <MapPin className="w-[9px] h-[9px] text-[#0369A1]" />
                     </span>
                     منطقة الزبون
                   </label>
                   {selected && (
-                    <span className="text-[9px] font-black bg-[#0A3D2E] text-[#F5D77F] px-[6px] py-[1px] rounded-full border border-[#C9A86A] flex items-center gap-[3px]">
+                    <span className="text-[9px] font-black bg-[#0369A1] text-[#FDE047] px-[6px] py-[1px] rounded-full border border-[#38BDF8] flex items-center gap-[3px]">
                       {Number(selected.deliveryPrice) / ALF_PER_DINAR} الف توصيل
                     </span>
                   )}
@@ -796,8 +796,8 @@ function ClientOrderFormInner({
                     placeholder="ابحث عن المنطقة..."
                     className={`focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] bg-white pr-[10px] pl-[56px] text-[13px] font-black outline-none placeholder:text-[#94A3B8] ${
                       selected && q === selected.name
-                        ? "border-[#0A3D2E] text-[#0A3D2E] font-black"
-                        : "border-[#C9A86A]/40 text-[#1E293B]"
+                        ? "border-[#0369A1] text-[#0369A1] font-black"
+                        : "border-[#38BDF8]/40 text-[#1E293B]"
                     }`}
                   />
                   <div className="absolute left-[6px] top-1/2 -translate-y-1/2 flex items-center gap-[4px]">
@@ -814,20 +814,20 @@ function ClientOrderFormInner({
                         <X className="w-[12px] h-[12px]" />
                       </button>
                     )}
-                    <div className="w-[22px] h-[22px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/30 flex items-center justify-center">
-                      <MapPin className="w-[12px] h-[12px] text-[#0A3D2E]" />
+                    <div className="w-[22px] h-[22px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/30 flex items-center justify-center">
+                      <MapPin className="w-[12px] h-[12px] text-[#0369A1]" />
                     </div>
                   </div>
                 </div>
 
                 {/* قائمة نتائج البحث */}
                 {showRegionHits && hits.length > 0 && (
-                  <div className="absolute z-[40] top-[64px] left-0 right-0 rounded-[18px] overflow-hidden border-[2px] border-[#C9A86A] bg-[#FFFEFB] shadow-[0_16px_40px_rgba(5,40,28,0.22)]">
-                    <div className="bg-[#0A3D2E] px-[12px] py-[7px] flex items-center justify-between">
-                      <span className="text-[#F5D77F] font-black text-[10px]">اختر المنطقة</span>
-                      <span className="text-[#C9A86A] font-bold text-[9px]">{hits.length} نتائج</span>
+                  <div className="absolute z-[40] top-[64px] left-0 right-0 rounded-[18px] overflow-hidden border-[2px] border-[#38BDF8] bg-[#FFFFFF] shadow-[0_16px_40px_rgba(5,40,28,0.22)]">
+                    <div className="bg-[#0369A1] px-[12px] py-[7px] flex items-center justify-between">
+                      <span className="text-[#FDE047] font-black text-[10px]">اختر المنطقة</span>
+                      <span className="text-[#38BDF8] font-bold text-[9px]">{hits.length} نتائج</span>
                     </div>
-                    <div className="max-h-[160px] overflow-auto divide-y divide-[#C9A86A]/10">
+                    <div className="max-h-[160px] overflow-auto divide-y divide-[#38BDF8]/10">
                       {hits.map((hit) => (
                         <button
                           key={hit.id}
@@ -838,15 +838,15 @@ function ClientOrderFormInner({
                             setShowRegionHits(false);
                             setDeliveryPriceAdd(null);
                           }}
-                          className="w-full flex items-center justify-between px-[12px] py-[10px] hover:bg-[#FFF8F0] text-right transition"
+                          className="w-full flex items-center justify-between px-[12px] py-[10px] hover:bg-[#F0F9FF] text-right transition"
                         >
                           <div className="flex flex-col items-start">
                             <span className="text-[13px] font-black text-[#1E293B]">{hit.name}</span>
-                            <span className="text-[10px] font-bold text-[#0A3D2E]/70">
+                            <span className="text-[10px] font-bold text-[#0369A1]/70">
                               {Number(hit.deliveryPrice) / ALF_PER_DINAR} الف د.ع توصيل
                             </span>
                           </div>
-                          <span className="text-[10px] font-black bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] px-[8px] py-[3px] rounded-full">
+                          <span className="text-[10px] font-black bg-[#F0F9FF] border border-[#38BDF8]/40 text-[#0369A1] px-[8px] py-[3px] rounded-full">
                             اختيار
                           </span>
                         </button>
@@ -876,8 +876,8 @@ function ClientOrderFormInner({
                       }}
                       className={`px-[8px] py-[3px] rounded-full text-[10px] font-black border transition ${
                         orderType === tag
-                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                          : "bg-[#FFF8F0] text-[#0A3D2E] border-[#C9A86A]/30"
+                          ? "bg-[#0369A1] text-[#FDE047] border-[#38BDF8]"
+                          : "bg-[#F0F9FF] text-[#0369A1] border-[#38BDF8]/30"
                       }`}
                     >
                       {tag}
@@ -893,7 +893,7 @@ function ClientOrderFormInner({
                       triggerTypingAnimation();
                     }}
                     placeholder="طعام، ملابس..."
-                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#C9A86A]/40 bg-white px-[12px] text-[13px] font-black text-[#1E293B] outline-none placeholder:text-[#94A3B8]"
+                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#38BDF8]/40 bg-white px-[12px] text-[13px] font-black text-[#1E293B] outline-none placeholder:text-[#94A3B8]"
                   />
                 </div>
               </div>
@@ -915,8 +915,8 @@ function ClientOrderFormInner({
                       }}
                       className={`px-[8px] py-[3px] rounded-full text-[10px] font-black border transition ${
                         orderPrice === priceTag
-                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                          : "bg-[#FFF8F0] text-[#0A3D2E] border-[#C9A86A]/30"
+                          ? "bg-[#0369A1] text-[#FDE047] border-[#38BDF8]"
+                          : "bg-[#F0F9FF] text-[#0369A1] border-[#38BDF8]/30"
                       }`}
                     >
                       {priceTag} الف
@@ -933,9 +933,9 @@ function ClientOrderFormInner({
                     }}
                     placeholder="15"
                     inputMode="decimal"
-                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#C9A86A]/40 bg-white px-[12px] pl-[38px] text-center font-mono font-black text-[15px] text-[#1E293B] outline-none"
+                    className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#38BDF8]/40 bg-white px-[12px] pl-[38px] text-center font-mono font-black text-[15px] text-[#1E293B] outline-none"
                   />
-                  <span className="absolute left-[6px] top-1/2 -translate-y-1/2 h-[30px] px-[8px] rounded-[10px] bg-[#FFF8F0] border border-[#C9A86A]/30 flex items-center justify-center text-[10px] font-black text-[#0A3D2E]">
+                  <span className="absolute left-[6px] top-1/2 -translate-y-1/2 h-[30px] px-[8px] rounded-[10px] bg-[#F0F9FF] border border-[#38BDF8]/30 flex items-center justify-center text-[10px] font-black text-[#0369A1]">
                     الف
                   </span>
                 </div>
@@ -944,13 +944,13 @@ function ClientOrderFormInner({
 
             {/* شريط الإجمالي وسعر الطلب الكلي المباشر */}
             {(orderPrice || selected) && (
-              <div className="mt-[12px] rounded-[16px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border-[1.5px] border-[#C9A86A] p-[10px] px-[14px] flex items-center justify-between shadow-[0_4px_16px_rgba(10,61,46,0.25)]">
+              <div className="mt-[12px] rounded-[16px] bg-gradient-to-r from-[#075985] via-[#0369A1] to-[#075985] border-[1.5px] border-[#38BDF8] p-[10px] px-[14px] flex items-center justify-between shadow-[0_4px_16px_rgba(10,61,46,0.25)]">
                 <div className="flex items-center gap-[8px]">
-                  <div className="w-[28px] h-[28px] rounded-[8px] bg-[#F5D77F] flex items-center justify-center">
-                    <CreditCard className="w-[14px] h-[14px] text-[#0A3D2E]" />
+                  <div className="w-[28px] h-[28px] rounded-[8px] bg-[#FDE047] flex items-center justify-center">
+                    <CreditCard className="w-[14px] h-[14px] text-[#0369A1]" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[#F5D77F] font-black text-[12px] leading-[1]">
+                    <span className="text-[#FDE047] font-black text-[12px] leading-[1]">
                       السعر الكلي للطلب
                     </span>
                     <span className="text-white/75 font-bold text-[10px] mt-[2px]">
@@ -959,7 +959,7 @@ function ClientOrderFormInner({
                   </div>
                 </div>
                 <div className="flex items-baseline gap-[3px]">
-                  <span className="text-[#F5D77F] font-black text-[18px] font-mono leading-[1]">
+                  <span className="text-[#FDE047] font-black text-[18px] font-mono leading-[1]">
                     {(Number(orderPrice) || 0) + currentTotalDeliveryAlf}
                   </span>
                   <span className="text-white font-black text-[11px]">الف د.ع</span>
@@ -968,12 +968,12 @@ function ClientOrderFormInner({
             )}
 
             {/* السطر الثالث: شوكت تحب نستلم الطلب */}
-            <div className="mt-[14px] rounded-[18px] bg-[#FFF8F0] border-[1.5px] border-[#C9A86A]/30 p-[12px] flex items-center gap-[12px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]">
-              <div className="w-[44px] h-[44px] rounded-[14px] bg-white border border-[#C9A86A]/30 shadow-sm flex items-center justify-center shrink-0">
-                <Clock className="w-[20px] h-[20px] text-[#0A3D2E]" />
+            <div className="mt-[14px] rounded-[18px] bg-[#F0F9FF] border-[1.5px] border-[#38BDF8]/30 p-[12px] flex items-center gap-[12px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]">
+              <div className="w-[44px] h-[44px] rounded-[14px] bg-white border border-[#38BDF8]/30 shadow-sm flex items-center justify-center shrink-0">
+                <Clock className="w-[20px] h-[20px] text-[#0369A1]" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-black text-[#0A3D2E] leading-[1]">
+                <p className="text-[11px] font-black text-[#0369A1] leading-[1]">
                   شوكت تحب نستلم الطلب
                 </p>
                 {/* اقتراحان سريعان من آخر طلبيتين مرفوعتين */}
@@ -988,8 +988,8 @@ function ClientOrderFormInner({
                       }}
                       className={`px-[8px] py-[2px] rounded-full border text-[10px] font-bold transition ${
                         orderTime === t
-                          ? "bg-[#0A3D2E] text-[#F5D77F] border-[#C9A86A]"
-                          : "bg-white border-[#C9A86A]/30 text-[#0A3D2E]"
+                          ? "bg-[#0369A1] text-[#FDE047] border-[#38BDF8]"
+                          : "bg-white border-[#38BDF8]/30 text-[#0369A1]"
                       }`}
                     >
                       {t}
@@ -1006,7 +1006,7 @@ function ClientOrderFormInner({
                     triggerTypingAnimation();
                   }}
                   placeholder="الآن..."
-                  className="focus-ring w-full h-[38px] rounded-[12px] border-[1.5px] border-[#C9A86A]/40 bg-white px-[10px] text-[12px] font-bold text-[#1E293B] outline-none"
+                  className="focus-ring w-full h-[38px] rounded-[12px] border-[1.5px] border-[#38BDF8]/40 bg-white px-[10px] text-[12px] font-bold text-[#1E293B] outline-none"
                 />
               </div>
             </div>
@@ -1014,7 +1014,7 @@ function ClientOrderFormInner({
             {/* السطر الرابع: مفتاحا "كلشي واصل" و "طلب عكسي" */}
             <div className="mt-[14px] grid grid-cols-2 gap-[10px]">
               {/* كلشي واصل */}
-              <div className="rounded-[16px] bg-[#FFF8F0] border border-[#C9A86A]/30 p-[10px] flex items-center justify-between">
+              <div className="rounded-[16px] bg-[#F0F9FF] border border-[#38BDF8]/30 p-[10px] flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[12px] font-black text-[#1E293B] leading-[1]">
                     كلشي واصل
@@ -1028,7 +1028,7 @@ function ClientOrderFormInner({
                   onClick={() => setIsPrepaidAll(!isPrepaidAll)}
                   className={`relative w-[44px] h-[26px] rounded-full border transition-colors ${
                     isPrepaidAll
-                      ? "bg-[#0A3D2E] border-[#C9A86A]/50"
+                      ? "bg-[#0369A1] border-[#38BDF8]/50"
                       : "bg-[#E2E8F0] border-[#CBD5E1]"
                   }`}
                 >
@@ -1041,7 +1041,7 @@ function ClientOrderFormInner({
               </div>
 
               {/* طلب عكسي */}
-              <div className="rounded-[16px] bg-[#FFF8F0] border border-[#C9A86A]/30 p-[10px] flex items-center justify-between">
+              <div className="rounded-[16px] bg-[#F0F9FF] border border-[#38BDF8]/30 p-[10px] flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[12px] font-black text-[#1E293B] leading-[1]">
                     طلب عكسي
@@ -1055,7 +1055,7 @@ function ClientOrderFormInner({
                   onClick={() => setIsReverse(!isReverse)}
                   className={`relative w-[44px] h-[26px] rounded-full border transition-colors ${
                     isReverse
-                      ? "bg-[#6D28D9] border-[#C9A86A]/50"
+                      ? "bg-[#6D28D9] border-[#38BDF8]/50"
                       : "bg-[#E2E8F0] border-[#CBD5E1]"
                   }`}
                 >
@@ -1069,26 +1069,26 @@ function ClientOrderFormInner({
             </div>
 
             {/* القائمة المنسدلة: تفاصيل أخرى (اختياري) */}
-            <div className="mt-[14px] rounded-[18px] overflow-hidden border border-[#C9A86A]/30 bg-gradient-to-r from-[#FFFEFB] via-[#FFF8F0] to-[#FDF6E8] p-[1px]">
+            <div className="mt-[14px] rounded-[18px] overflow-hidden border border-[#38BDF8]/30 bg-gradient-to-r from-[#FFFFFF] via-[#F0F9FF] to-[#FDF6E8] p-[1px]">
               <button
                 type="button"
                 onClick={() => setIsOtherDetailsOpen(!isOtherDetailsOpen)}
-                className="w-full h-[46px] px-[14px] bg-white flex items-center justify-between rounded-[17px] hover:bg-[#FFF8F0] transition"
+                className="w-full h-[46px] px-[14px] bg-white flex items-center justify-between rounded-[17px] hover:bg-[#F0F9FF] transition"
               >
                 <div className="flex items-center gap-[8px]">
-                  <div className="w-[20px] h-[20px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center">
-                    <span className="w-[6px] h-[6px] rounded-full bg-[#C9A86A]" />
+                  <div className="w-[20px] h-[20px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center">
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#38BDF8]" />
                   </div>
-                  <span className="text-[12px] font-black text-[#0A3D2E]">
+                  <span className="text-[12px] font-black text-[#0369A1]">
                     تفاصيل أخرى (اختياري)
                   </span>
                 </div>
                 <div className="flex items-center gap-[8px]">
-                  <span className="text-[10px] font-bold text-[#8B6B2A] bg-white border border-[#C9A86A]/30 px-[8px] py-[2px] rounded-full">
+                  <span className="text-[10px] font-bold text-[#8B6B2A] bg-white border border-[#38BDF8]/30 px-[8px] py-[2px] rounded-full">
                     {isOtherDetailsOpen ? "إخفاء" : "عرض"}
                   </span>
                   <span
-                    className={`w-[24px] h-[24px] rounded-full bg-[#0A3D2E] text-[#F5D77F] flex items-center justify-center transition-transform ${
+                    className={`w-[24px] h-[24px] rounded-full bg-[#0369A1] text-[#FDE047] flex items-center justify-center transition-transform ${
                       isOtherDetailsOpen ? "rotate-180" : ""
                     }`}
                   >
@@ -1098,11 +1098,11 @@ function ClientOrderFormInner({
               </button>
 
               {isOtherDetailsOpen && (
-                <div className="p-[12px] grid grid-cols-1 gap-[12px] bg-[#FFFEFB]/80">
+                <div className="p-[12px] grid grid-cols-1 gap-[12px] bg-[#FFFFFF]/80">
                   {/* رفع أجر التوصيل ورقم ثاني */}
                   <div className="grid grid-cols-2 gap-[10px]">
                     {/* رفع أجر التوصيل */}
-                    <div className="rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/20 p-[10px]">
+                    <div className="rounded-[14px] bg-[#F0F9FF] border border-[#38BDF8]/20 p-[10px]">
                       <p className="text-[11px] font-black text-[#1E293B] mb-[8px]">
                         رفع أجر التوصيل
                       </p>
@@ -1113,11 +1113,11 @@ function ClientOrderFormInner({
                             const cur = deliveryPriceAdd !== null ? deliveryPriceAdd : baseDeliveryAlf;
                             setDeliveryPriceAdd(Math.max(0, cur - 1));
                           }}
-                          className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#C9A86A]/40 text-[#0A3D2E] font-black text-[16px] shadow-sm active:scale-95"
+                          className="w-[34px] h-[34px] rounded-[10px] bg-white border border-[#38BDF8]/40 text-[#0369A1] font-black text-[16px] shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <div className="flex-1 h-[34px] rounded-[10px] bg-white border border-[#C9A86A]/30 flex items-center justify-center font-mono font-black text-[13px] text-[#0A3D2E]">
+                        <div className="flex-1 h-[34px] rounded-[10px] bg-white border border-[#38BDF8]/30 flex items-center justify-center font-mono font-black text-[13px] text-[#0369A1]">
                           {currentTotalDeliveryAlf} الف
                         </div>
                         <button
@@ -1126,7 +1126,7 @@ function ClientOrderFormInner({
                             const cur = deliveryPriceAdd !== null ? deliveryPriceAdd : baseDeliveryAlf;
                             setDeliveryPriceAdd(cur + 1);
                           }}
-                          className="w-[34px] h-[34px] rounded-[10px] bg-[#0A3D2E] border border-[#C9A86A] text-[#F5D77F] font-black text-[16px] shadow-sm active:scale-95"
+                          className="w-[34px] h-[34px] rounded-[10px] bg-[#0369A1] border border-[#38BDF8] text-[#FDE047] font-black text-[16px] shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -1134,13 +1134,13 @@ function ClientOrderFormInner({
                     </div>
 
                     {/* رقم ثاني للزبون */}
-                    <div className="rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/20 p-[10px]">
+                    <div className="rounded-[14px] bg-[#F0F9FF] border border-[#38BDF8]/20 p-[10px]">
                       <p className="text-[11px] font-black text-[#1E293B] mb-[8px]">رقم ثاني</p>
                       <input
                         value={alternatePhone}
                         onChange={(ev) => setAlternatePhone(ev.target.value)}
                         placeholder="07XXXXXXXX"
-                        className="focus-ring w-full h-[34px] rounded-[10px] border border-[#C9A86A]/30 bg-white px-[10px] text-[12px] font-mono font-bold outline-none"
+                        className="focus-ring w-full h-[34px] rounded-[10px] border border-[#38BDF8]/30 bg-white px-[10px] text-[12px] font-mono font-bold outline-none"
                       />
                     </div>
                   </div>
@@ -1162,21 +1162,21 @@ function ClientOrderFormInner({
                           onClick={() => setVehiclePreference(item.id)}
                           className={`rounded-[14px] border-[1.8px] p-[10px] flex flex-col items-center gap-[6px] transition ${
                             vehiclePreference === item.id
-                              ? "bg-[#0A3D2E] border-[#C9A86A] shadow-[0_6px_16px_rgba(10,61,46,0.25)] text-[#F5D77F]"
-                              : "bg-[#FFF8F0] border-[#C9A86A]/25 text-[#1E293B]"
+                              ? "bg-[#0369A1] border-[#38BDF8] shadow-[0_6px_16px_rgba(10,61,46,0.25)] text-[#FDE047]"
+                              : "bg-[#F0F9FF] border-[#0284C7]/20 text-[#1E293B]"
                           }`}
                         >
                           <item.Icon className="w-[18px] h-[18px]" />
                           <span
                             className={`text-[11px] font-black ${
-                              vehiclePreference === item.id ? "text-[#F5D77F]" : "text-[#1E293B]"
+                              vehiclePreference === item.id ? "text-[#FDE047]" : "text-[#1E293B]"
                             }`}
                           >
                             {item.label}
                           </span>
                           {vehiclePreference === item.id && (
-                            <span className="w-[18px] h-[18px] rounded-full bg-[#F5D77F] flex items-center justify-center">
-                              <Check className="w-[10px] h-[10px] text-[#0A3D2E] stroke-[3]" />
+                            <span className="w-[18px] h-[18px] rounded-full bg-[#FDE047] flex items-center justify-center">
+                              <Check className="w-[10px] h-[10px] text-[#0369A1] stroke-[3]" />
                             </span>
                           )}
                         </button>
@@ -1191,7 +1191,7 @@ function ClientOrderFormInner({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-[42px] rounded-[12px] border-[1.5px] border-dashed border-[#C9A86A] bg-[#FFF8F0] flex items-center justify-center gap-[6px] text-[12px] font-black text-[#0A3D2E] active:scale-[0.98]"
+                        className="h-[42px] rounded-[12px] border-[1.5px] border-dashed border-[#38BDF8] bg-[#F0F9FF] flex items-center justify-center gap-[6px] text-[12px] font-black text-[#0369A1] active:scale-[0.98]"
                       >
                         <Camera className="w-[16px] h-[16px]" />
                         كاميرا
@@ -1199,7 +1199,7 @@ function ClientOrderFormInner({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-[42px] rounded-[12px] border-[1.5px] border-dashed border-[#C9A86A] bg-[#FFF8F0] flex items-center justify-center gap-[6px] text-[12px] font-black text-[#0A3D2E] active:scale-[0.98]"
+                        className="h-[42px] rounded-[12px] border-[1.5px] border-dashed border-[#38BDF8] bg-[#F0F9FF] flex items-center justify-center gap-[6px] text-[12px] font-black text-[#0369A1] active:scale-[0.98]"
                       >
                         <ImageIcon className="w-[16px] h-[16px]" />
                         المعرض
@@ -1215,7 +1215,7 @@ function ClientOrderFormInner({
                     />
 
                     {imagePreview ? (
-                      <div className="mt-[10px] relative rounded-[16px] overflow-hidden border-[1.5px] border-[#C9A86A]/40">
+                      <div className="mt-[10px] relative rounded-[16px] overflow-hidden border-[1.5px] border-[#38BDF8]/40">
                         <img
                           src={imagePreview}
                           alt="معاينة الطلب"
@@ -1224,13 +1224,13 @@ function ClientOrderFormInner({
                         <button
                           type="button"
                           onClick={() => setImagePreview(null)}
-                          className="absolute top-[8px] right-[8px] w-[26px] h-[26px] rounded-full bg-[#0A3D2E] text-white flex items-center justify-center"
+                          className="absolute top-[8px] right-[8px] w-[26px] h-[26px] rounded-full bg-[#0369A1] text-white flex items-center justify-center"
                         >
                           <X className="w-[14px] h-[14px]" />
                         </button>
                       </div>
                     ) : (
-                      <div className="mt-[10px] h-[72px] rounded-[14px] border-[1.2px] border-dashed border-[#C9A86A]/40 bg-[#FFFEFB] flex items-center justify-center gap-[8px] text-[#94A3B8]">
+                      <div className="mt-[10px] h-[72px] rounded-[14px] border-[1.2px] border-dashed border-[#38BDF8]/40 bg-[#FFFFFF] flex items-center justify-center gap-[8px] text-[#94A3B8]">
                         <ImageIcon className="w-[18px] h-[18px]" />
                         <span className="text-[11px] font-bold">لم يتم اختيار صورة</span>
                       </div>
@@ -1253,18 +1253,18 @@ function ClientOrderFormInner({
                       onChange={(ev) => setNotes(ev.target.value)}
                       rows={3}
                       placeholder="اكتب تعليمات إضافية للمندوب..."
-                      className="focus-ring w-full rounded-[14px] border-[1.5px] border-[#C9A86A]/30 bg-[#FFF8F0] p-[10px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8]"
+                      className="focus-ring w-full rounded-[14px] border-[1.5px] border-[#38BDF8]/30 bg-[#F0F9FF] p-[10px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8]"
                     />
                   </div>
 
                   {/* أزرار التقييم والتواصل الإضافية */}
-                  <div className="pt-[10px] border-t border-[#C9A86A]/25 grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
+                  <div className="pt-[10px] border-t border-[#0284C7]/20 grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
                     <button
                       type="button"
                       onClick={() => setShowFeedbackModal(true)}
-                      className="h-[42px] rounded-[13px] bg-gradient-to-r from-[#FAF0D7] via-[#FFFDF7] to-[#FAF0D7] border-[1.5px] border-[#C9A86A] text-[#0A3D2E] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="h-[42px] rounded-[13px] bg-gradient-to-r from-[#E0F2FE] via-[#FFFDF7] to-[#E0F2FE] border-[1.5px] border-[#38BDF8] text-[#0369A1] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <Sparkles className="w-[15px] h-[15px] text-[#C9A86A]" />
+                      <Sparkles className="w-[15px] h-[15px] text-[#38BDF8]" />
                       <span>تقييم التجربة / تقييم جديد ⭐</span>
                     </button>
 
@@ -1307,7 +1307,7 @@ function ClientOrderFormInner({
             : "fabFloat 2.8s ease-in-out infinite, fabGlow 2.8s ease-in-out infinite",
         }}
         className={`fixed z-[60] w-[96px] h-[96px] sm:w-[104px] sm:h-[104px] rounded-full flex flex-col items-center justify-center select-none active:scale-[0.95] transition-transform duration-150 bg-transparent border-0 p-0 ${
-          showNewBtnHint ? "ring-4 ring-[#F5D77F] ring-offset-2 ring-offset-[#0A3D2E] scale-105" : ""
+          showNewBtnHint ? "ring-4 ring-[#FDE047] ring-offset-2 ring-offset-[#0369A1] scale-105" : ""
         } ${
           isDragging
             ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
@@ -1317,7 +1317,7 @@ function ClientOrderFormInner({
         {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي مع عبارة رفع الطلب المدمجة */}
         <div className="absolute inset-0 pointer-events-none">
           <Image
-            src="/images/order-luxury/ak-submit-btn-v3.webp"
+            src="/images/wasly-submit-btn.png"
             alt="رفع الطلب"
             fill
             priority
@@ -1329,32 +1329,32 @@ function ClientOrderFormInner({
         {/* مؤشر التحميل أثناء الرفع */}
         {pending && (
           <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
-            <Loader2 className="w-[38px] h-[38px] text-[#F5D77F] animate-spin" />
+            <Loader2 className="w-[38px] h-[38px] text-[#FDE047] animate-spin" />
           </div>
         )}
       </button>
 
       {/* نافذة التنبيه الإرشادية لزر رفع الطلب الجديد */}
       {showNewBtnHint && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#05281C]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
-          <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFEFB] via-[#FFFDF7] to-[#FAF6EE] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#075985]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
+          <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#38BDF8] bg-gradient-to-b from-[#FFFFFF] via-[#FFFDF7] to-[#F8FAFC] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
             {/* أيقونة الختم الملكي مع هالة ذهبية */}
-            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#FAF0D7] to-[#E8D39E] border-2 border-[#C9A86A] flex items-center justify-center shadow-lg mb-[14px]">
+            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#E0F2FE] to-[#E8D39E] border-2 border-[#38BDF8] flex items-center justify-center shadow-lg mb-[14px]">
               <div className="relative w-full h-full rounded-full overflow-hidden">
                 <Image
-                  src="/images/order-luxury/ak-submit-btn-v3.webp"
+                  src="/images/wasly-submit-btn.png"
                   alt="زر رفع الطلب الجديد"
                   fill
                   className="object-contain"
                 />
               </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0A3D2E] border border-[#F5D77F] text-white flex items-center justify-center text-xs shadow-md">
+              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0369A1] border border-[#FDE047] text-white flex items-center justify-center text-xs shadow-md">
                 👑
               </div>
             </div>
 
-            <h3 className="text-[17px] font-black text-[#0A3D2E] tracking-tight">
-              زر رفع الطلب الجديد 👑
+            <h3 className="text-[17px] font-black text-[#0369A1] tracking-tight">
+              زر رفع الطلب — وصلي ⚡
             </h3>
             
             <p className="text-[12.5px] font-bold text-[#475569] mt-[8px] leading-[1.6] px-2">
@@ -1365,7 +1365,7 @@ function ClientOrderFormInner({
               <button
                 type="button"
                 onClick={handleAcknowledgeBtnHint}
-                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#38BDF8] text-[#FDE047] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>حسناً، فهمت</span>
                 <span className="text-base">👍</span>
@@ -1377,12 +1377,12 @@ function ClientOrderFormInner({
 
       {/* نافذة تنبيه نقص الحقول */}
       {fieldErrorModal && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-[16px] bg-[#05281C]/60 backdrop-blur-[10px]">
-          <div className="w-full max-w-[340px] rounded-[28px] border-[2px] border-[#C9A86A] bg-[#FFFEFB] p-[22px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95">
-            <div className="mx-auto w-[64px] h-[64px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center shadow-inner mb-[14px]">
-              <AlertCircle className="w-[32px] h-[32px] text-[#C9A86A]" />
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-[16px] bg-[#075985]/60 backdrop-blur-[10px]">
+          <div className="w-full max-w-[340px] rounded-[28px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-[22px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95">
+            <div className="mx-auto w-[64px] h-[64px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center shadow-inner mb-[14px]">
+              <AlertCircle className="w-[32px] h-[32px] text-[#38BDF8]" />
             </div>
-            <h3 className="text-[16px] font-black text-[#0A3D2E]">
+            <h3 className="text-[16px] font-black text-[#0369A1]">
               {fieldErrorModal.title}
             </h3>
             <p className="text-[13px] font-bold text-[#475569] mt-[6px] leading-[1.5]">
@@ -1398,7 +1398,7 @@ function ClientOrderFormInner({
                   ref?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                 }, 100);
               }}
-              className="mt-[16px] w-full h-[46px] rounded-[14px] bg-[#0A3D2E] border border-[#C9A86A] text-[#F5D77F] font-black text-[14px] shadow-md active:scale-95 transition"
+              className="mt-[16px] w-full h-[46px] rounded-[14px] bg-[#0369A1] border border-[#38BDF8] text-[#FDE047] font-black text-[14px] shadow-md active:scale-95 transition"
             >
               حسناً، سأكمل الحقل
             </button>
@@ -1408,12 +1408,12 @@ function ClientOrderFormInner({
 
       {/* نافذة تأكيد الإرسال بدون سعر */}
       {showNoPriceConfirm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-[16px] bg-[#05281C]/55 backdrop-blur-[8px]">
-          <div className="w-full max-w-[340px] rounded-[28px] border-[2px] border-[#C9A86A] bg-[#FFFEFB] p-[20px] text-center shadow-xl animate-in fade-in zoom-in-95">
-            <div className="mx-auto w-[56px] h-[56px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center shadow-inner mb-[12px]">
-              <span className="w-[10px] h-[10px] rounded-full bg-[#C9A86A]" />
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-[16px] bg-[#075985]/55 backdrop-blur-[8px]">
+          <div className="w-full max-w-[340px] rounded-[28px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-[20px] text-center shadow-xl animate-in fade-in zoom-in-95">
+            <div className="mx-auto w-[56px] h-[56px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center shadow-inner mb-[12px]">
+              <span className="w-[10px] h-[10px] rounded-full bg-[#38BDF8]" />
             </div>
-            <h3 className="text-[15px] font-black text-[#0A3D2E]">بدون سعر طلب</h3>
+            <h3 className="text-[15px] font-black text-[#0369A1]">بدون سعر طلب</h3>
             <p className="text-[12px] font-bold text-[#475569] mt-[6px] leading-[1.5]">
               لم تدخل سعراً للطلب، هل تود الإرسال وترك التسعير لاحقاً للإدارة؟
             </p>
@@ -1424,7 +1424,7 @@ function ClientOrderFormInner({
                   setShowNoPriceConfirm(false);
                   formRef.current?.requestSubmit();
                 }}
-                className="w-full h-[44px] rounded-[14px] bg-[#0A3D2E] border border-[#C9A86A] text-[#F5D77F] font-black text-[13px] shadow-sm active:scale-95 transition"
+                className="w-full h-[44px] rounded-[14px] bg-[#0369A1] border border-[#38BDF8] text-[#FDE047] font-black text-[13px] shadow-sm active:scale-95 transition"
               >
                 نعم، إرسال الطلب الآن
               </button>
@@ -1434,7 +1434,7 @@ function ClientOrderFormInner({
                   setShowNoPriceConfirm(false);
                   orderPriceRef.current?.focus();
                 }}
-                className="w-full h-[42px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#334155] font-black text-[13px] active:scale-95 transition"
+                className="w-full h-[42px] rounded-[14px] bg-[#F0F9FF] border border-[#38BDF8]/40 text-[#334155] font-black text-[13px] active:scale-95 transition"
               >
                 تعديل السعر أولاً
               </button>
@@ -1445,17 +1445,17 @@ function ClientOrderFormInner({
 
       {/* نافذة نجاح رفع الطلب */}
       {showSuccessModal && lastSubmittedOrder && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-[16px] bg-[#05281C]/65 backdrop-blur-[12px]">
-          <div className="w-full max-w-[360px] rounded-[28px] border-[2px] border-[#C9A86A] bg-[#FFFEFB] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.4)] animate-in fade-in zoom-in-95">
-            <div className="mx-auto w-[72px] h-[72px] rounded-full bg-[#0A3D2E] border-[2px] border-[#F5D77F] flex items-center justify-center shadow-lg mb-[12px]">
-              <Check className="w-[32px] h-[32px] text-[#F5D77F] stroke-[3]" />
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-[16px] bg-[#075985]/65 backdrop-blur-[12px]">
+          <div className="w-full max-w-[360px] rounded-[28px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.4)] animate-in fade-in zoom-in-95">
+            <div className="mx-auto w-[72px] h-[72px] rounded-full bg-[#0369A1] border-[2px] border-[#FDE047] flex items-center justify-center shadow-lg mb-[12px]">
+              <Check className="w-[32px] h-[32px] text-[#FDE047] stroke-[3]" />
             </div>
-            <h2 className="text-[18px] font-black text-[#0A3D2E]">تم رفع الطلب بنجاح</h2>
+            <h2 className="text-[18px] font-black text-[#0369A1]">تم رفع الطلب بنجاح</h2>
             <p className="text-[12px] font-bold text-[#475569] mt-[8px] leading-[1.6]">
               تم حفظ وإرسال تفاصيل طلبك للإدارة بنجاح، سيتم إسناد المندوب والتوصيل قريباً
             </p>
 
-            <div className="mt-[16px] rounded-[16px] bg-[#FFF8F0] border border-[#C9A86A]/30 p-[10px] grid grid-cols-3 text-center divide-x divide-[#C9A86A]/20 divide-x-reverse">
+            <div className="mt-[16px] rounded-[16px] bg-[#F0F9FF] border border-[#38BDF8]/30 p-[10px] grid grid-cols-3 text-center divide-x divide-[#38BDF8]/20 divide-x-reverse">
               <div>
                 <p className="text-[9px] font-bold text-[#94A3B8]">الزبون</p>
                 <p className="text-[11px] font-black text-[#1E293B] mt-[2px]">
@@ -1496,9 +1496,9 @@ function ClientOrderFormInner({
                   setShowSuccessModal(false);
                   setShowFeedbackModal(true);
                 }}
-                className="w-full h-[40px] rounded-[12px] bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] font-black text-[12px] hover:bg-white active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full h-[40px] rounded-[12px] bg-[#F0F9FF] border border-[#38BDF8]/40 text-[#0369A1] font-black text-[12px] hover:bg-white active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Sparkles className="w-[14px] h-[14px] text-[#C9A86A]" />
+                <Sparkles className="w-[14px] h-[14px] text-[#38BDF8]" />
                 <span>تقييم تجربتك في رفع الطلب ⭐</span>
               </button>
 
@@ -1506,7 +1506,7 @@ function ClientOrderFormInner({
               <button
                 type="button"
                 onClick={resetFormForNew}
-                className="w-full h-[44px] rounded-[14px] bg-gradient-to-r from-[#05281C] via-[#0A3D2E] to-[#05281C] border border-[#C9A86A] text-[#F5D77F] font-black text-[13.5px] shadow-md active:scale-95 transition cursor-pointer"
+                className="w-full h-[44px] rounded-[14px] bg-gradient-to-r from-[#075985] via-[#0369A1] to-[#075985] border border-[#38BDF8] text-[#FDE047] font-black text-[13.5px] shadow-md active:scale-95 transition cursor-pointer"
               >
                 رفع طلب جديد 🚀
               </button>

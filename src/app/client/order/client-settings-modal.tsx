@@ -45,24 +45,24 @@ export function ClientSettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#05281C]/70 backdrop-blur-[10px] animate-in fade-in duration-200">
-      <div className="relative w-full max-w-[390px] rounded-[28px] border-[2px] border-[#C9A86A] bg-[#FFFEFB] p-[20px] sm:p-[24px] shadow-[0_24px_64px_rgba(0,0,0,0.45)] animate-in zoom-in-95 duration-200 text-right">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#075985]/70 backdrop-blur-[10px] animate-in fade-in duration-200">
+      <div className="relative w-full max-w-[390px] rounded-[28px] border-[2px] border-[#38BDF8] bg-[#FFFFFF] p-[20px] sm:p-[24px] shadow-[0_24px_64px_rgba(0,0,0,0.45)] animate-in zoom-in-95 duration-200 text-right">
         {/* زر الإغلاق العلوي */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-[18px] left-[18px] w-[32px] h-[32px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 flex items-center justify-center text-[#475569] hover:text-[#0A3D2E] hover:bg-white active:scale-95 transition"
+          className="absolute top-[18px] left-[18px] w-[32px] h-[32px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center text-[#475569] hover:text-[#0369A1] hover:bg-white active:scale-95 transition"
         >
           <X className="w-[18px] h-[18px]" />
         </button>
 
         {/* رأس النافذة */}
         <div className="flex items-center gap-[10px] mb-[18px] pl-[36px]">
-          <div className="w-[42px] h-[42px] rounded-[14px] bg-gradient-to-br from-[#0A3D2E] to-[#05281C] border-[1.5px] border-[#C9A86A] flex items-center justify-center text-[#F5D77F] shadow-sm shrink-0">
+          <div className="w-[42px] h-[42px] rounded-[14px] bg-gradient-to-br from-[#0369A1] to-[#075985] border-[1.5px] border-[#38BDF8] flex items-center justify-center text-[#FDE047] shadow-sm shrink-0">
             <Settings className="w-[22px] h-[22px]" />
           </div>
           <div>
-            <h2 className="text-[17px] font-black text-[#0A3D2E]">إعدادات صفحة العميل</h2>
+            <h2 className="text-[17px] font-black text-[#0369A1]">إعدادات صفحة العميل</h2>
             <p className="text-[11px] font-bold text-[#64748B]">تخصيص تجربتك والخيارات السريعة</p>
           </div>
         </div>
@@ -70,12 +70,12 @@ export function ClientSettingsModal({
         {/* قائمة الخيارات */}
         <div className="space-y-[12px]">
           {/* 1. خيار تفعيل إرسال الواتساب التلقائي */}
-          <div className="p-[14px] rounded-[18px] bg-[#FFF8F0] border border-[#C9A86A]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)] transition">
+          <div className="p-[14px] rounded-[18px] bg-[#F0F9FF] border border-[#38BDF8]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)] transition">
             <div className="flex items-start justify-between gap-[12px]">
               <div className="flex-1">
                 <div className="flex items-center gap-[6px]">
                   <MessageCircle className="w-[16px] h-[16px] text-[#25D366]" />
-                  <span className="text-[13px] font-black text-[#0A3D2E]">
+                  <span className="text-[13px] font-black text-[#0369A1]">
                     إرسال تفاصيل الطلب للواتساب
                   </span>
                 </div>
@@ -110,13 +110,13 @@ export function ClientSettingsModal({
           </div>
 
           {/* 2. خيار التقييم */}
-          <div className="p-[14px] rounded-[18px] bg-[#FFF8F0] border border-[#C9A86A]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)]">
+          <div className="p-[14px] rounded-[18px] bg-[#F0F9FF] border border-[#38BDF8]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)]">
             <div className="flex items-start gap-[10px]">
-              <div className="w-[32px] h-[32px] rounded-full bg-[#F5D77F]/30 border border-[#C9A86A]/40 flex items-center justify-center shrink-0 mt-[2px]">
-                <Star className="w-[16px] h-[16px] text-[#C9A86A] fill-[#C9A86A]" />
+              <div className="w-[32px] h-[32px] rounded-full bg-[#FDE047]/30 border border-[#38BDF8]/40 flex items-center justify-center shrink-0 mt-[2px]">
+                <Star className="w-[16px] h-[16px] text-[#38BDF8] fill-[#38BDF8]" />
               </div>
               <div className="flex-1">
-                <h3 className="text-[13px] font-black text-[#0A3D2E]">تقييم تجربة الاستخدام</h3>
+                <h3 className="text-[13px] font-black text-[#0369A1]">تقييم تجربة الاستخدام</h3>
                 <p className="text-[11px] font-semibold text-[#475569] mt-[2px] leading-[1.5]">
                   شاركنا رأيك في التصميم والأزرار وسهولة الاستخدام.
                 </p>
@@ -126,9 +126,9 @@ export function ClientSettingsModal({
                     onClose();
                     onOpenFeedback();
                   }}
-                  className="mt-[10px] w-full h-[36px] rounded-[12px] bg-gradient-to-r from-[#05281C] to-[#0A3D2E] border border-[#C9A86A]/70 text-[#F5D77F] font-bold text-[12px] shadow-sm active:scale-95 transition flex items-center justify-center gap-[6px]"
+                  className="mt-[10px] w-full h-[36px] rounded-[12px] bg-gradient-to-r from-[#075985] to-[#0369A1] border border-[#38BDF8]/70 text-[#FDE047] font-bold text-[12px] shadow-sm active:scale-95 transition flex items-center justify-center gap-[6px]"
                 >
-                  <Star className="w-[13px] h-[13px] fill-[#F5D77F]" />
+                  <Star className="w-[13px] h-[13px] fill-[#FDE047]" />
                   <span>فتح نافذة التقييم ⭐</span>
                 </button>
               </div>
@@ -136,13 +136,13 @@ export function ClientSettingsModal({
           </div>
 
           {/* 3. خيار التواصل مع الإدارة */}
-          <div className="p-[14px] rounded-[18px] bg-[#FFF8F0] border border-[#C9A86A]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)]">
+          <div className="p-[14px] rounded-[18px] bg-[#F0F9FF] border border-[#38BDF8]/35 shadow-[0_2px_8px_rgba(5,40,28,0.03)]">
             <div className="flex items-start gap-[10px]">
               <div className="w-[32px] h-[32px] rounded-full bg-[#25D366]/20 border border-[#25D366]/40 flex items-center justify-center shrink-0 mt-[2px]">
                 <PhoneCall className="w-[16px] h-[16px] text-[#1E9E4B]" />
               </div>
               <div className="flex-1">
-                <h3 className="text-[13px] font-black text-[#0A3D2E]">التواصل المباشر مع الإدارة</h3>
+                <h3 className="text-[13px] font-black text-[#0369A1]">التواصل المباشر مع الإدارة</h3>
                 <p className="text-[11px] font-semibold text-[#475569] mt-[2px] leading-[1.5]">
                   فريق إدارة وصلي جاهز لمساعدتك والرد على كافة استفساراتك.
                 </p>
@@ -165,7 +165,7 @@ export function ClientSettingsModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full h-[40px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/50 text-[#0A3D2E] font-black text-[13px] hover:bg-white active:scale-95 transition"
+            className="w-full h-[40px] rounded-[14px] bg-[#F0F9FF] border border-[#38BDF8]/50 text-[#0369A1] font-black text-[13px] hover:bg-white active:scale-95 transition"
           >
             إغلاق
           </button>
