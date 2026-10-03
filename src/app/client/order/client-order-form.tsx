@@ -613,7 +613,7 @@ function ClientOrderFormInner({
           border-color: #0284C7 !important;
           box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18), 0 0 0 6px rgba(186, 230, 253, 0.4);
         }
-        @keyframes goldShimmer {
+        @keyframes blueShimmer {
           0% { transform: translateX(-120%) skewX(-12deg); }
           100% { transform: translateX(220%) skewX(-12deg); }
         }
@@ -642,14 +642,14 @@ function ClientOrderFormInner({
       `}</style>
 
       {/* خلفية التدرج والزخرفة */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#FFFFFF] to-[#F8FAFC] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#FFFFFF] to-[#FFFFFF] pointer-events-none" />
       <div className="absolute inset-0 islamic-pattern opacity-[0.22] pointer-events-none" />
       <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[900px] h-[420px] bg-gradient-to-b from-[#0284C7]/12 via-[#0284C7]/10 to-transparent blur-[70px] pointer-events-none" />
 
       {/* الحاوية الأساسية */}
       <div className="relative mx-auto max-w-[480px] px-[14px] py-[14px] pb-[140px]">
         {/* الهيدر العلوي */}
-        <div className="rounded-[20px] bg-[#FFFFFF] border border-[#0284C7]/20 shadow-[0_4px_20px_rgba(5,40,28,0.06)] px-[12px] py-[10px] mb-[12px]">
+        <div className="rounded-[20px] bg-[#FFFFFF] border border-[#0284C7]/20 shadow-[0_4px_20px_rgba(2,32,52,0.06)] px-[12px] py-[10px] mb-[12px]">
           <div className="flex items-center justify-between gap-[8px]">
             <div className="flex items-center gap-[8px] min-w-0">
               <div className="relative w-[34px] h-[34px] rounded-full overflow-hidden border-[1.5px] border-[#0284C7]/40 shadow-sm flex items-center justify-center shrink-0">
@@ -684,7 +684,7 @@ function ClientOrderFormInner({
         {/* بطاقة الترحيب بالمحل والمستخدم */}
         <div className="card-gold p-[14px] flex items-center gap-[14px] mb-[10px]">
           <div className="relative shrink-0">
-            <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-[2.5px] border-[#0284C7] shadow-[0_4px_16px_rgba(201,168,106,0.35)] bg-[#FFFFFF] flex items-center justify-center">
+            <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-[2.5px] border-[#0284C7] shadow-[0_4px_16px_rgba(2,132,199,0.25)] bg-[#FFFFFF] flex items-center justify-center">
               {photoUrl ? (
                 <img
                   src={resolvePublicImageSrc(photoUrl)}
@@ -712,7 +712,7 @@ function ClientOrderFormInner({
             </p>
             {/* شريط العبارة المضيئة المشرقة */}
             <div className="mt-[8px] h-[28px] rounded-full bg-gradient-to-r from-[#0284C7]/15 via-[#FDE047]/25 to-[#0284C7]/15 border border-[#0284C7]/30 flex items-center justify-center px-[10px] relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent w-[45%] animate-[goldShimmer_2.8s_ease-in-out_infinite]" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent w-[45%] animate-[blueShimmer_2.8s_ease-in-out_infinite]" />
               <span className="text-[#0369A1] font-black text-[11px] tracking-wide relative z-10">
                 خدمتكم تسعدنا وطلباتكم أمانة لدينا
               </span>
@@ -725,7 +725,7 @@ function ClientOrderFormInner({
           <div className="flex items-center gap-[8px]">
             <Link
               href={`/client/order/account?e=${e}&exp=${exp}&s=${sig}`}
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(2,32,52,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(2,32,52,0.08)] hover:border-[#0284C7]/40"
             >
               <CreditCard className="w-[16px] h-[16px] text-[#0369A1]" />
               <span className="text-[#0369A1] font-bold text-[12px]">سجل الديون</span>
@@ -733,7 +733,7 @@ function ClientOrderFormInner({
 
             <Link
               href={`/client/order/history?e=${e}&exp=${exp}&s=${sig}`}
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(2,32,52,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(2,32,52,0.08)] hover:border-[#0284C7]/40"
             >
               <FileText className="w-[16px] h-[16px] text-[#0369A1]" />
               <span className="text-[#0369A1] font-bold text-[12px]">السجل</span>
@@ -747,7 +747,7 @@ function ClientOrderFormInner({
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(5,40,28,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(5,40,28,0.08)] hover:border-[#0284C7]/40"
+              className="flex-1 h-[40px] px-[10px] rounded-[12px] bg-[#FFFFFF] border-[1.5px] border-[#0284C7]/40 shadow-[0_2px_8px_rgba(2,32,52,0.05)] flex items-center justify-center gap-[6px] active:scale-[0.97] transition hover:shadow-[0_4px_12px_rgba(2,32,52,0.08)] hover:border-[#0284C7]/40"
             >
               <Headphones className="w-[16px] h-[16px] text-[#0369A1]" />
               <span className="text-[#0369A1] font-bold text-[12px]">الدعم</span>
@@ -1328,7 +1328,7 @@ function ClientOrderFormInner({
                     <button
                       type="button"
                       onClick={() => setShowFeedbackModal(true)}
-                      className="h-[42px] rounded-[13px] bg-gradient-to-r from-[#FFFFFF] via-[#FFFDF7] to-[#FFFFFF] border-[1.5px] border-[#0284C7] text-[#0369A1] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="h-[42px] rounded-[13px] bg-gradient-to-r from-[#FFFFFF] via-[#FFFFFF] to-[#FFFFFF] border-[1.5px] border-[#0284C7] text-[#0369A1] font-black text-[12px] shadow-sm hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Sparkles className="w-[15px] h-[15px] text-[#0284C7]" />
                       <span>تقييم التجربة / تقييم جديد ⭐</span>
@@ -1385,20 +1385,15 @@ function ClientOrderFormInner({
           showNewBtnHint ? "ring-4 ring-[#FDE047] ring-offset-2 ring-offset-[#0369A1] scale-105" : ""
         } ${
           isDragging
-            ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(201,168,106,0.9)]"
+            ? "cursor-grabbing scale-[1.08] filter drop-shadow-[0_0_24px_rgba(2,132,199,0.9)]"
             : "cursor-grab"
         }`}
       >
-        {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي مع عبارة رفع الطلب المدمجة */}
-        <div className="absolute inset-0 pointer-events-none">
-          <Image
-            src="/images/wasly-submit-btn.png"
-            alt="رفع الطلب"
-            fill
-            priority
-            unoptimized
-            className="object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
-          />
+        {/* زر رفع الطلب بهوية وصلي: أزرق + أبيض + أصفر */}
+        <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-[#0369A1] via-[#0284C7] to-[#075985] border-[3px] border-[#FDE047] shadow-[0_8px_28px_rgba(2,132,199,0.45)] flex flex-col items-center justify-center gap-[2px] pointer-events-none">
+          <Send className="w-[27px] h-[27px] text-[#FDE047] fill-[#FDE047] -rotate-45" strokeWidth={2.5} />
+          <span className="text-white text-[12px] font-black leading-none">رفع الطلب</span>
+          <span className="text-[#FDE047] text-[9px] font-black leading-none">وصلي ⚡</span>
         </div>
 
         {/* مؤشر التحميل أثناء الرفع */}
@@ -1412,20 +1407,12 @@ function ClientOrderFormInner({
       {/* نافذة التنبيه الإرشادية لزر رفع الطلب الجديد */}
       {showNewBtnHint && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#075985]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
-          <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#0284C7] bg-gradient-to-b from-[#FFFFFF] via-[#FFFDF7] to-[#F8FAFC] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
-            {/* أيقونة الختم الملكي مع هالة ذهبية */}
-            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#FFFFFF] to-[#FDE047] border-2 border-[#0284C7] flex items-center justify-center shadow-lg mb-[14px]">
-              <div className="relative w-full h-full rounded-full overflow-hidden">
-                <Image
-                  src="/images/wasly-submit-btn.png"
-                  alt="زر رفع الطلب الجديد"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0369A1] border border-[#FDE047] text-white flex items-center justify-center text-xs shadow-md">
-                👑
-              </div>
+          <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#0284C7] bg-gradient-to-b from-[#FFFFFF] via-[#FFFFFF] to-[#FFFFFF] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+            {/* رمز وصلي لزر رفع الطلب */}
+            <div className="relative mx-auto w-[92px] h-[92px] rounded-full bg-gradient-to-br from-[#0369A1] via-[#0284C7] to-[#075985] border-[3px] border-[#FDE047] flex flex-col items-center justify-center shadow-[0_8px_28px_rgba(2,132,199,0.35)] mb-[14px]">
+              <Send className="w-[30px] h-[30px] text-[#FDE047] fill-[#FDE047] -rotate-45" strokeWidth={2.5} />
+              <span className="text-white text-[12px] font-black mt-[2px]">رفع الطلب</span>
+              <span className="text-[#FDE047] text-[9px] font-black">وصلي ⚡</span>
             </div>
 
             <h3 className="text-[17px] font-black text-[#0369A1] tracking-tight">
@@ -1440,7 +1427,7 @@ function ClientOrderFormInner({
               <button
                 type="button"
                 onClick={handleAcknowledgeBtnHint}
-                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0369A1] via-[#075985] to-[#0369A1] border-2 border-[#0284C7] text-[#FDE047] font-black text-[15px] shadow-[0_4px_16px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-[48px] rounded-[16px] bg-gradient-to-r from-[#0369A1] via-[#075985] to-[#0369A1] border-2 border-[#0284C7] text-[#FDE047] font-black text-[15px] shadow-[0_4px_16px_rgba(2,32,52,0.35),inset_0_1px_0_rgba(253,224,71,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>حسناً، فهمت</span>
                 <span className="text-base">👍</span>
