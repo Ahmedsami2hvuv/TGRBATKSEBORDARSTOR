@@ -183,7 +183,7 @@ export function MandoubOrderMoneyFlow({
         detail: { orderId, status: "delivered" },
       }),
     );
-    setToastMsg({ text: "تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉", type: "success" });
+    setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح! 🎉", type: "success" });
     closePanels();
     void triggerBackgroundMoneyRecord({
       type: "delivery",
@@ -259,7 +259,7 @@ export function MandoubOrderMoneyFlow({
       setToastMsg({ text: deliveryState.error, type: "error" });
       setLocalEvents(moneyEvents); // تراجع في حال الخطأ
     } else if (deliveryState.success || deliveryState.ok) {
-      setToastMsg({ text: "تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉", type: "success" });
+      setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح! 🎉", type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
@@ -353,20 +353,20 @@ export function MandoubOrderMoneyFlow({
       )}
 
       {/* كارت المعاملات المالية المتطابق 100% مع واجهة الإدارة والتصميم الملكي الفاخر */}
-      <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
+      <div className="relative rounded-[22px] border-[1.5px] border-[#38BDF8] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
         {/* هيدر الكارت المذهب */}
-        <div className="relative px-3.5 py-3 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] border-b border-[#C9A86A]/20 flex items-center justify-between">
+        <div className="relative px-3.5 py-3 bg-gradient-to-b from-[#F0F9FF] to-[#FFFEFB] border-b border-[#38BDF8]/20 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-[30px] h-[30px] rounded-[10px] gold-grad flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.35)] border border-[#9C7D46]/30">
-              <svg className="w-[16px] h-[16px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <svg className="w-[16px] h-[16px] text-[#0369A1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <circle cx="9" cy="12" r="6" />
                 <circle cx="15" cy="12" r="6" />
               </svg>
             </div>
-            <h3 className="text-[13.5px] font-black text-[#0A3D2E] leading-none tracking-wide">المعاملات المالية</h3>
+            <h3 className="text-[13.5px] font-black text-[#0369A1] leading-none tracking-wide">المعاملات المالية</h3>
           </div>
 
-          <div className="w-[8px] h-[8px] rounded-full bg-[#C9A86A] shadow-[0_0_6px_#C9A86A] animate-pulse" />
+          <div className="w-[8px] h-[8px] rounded-full bg-[#38BDF8] shadow-[0_0_6px_#38BDF8] animate-pulse" />
         </div>
 
         <div className="relative p-3.5 bg-[#FFFEF8] space-y-3.5">
@@ -413,14 +413,14 @@ export function MandoubOrderMoneyFlow({
 
           {/* فاصل ذهبي ناعم */}
           <div className="flex items-center gap-2 py-0.5">
-            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-            <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A]/60" />
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
+            <div className="w-[6px] h-[6px] rotate-45 bg-[#38BDF8]/60" />
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
           </div>
 
           {/* قائمة المعاملات */}
           {moneyEvents.length === 0 ? (
-            <p className="text-center text-[#8B6A2A]/70 py-4 bg-[#FDF6E3]/60 rounded-xl border border-[#C9A86A]/25 text-xs font-bold">
+            <p className="text-center text-[#8B6A2A]/70 py-4 bg-[#F0F9FF]/60 rounded-xl border border-[#38BDF8]/25 text-xs font-bold">
               لا توجد معاملات نقد مسجّلة لهذا الطلب بعد.
             </p>
           ) : (
@@ -436,7 +436,7 @@ export function MandoubOrderMoneyFlow({
                 return (
                   <div
                     key={ev.id}
-                    className={`relative rounded-[14px] bg-[#FFFEF8] border-[1.5px] border-[#C9A86A]/40 shadow-[0_2px_8px_rgba(201,168,106,0.08),inset_0_1px_0_white] p-2.5 overflow-hidden ${
+                    className={`relative rounded-[14px] bg-[#FFFEF8] border-[1.5px] border-[#38BDF8]/40 shadow-[0_2px_8px_rgba(201,168,106,0.08),inset_0_1px_0_white] p-2.5 overflow-hidden ${
                       deleted ? "opacity-50 grayscale" : ""
                     }`}
                   >
@@ -445,11 +445,11 @@ export function MandoubOrderMoneyFlow({
                         {/* أيقونة الاتجاه */}
                         <div
                           className={`w-[28px] h-[28px] rounded-full flex items-center justify-center border shrink-0 ${
-                            isSader ? "bg-[#E6F4EF] border-[#0A3D2E]/20" : "bg-[#FFF0F0] border-[#FFB4B4]/60"
+                            isSader ? "bg-[#E6F4EF] border-[#0369A1]/20" : "bg-[#FFF0F0] border-[#FFB4B4]/60"
                           }`}
                         >
                           {isSader ? (
-                            <svg className="w-3.5 h-3.5 text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <svg className="w-3.5 h-3.5 text-[#0369A1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                               <line x1="7" y1="17" x2="17" y2="7" />
                               <polyline points="7 7 17 7 17 17" />
                             </svg>
@@ -467,22 +467,22 @@ export function MandoubOrderMoneyFlow({
                             <span
                               className={`px-2 py-[2px] rounded-full text-[10px] font-black border ${
                                 isSader
-                                  ? "bg-[#E6F4EF] border-[#0A3D2E]/20 text-[#0A3D2E]"
+                                  ? "bg-[#E6F4EF] border-[#0369A1]/20 text-[#0369A1]"
                                   : "bg-[#FFF0F0] border-[#FFB4B4] text-[#C53030]"
                               }`}
                             >
                               {isSader ? "صادر" : "وارد"}
                             </span>
 
-                            <span className="text-[11px] font-bold text-[#0A3D2E]">
+                            <span className="text-[11px] font-bold text-[#0369A1]">
                               {ev.performedByDisplayName?.trim() || courierName?.trim() || "المندوب"}
                             </span>
 
-                            <span className="text-[9px] font-bold text-[#8B6A2A]/60 px-2 py-[2px] rounded-full bg-[#F7F5EF] border border-[#E8D5A3]/50">
+                            <span className="text-[9px] font-bold text-[#8B6A2A]/60 px-2 py-[2px] rounded-full bg-[#F7F5EF] border border-[#BAE6FD]/50">
                               {timeInfo.dateStr} {timeInfo.timeStr}
                             </span>
 
-                            <span className="text-[11px] font-black text-[#0A3D2E] font-mono mr-auto">
+                            <span className="text-[11px] font-black text-[#0369A1] font-mono mr-auto">
                               {formatDinarAsAlfWithUnit(ev.amountDinar)}
                             </span>
                           </div>
@@ -597,7 +597,7 @@ function MandoubPickupModal({
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-[#FDF8EE] border-[2px] border-[#38BDF8] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -609,12 +609,12 @@ function MandoubPickupModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#38BDF8]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
           >
             ×
           </button>
         </div>
-        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
+        <div className="h-[1px] bg-[#38BDF8]/30 mx-6" />
 
         <div className="p-6">
           <form
@@ -681,7 +681,7 @@ function MandoubPickupModal({
                   else setSelectedBox(null);
                 }}
                 placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
               />
             </div>
 
@@ -697,7 +697,7 @@ function MandoubPickupModal({
                   name="mismatchNote"
                   required
                   rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
                   placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
                 />
               </div>
@@ -705,14 +705,14 @@ function MandoubPickupModal({
               <input type="hidden" name="mismatchNote" value="" />
             )}
 
-            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+            <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
 
             <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={pickupPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 100%)" }}
               >
                 <span>💾</span>
                 <span>تأكيد الصادر ⚡</span>
@@ -720,7 +720,7 @@ function MandoubPickupModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
               >
                 إلغاء
               </button>
@@ -803,7 +803,7 @@ function MandoubDeliveryModal({
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-[#FDF8EE] border-[2px] border-[#38BDF8] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -815,12 +815,12 @@ function MandoubDeliveryModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#38BDF8]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
           >
             ×
           </button>
         </div>
-        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
+        <div className="h-[1px] bg-[#38BDF8]/30 mx-6" />
 
         <div className="p-6">
           <form
@@ -901,7 +901,7 @@ function MandoubDeliveryModal({
                   else setSelectedBox(null);
                 }}
                 placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
               />
             </div>
 
@@ -917,7 +917,7 @@ function MandoubDeliveryModal({
                   name="mismatchNote"
                   required
                   rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
                   placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
                 />
               </div>
@@ -925,13 +925,13 @@ function MandoubDeliveryModal({
               <input type="hidden" name="mismatchNote" value="" />
             )}
 
-            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+            <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
 
             <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={deliveryPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
               >
                 <span>💾</span>
@@ -940,7 +940,7 @@ function MandoubDeliveryModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
               >
                 إلغاء
               </button>
@@ -956,12 +956,12 @@ function MandoubDeliveryModal({
                 role="dialog"
                 aria-modal="true"
               >
-                <div className="max-w-md rounded-2xl border-2 border-[#C9A86A] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0] text-right">
-                  <p className="text-base font-black leading-relaxed text-[#F5D77F]">
+                <div className="max-w-md rounded-2xl border-2 border-[#38BDF8] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0] text-right">
+                  <p className="text-base font-black leading-relaxed text-[#FDE047]">
                     هذا الطلب لا يحتوي على موقع للزبون
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-[#FFF8F0]/85">
-                    أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#F5D77F]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
+                    أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#FDE047]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
                   </p>
                   {geoError ? (
                     <p className="mt-3 text-sm font-bold text-rose-300">{geoError}</p>
@@ -971,7 +971,7 @@ function MandoubDeliveryModal({
                       type="button"
                       onClick={onConfirmGps}
                       disabled={deliveryPending}
-                      className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+                      className="rounded-xl bg-gradient-to-r from-[#FDE047] via-[#E5C158] to-[#38BDF8] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
                     >
                       ✓ نعم، ارفع موقعي الحالي
                     </button>
@@ -979,7 +979,7 @@ function MandoubDeliveryModal({
                       type="button"
                       onClick={onSkipLocation}
                       disabled={deliveryPending}
-                      className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
+                      className="rounded-xl border-2 border-[#38BDF8] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#FDE047] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
                     >
                       ✕ لا، لا ترفع موقعي
                     </button>
@@ -989,7 +989,7 @@ function MandoubDeliveryModal({
                         setLocationModalOpen(false);
                         setGeoError("");
                       }}
-                      className="mt-2 text-center text-sm font-bold text-[#C9A86A] hover:underline cursor-pointer"
+                      className="mt-2 text-center text-sm font-bold text-[#38BDF8] hover:underline cursor-pointer"
                       disabled={deliveryPending}
                     >
                       إلغاء والرجوع
@@ -1020,7 +1020,7 @@ function MandoubAmountSquareBtn({
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
   const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const textColor = selected ? "#38BDF8" : isEmerald ? "#0A3D2A" : "#8B2E1A";
 
   return (
     <button
@@ -1032,11 +1032,11 @@ function MandoubAmountSquareBtn({
         text-[48px] font-black leading-none tracking-tight
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_0_0_3px_#38BDF844,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
-        borderColor: "#C9A86A",
+        borderColor: "#38BDF8",
         color: textColor,
       }}
     >
@@ -1062,7 +1062,7 @@ function MandoubZeroSquareBtn({
 }) {
   const isEmerald = color === "emerald";
   const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#C9A86A" : "#0A3D2A";
+  const textColor = selected ? "#38BDF8" : "#0A3D2A";
 
   return (
     <button
@@ -1073,11 +1073,11 @@ function MandoubZeroSquareBtn({
         rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_0_0_3px_#38BDF844,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
       `}
       style={{
         backgroundColor: selected ? activeBg : "#E8E0D0",
-        borderColor: "#C9A86A",
+        borderColor: "#38BDF8",
         color: textColor,
       }}
     >
@@ -1088,7 +1088,7 @@ function MandoubZeroSquareBtn({
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#38BDF8" }}>
           {label}
         </span>
       )}
@@ -1262,7 +1262,7 @@ export function PickupMoneyForm({
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
           />
         </div>
 
@@ -1281,7 +1281,7 @@ export function PickupMoneyForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
               placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
@@ -1289,14 +1289,14 @@ export function PickupMoneyForm({
           <input type="hidden" name="mismatchNote" value="" />
         )}
 
-        <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+        <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
 
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={pending}
-            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 100%)" }}
           >
             <span>💾</span>
             <span>{pending ? "جارٍ الحفظ…" : "تأكيد الصادر ⚡"}</span>
@@ -1304,7 +1304,7 @@ export function PickupMoneyForm({
           <button
             type="button"
             onClick={onClose}
-            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -1542,7 +1542,7 @@ export function DeliveryMoneyForm({
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
           />
         </div>
 
@@ -1561,7 +1561,7 @@ export function DeliveryMoneyForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
               placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
@@ -1569,14 +1569,14 @@ export function DeliveryMoneyForm({
           <input type="hidden" name="mismatchNote" value="" />
         )}
 
-        <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+        <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
 
         <div className="flex gap-3">
           <button
             ref={mainSubmitRef}
             type="submit"
             disabled={pending}
-            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
           >
             <span>💾</span>
@@ -1585,7 +1585,7 @@ export function DeliveryMoneyForm({
           <button
             type="button"
             onClick={onClose}
-            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
             disabled={pending}
           >
             إلغاء
@@ -1601,12 +1601,12 @@ export function DeliveryMoneyForm({
               role="dialog"
               aria-modal="true"
             >
-              <div className="max-w-md rounded-2xl border-2 border-[#C9A86A] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0] text-right">
-                <p className="text-base font-black leading-relaxed text-[#F5D77F]">
+              <div className="max-w-md rounded-2xl border-2 border-[#38BDF8] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0] text-right">
+                <p className="text-base font-black leading-relaxed text-[#FDE047]">
                   هذا الطلب لا يحتوي على موقع للزبون
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-[#FFF8F0]/85">
-                  أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#F5D77F]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
+                  أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#FDE047]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
                 </p>
                 {geoError ? (
                   <p className="mt-3 text-sm font-bold text-rose-300">{geoError}</p>
@@ -1616,7 +1616,7 @@ export function DeliveryMoneyForm({
                     type="button"
                     onClick={onConfirmGps}
                     disabled={pending}
-                    className="rounded-xl bg-gradient-to-r from-[#F5D77F] via-[#E5C158] to-[#C9A86A] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+                    className="rounded-xl bg-gradient-to-r from-[#FDE047] via-[#E5C158] to-[#38BDF8] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
                   >
                     ✓ نعم، ارفع موقعي الحالي
                   </button>
@@ -1624,7 +1624,7 @@ export function DeliveryMoneyForm({
                     type="button"
                     onClick={onSkipLocation}
                     disabled={pending}
-                    className="rounded-xl border-2 border-[#C9A86A] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#F5D77F] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
+                    className="rounded-xl border-2 border-[#38BDF8] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#FDE047] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
                   >
                     ✕ لا، لا ترفع موقعي
                   </button>
@@ -1634,7 +1634,7 @@ export function DeliveryMoneyForm({
                       setLocationModalOpen(false);
                       setGeoError("");
                     }}
-                    className="mt-2 text-center text-sm font-bold text-[#C9A86A] hover:underline cursor-pointer"
+                    className="mt-2 text-center text-sm font-bold text-[#38BDF8] hover:underline cursor-pointer"
                     disabled={pending}
                   >
                     إلغاء والرجوع
