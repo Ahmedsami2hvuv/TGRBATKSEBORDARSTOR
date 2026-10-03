@@ -704,7 +704,7 @@ export async function assignPendingOrderToCourier(
                 ],
                 noProfit: !!draftDataObj.noProfit,
                 customerInvoiceText: buildCustomerInvoiceText({
-                  brandLabel: "أبو الأكبر للتوصيل",
+                  brandLabel: "وصلي للتوصيل",
                   orderNumberLabel: `#${draftDataObj.reservedOrderNumber || "(جديد)"}`,
                   regionTitle: draft.titleLine,
                   phone: draft.customerPhone,
@@ -766,7 +766,7 @@ export async function assignPendingOrderToCourier(
               noProfit: !!draftDataObj.noProfit,
               staffId: draftDataObj.fromStaffEmployeeId || null,
               customerInvoiceText: buildCustomerInvoiceText({
-                brandLabel: "أبو الأكبر للتوصيل",
+                brandLabel: "وصلي للتوصيل",
                 orderNumberLabel: `#(جديد)`,
                 regionTitle: draft.titleLine,
                 phone: draft.customerPhone,

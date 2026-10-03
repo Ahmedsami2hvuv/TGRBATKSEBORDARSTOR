@@ -4,7 +4,7 @@ import { CustomerPushSubscribe } from "./customer-push-subscribe";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تفعيل إشعارات الزبون — أبو الأكبر للتوصيل",
+  title: "تفعيل إشعارات الزبون — وصلي للتوصيل",
 };
 
 type Props = {

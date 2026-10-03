@@ -1,7 +1,7 @@
 {
-  "name": "أبو الأكبر للتوصيل",
-  "short_name": "أبو الأكبر",
-  "description": "نظام إدارة التوصيل والطلبات",
+  "name": "وصلي للتوصيل",
+  "short_name": "وصلي",
+  "description": "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

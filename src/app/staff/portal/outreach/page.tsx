@@ -10,7 +10,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "مهمة مراسلة الزبائن وتخزين الأرقام — أبو الأكبر للتوصيل",
+  title: "مهمة مراسلة الزبائن وتخزين الأرقام — وصلي للتوصيل",
 };
 
 export default async function StaffOutreachPage({

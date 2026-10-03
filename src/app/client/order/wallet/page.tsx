@@ -25,7 +25,7 @@ import { PreparerWalletTransferSection } from "../preparer-wallet-transfer-secti
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "المحفظة — أبو الأكبر للتوصيل",
+  title: "المحفظة — وصلي للتوصيل",
 };
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {
@@ -218,7 +218,7 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
       <div className="kse-app-inner mx-auto max-w-lg space-y-5">
         <header className="kse-glass-dark rounded-2xl border border-emerald-200/90 p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">
-            أبو الأكبر للتوصيل
+            وصلي للتوصيل
           </p>
           <h1 className="mt-2 text-xl font-black text-slate-900">المحفظة</h1>
           <p className="mt-1 text-sm font-semibold text-emerald-900">{employee.shop.name}</p>

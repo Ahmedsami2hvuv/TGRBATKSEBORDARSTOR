@@ -6,7 +6,7 @@ import { PrepNoticeForm } from "./prep-notice-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إشعارات تجهيز المجهزين — أبو الأكبر للتوصيل",
+  title: "إشعارات تجهيز المجهزين — وصلي للتوصيل",
 };
 
 export default async function AdminPrepNoticesPage() {

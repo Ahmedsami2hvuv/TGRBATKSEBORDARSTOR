@@ -27,7 +27,7 @@ const SYSTEM_ADMIN_PHONE = "07733921568";
 export const revalidate = 15;
 
 export const metadata = {
-  title: "إدارة الطلبات والتجهيز — أبو الأكبر للتوصيل",
+  title: "إدارة الطلبات والتجهيز — وصلي للتوصيل",
 };
 
 function customerOrderTimeLabel(orderNoteTime: string | null): string {

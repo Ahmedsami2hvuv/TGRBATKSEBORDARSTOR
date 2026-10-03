@@ -38,7 +38,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "تتبع الطلبات — أبو الأكبر للتوصيل",
+  title: "تتبع الطلبات — وصلي للتوصيل",
 };
 
 function formatShopWithCustomer(

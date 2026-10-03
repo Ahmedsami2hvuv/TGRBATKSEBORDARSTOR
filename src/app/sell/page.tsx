@@ -156,7 +156,7 @@ export default function SellPage() {
             )}
             <div>
               <h1 className="text-base sm:text-lg font-black text-emerald-600">
-                {selectedCategory ? selectedCategory.name : "معرض السلع - أبو الأكبر"}
+                {selectedCategory ? selectedCategory.name : "معرض السلع - وصلي"}
               </h1>
               <p className="text-[11px] text-slate-500 font-medium">
                 {selectedCategory ? "تصفح السلع والمنتجات المتاحة بهذا القسم" : "اختر القسم لتصفح المنتجات والسلع المعروضة للبيع"}
@@ -197,7 +197,7 @@ export default function SellPage() {
               🏬
             </div>
             <div>
-              <h2 className="font-black text-base sm:text-lg">متجر أبو الأكبر الرئيسي 🛍️</h2>
+              <h2 className="font-black text-base sm:text-lg">متجر وصلي الرئيسي 🛍️</h2>
               <p className="text-xs text-emerald-100 font-medium mt-0.5">
                 تصفح مئات المنتجات والأجهزة الإلكترونية والخصومات الحصرية في متجرنا الرسمي!
               </p>

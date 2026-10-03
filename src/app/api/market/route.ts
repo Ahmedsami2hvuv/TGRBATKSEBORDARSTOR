@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     });
 
     // تجهيز نص الرسالة التلقائية للواتساب
-    const waText = `مرحبا\nاني ${buyerName}\nدخلت الك من الموقع مال ابو الاكبر\nاجيتك ع السلعه (${item.title}) الي ناشرها\nالي سعرها: ${item.price || "غير محدد"}`;
+    const waText = `مرحبا\nاني ${buyerName}\nدخلت الك من موقع وصلي\nاجيتك ع السلعه (${item.title}) الي ناشرها\nالي سعرها: ${item.price || "غير محدد"}`;
     
     // تنظيف رقم الهاتف للبائع
     let cleanPhone = item.sellerPhone.replace(/[^0-9]/g, "");

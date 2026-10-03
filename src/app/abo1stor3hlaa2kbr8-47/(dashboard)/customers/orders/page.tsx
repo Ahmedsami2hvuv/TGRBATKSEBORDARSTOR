@@ -13,7 +13,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "طلبات الزبون — أبو الأكبر للتوصيل",
+  title: "طلبات الزبون — وصلي للتوصيل",
 };
 
 type Props = { searchParams: Promise<{ phone?: string }> };

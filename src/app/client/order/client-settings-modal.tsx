@@ -144,7 +144,7 @@ export function ClientSettingsModal({
               <div className="flex-1">
                 <h3 className="text-[13px] font-black text-[#0A3D2E]">التواصل المباشر مع الإدارة</h3>
                 <p className="text-[11px] font-semibold text-[#475569] mt-[2px] leading-[1.5]">
-                  فريق إدارة أبو الأكبر جاهز لمساعدتك والرد على كافة استفساراتك.
+                  فريق إدارة وصلي جاهز لمساعدتك والرد على كافة استفساراتك.
                 </p>
                 <a
                   href="https://api.whatsapp.com/send?phone=9647733921468"

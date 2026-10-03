@@ -140,7 +140,7 @@ export default function MarketplacePage() {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                معرض المبيعات والسلع - أبو الأكبر
+                معرض المبيعات والسلع - وصلي
               </h1>
               <p className="text-xs text-slate-400">تصفح وتواصل مباشرة مع البائعين بضغط واحدة</p>
             </div>

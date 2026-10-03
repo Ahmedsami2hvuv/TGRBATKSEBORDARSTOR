@@ -4,7 +4,7 @@ import { ad } from "@/lib/admin-ui";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقرير المحلات — أبو الأكبر للتوصيل",
+  title: "تقرير المحلات — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

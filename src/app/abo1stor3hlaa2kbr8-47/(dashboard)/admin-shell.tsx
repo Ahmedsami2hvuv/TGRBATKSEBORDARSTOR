@@ -606,14 +606,14 @@ export function AdminShell({
         {/* رأس القائمة الملكي */}
         <div className="flex h-16 w-full items-center justify-between px-4 border-b-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-white shrink-0 shadow-md">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 rounded-2xl bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] p-0.5 shadow-md shadow-[#0A3D2E]/30 items-center justify-center border border-[#F5D77F]">
-              <div className="size-full rounded-[14px] bg-[#0A3D2E] flex items-center justify-center text-[#F5D77F] font-black text-xs">
-                AK
-              </div>
-            </div>
+            <img 
+              src="/images/wasly-logo.png" 
+              alt="وصلي" 
+              className="size-9 rounded-full bg-white object-contain shadow-md border border-[#F5D77F]" 
+            />
             <div>
               <span className="text-xs sm:text-sm font-black text-[#F5D77F] block leading-tight">
-                أبو الأكبر للتوصيل
+                وصلي للتوصيل
               </span>
               <span className="text-[10px] font-bold text-emerald-200/80 block">
                 لوحة التحكم الإدارية ⚜️

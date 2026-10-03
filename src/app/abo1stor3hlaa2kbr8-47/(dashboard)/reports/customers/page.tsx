@@ -7,7 +7,7 @@ import { CustomerReportsClient } from "./customer-reports-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير الزبائن — أبو الأكبر للتوصيل",
+  title: "تقارير الزبائن — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

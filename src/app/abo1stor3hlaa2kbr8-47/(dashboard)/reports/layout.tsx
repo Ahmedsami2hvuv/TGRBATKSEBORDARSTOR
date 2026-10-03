@@ -5,7 +5,7 @@ import { ad } from "@/lib/admin-ui";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export const metadata = {
-  title: "نظام التقارير — أبو الأكبر للتوصيل",
+  title: "نظام التقارير — وصلي للتوصيل",
 };
 
 type Props = {

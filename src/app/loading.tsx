@@ -6,9 +6,12 @@ export default async function Loading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6" dir="rtl">
       <div className="text-center w-full max-w-4xl">
-        <h2 className="text-4xl md:text-6xl font-black text-sky-900 mb-8 opacity-20">
-          أبو الأكبر للتوصيل
-        </h2>
+        <div className="flex flex-col items-center justify-center mb-8">
+          <img src="/images/wasly-logo.png" alt="وصلي" className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-full shadow-md animate-pulse mb-3" />
+          <h2 className="text-2xl md:text-3xl font-black text-[#0088ff]">
+            وصلي للتوصيل
+          </h2>
+        </div>
 
         <DeliveryLoading message="نجهز لك البيانات، لحظات..." initialIcons={icons} />
 

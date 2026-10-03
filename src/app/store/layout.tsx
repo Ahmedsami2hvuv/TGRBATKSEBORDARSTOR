@@ -7,21 +7,21 @@ import { StoreSidePanels } from "@/components/store-side-panels";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aboakbr.com"),
   title: {
-    default: "خصيب ستور — أبو الأكبر للتوصيل",
-    template: "%s | خصيب ستور",
+    default: "متجر وصلي للتوصيل",
+    template: "%s | وصلي",
   },
-  description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
+  description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
   openGraph: {
-    title: "خصيب ستور — أبو الأكبر للتوصيل",
-    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
+    title: "متجر وصلي للتوصيل",
+    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
     url: "https://aboakbr.com/store",
-    siteName: "خصيب ستور — أبو الأكبر للتوصيل",
+    siteName: "وصلي للتوصيل",
     images: [
       {
-        url: "https://aboakbr.com/icon.png",
+        url: "https://aboakbr.com/images/wasly-logo.png",
         width: 800,
         height: 800,
-        alt: "خصيب ستور — أبو الأكبر للتوصيل",
+        alt: "شعار وصلي للتوصيل",
       },
     ],
     type: "website",
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "خصيب ستور — أبو الأكبر للتوصيل",
-    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع متجر أبو الأكبر.",
-    images: ["https://aboakbr.com/icon.png"],
+    title: "متجر وصلي للتوصيل",
+    description: "تسوق أفضل المنتجات والمأكولات والمشروبات بأسرع توصيل لباب بيتك مع وصلي — توصيل أسرع .. لكل مكان.",
+    images: ["https://aboakbr.com/images/wasly-logo.png"],
   },
 };
 

@@ -47,7 +47,7 @@ export function AdminGestureHandler() {
           window.location.reload();
           break;
         case "open_whatsapp":
-          window.open("https://api.whatsapp.com/send?phone=9647733921468&text=" + encodeURIComponent("مرحباً إدارة أبو الأكبر"), "_blank");
+          window.open("https://api.whatsapp.com/send?phone=9647733921468&text=" + encodeURIComponent("مرحباً إدارة وصلي"), "_blank");
           break;
         case "open_telegram":
           window.open("https://t.me/Reozaki_94", "_blank");

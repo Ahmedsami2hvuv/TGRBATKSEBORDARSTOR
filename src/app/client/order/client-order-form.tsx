@@ -612,7 +612,7 @@ function ClientOrderFormInner({
 
           <div className="flex-1 min-w-0">
             <h1 className="text-[#0A3D2E] font-black text-[18px] leading-[1.1] truncate">
-              {shopName || "محلات أبو الأكبر"}
+              {shopName || "محلات وصلي"}
             </h1>
             <p className="text-[#1E293B]/70 font-bold text-[12px] mt-[2px]">
               أهلاً يا{" "}

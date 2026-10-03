@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     const publisherSuffix = publisherName ? ` ${publisherName}` : "";
 
     // صياغة رسالة الواتساب التلقائية بالشكل والتنسيق المطلوب بالضبط
-    const waText = `السلام عليكم\nاني ${buyerName}\nدخلت الك من الموقع مال ابو الاكبر\nاجيتك ع السلعه (${item.title}) الي ناشرها${publisherSuffix}\nالي سعرها: ${item.price || "غير محدد"}`;
+    const waText = `السلام عليكم\nاني ${buyerName}\nدخلت الك من موقع وصلي\nاجيتك ع السلعه (${item.title}) الي ناشرها${publisherSuffix}\nالي سعرها: ${item.price || "غير محدد"}`;
     
     let cleanPhone = item.sellerPhone.replace(/[^0-9]/g, "");
     if (cleanPhone.startsWith("0")) {

@@ -15,7 +15,7 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "المندوبين — أبو الأكبر للتوصيل",
+  title: "المندوبين — وصلي للتوصيل",
 };
 
 import { serializePrisma } from "@/lib/serialize-prisma";

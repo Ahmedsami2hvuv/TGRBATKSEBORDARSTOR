@@ -10,7 +10,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الطلبات المؤرشفة — أبو الأكبر للتوصيل",
+  title: "الطلبات المؤرشفة — وصلي للتوصيل",
 };
 
 type Props = {

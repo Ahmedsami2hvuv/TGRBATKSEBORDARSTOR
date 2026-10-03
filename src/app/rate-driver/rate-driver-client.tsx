@@ -282,7 +282,7 @@ export function RateDriverClient({
 
             <div className="mt-5 text-[11px] font-bold text-white/30 flex items-center justify-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>أبو الأكبر للتوصيل — أبي الخصيب</span>
+              <span>وصلي للتوصيل — أبي الخصيب</span>
             </div>
           </div>
         </div>
@@ -326,8 +326,9 @@ export function RateDriverClient({
         {/* الشريط العلوي للعلامة التجارية */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2 text-xl font-black">
-            <span>أبو الأكبر</span>
-            <span className="text-[#CCFF00]">.</span>
+            <img src="/images/wasly-logo.png" alt="وصلي" className="w-7 h-7 object-contain rounded-full bg-white shadow-sm" />
+            <span>وصلي</span>
+            <span className="text-[#0088ff]">.</span>
           </div>
           <div className="flex items-center gap-2 text-xs font-mono bg-white/[0.05] border border-white/10 rounded-full px-3.5 py-1.5">
             <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />

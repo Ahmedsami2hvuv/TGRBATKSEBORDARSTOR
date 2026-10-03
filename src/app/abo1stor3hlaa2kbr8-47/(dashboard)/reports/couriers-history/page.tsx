@@ -7,7 +7,7 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "سجل أرباح المندوبين — أبو الأكبر للتوصيل",
+  title: "سجل أرباح المندوبين — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

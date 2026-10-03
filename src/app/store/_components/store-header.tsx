@@ -36,10 +36,18 @@ export function StoreHeader() {
           </svg>
         </button>
         
-        {/* اسم الستور - في الوسط */}
-        <div className="flex flex-col items-center justify-center flex-1 mx-2">
-          <span className="text-sm md:text-lg font-black text-green-600 line-clamp-1">خصيب ستور ابو الاكبر</span>
-        </div>
+        {/* اسم الستور والشعار الجديد - في الوسط */}
+        <Link href="/store" className="flex items-center justify-center gap-2 flex-1 mx-2 active:scale-95 transition-transform">
+          <img 
+            src="/images/wasly-logo.png" 
+            alt="وصلي" 
+            className="w-9 h-9 md:w-10 md:h-10 object-contain rounded-full shadow-sm bg-white" 
+          />
+          <div className="flex flex-col items-start leading-tight">
+            <span className="text-base md:text-xl font-black text-[#0088ff] tracking-tight">وصلي</span>
+            <span className="text-[10px] text-amber-500 font-bold">توصيل أسرع .. لكل مكان</span>
+          </div>
+        </Link>
 
         {/* زر الرئيسية - يمين (منزل) */}
         <Link href="/store" prefetch={true} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">

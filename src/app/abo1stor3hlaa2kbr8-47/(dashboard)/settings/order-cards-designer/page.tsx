@@ -6,7 +6,7 @@ import { OrderCardsDesignerClient } from "./order-cards-designer-client";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "استوديو تصميم كروت الطلبات والأزرار | أبو الأكبر",
+  title: "استوديو تصميم كروت الطلبات والأزرار | وصلي",
 };
 
 export default async function OrderCardsDesignerPage() {

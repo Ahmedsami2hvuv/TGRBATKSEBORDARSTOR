@@ -77,9 +77,10 @@ export default function WelcomePage() {
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/10 backdrop-blur-xl bg-[#080C0F]/80">
         <div className="mx-auto max-w-7xl px-4 md:px-8 h-[68px] flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-6">
-            <Link href="/" className="text-2xl font-black tracking-tight flex items-center gap-1">
-              <span>أبو الأكبر</span>
-              <span className="text-[#CCFF00]">.</span>
+            <Link href="/" className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <img src="/images/wasly-logo.png" alt="وصلي" className="w-9 h-9 object-contain rounded-full shadow bg-white" />
+              <span>وصلي</span>
+              <span className="text-[#0088ff]">.</span>
             </Link>
             <div className="hidden sm:flex items-center gap-2 text-xs font-mono tracking-wider bg-white/[0.05] border border-white/10 rounded-full px-3.5 py-1.5">
               <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
@@ -612,7 +613,7 @@ export default function WelcomePage() {
                 قبل لا تطلع... لا تنسى تخزن رقمنا بجهازك! 📲
               </h3>
               <p className="text-white/70 text-xs md:text-sm leading-relaxed mb-6">
-                احفظ اسم (أبو الأكبر للتوصيل) برقم <strong>07733921468</strong> حتى تطلب بأي وقت بضغطة زر وتوصلك عروض محلات أبي الخصيب أول بأول.
+                احفظ اسم (وصلي للتوصيل) برقم <strong>07733921468</strong> حتى تطلب بأي وقت بضغطة زر وتوصلك عروض محلات أبي الخصيب أول بأول.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 <a
@@ -638,7 +639,7 @@ export default function WelcomePage() {
           {/* بطاقة متجر خصيبي ستور */}
           <div className="bg-gradient-to-r from-[#0F171B] to-[#142028] border border-white/15 rounded-[32px] p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <div className="font-mono text-[#CCFF00] text-xs font-bold tracking-widest mb-2">KHASEEBI STORE // متجر أبي الخصيب</div>
+              <div className="font-mono text-[#CCFF00] text-xs font-bold tracking-widest mb-2">WASLY STORE // متجر وصلي</div>
               <h3 className="text-2xl md:text-4xl font-black text-white mb-2">متجر تسوق شامل لأهالي أبي الخصيب 🛍️</h3>
               <p className="text-white/60 text-sm md:text-base max-w-xl">
                 تصفح آلاف المنتجات من مختلف المحلات والمتاجر في مكان واحد مع توصيل مباشر للباب.
@@ -649,15 +650,16 @@ export default function WelcomePage() {
               className="shrink-0 inline-flex items-center gap-3 bg-[#5FA8D3] hover:bg-[#4a8eb9] text-white font-black px-8 py-4 rounded-full text-base transition-all shadow-[0_0_30px_rgba(95,168,211,0.3)]"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span>ادخل لمتجر خصيبي ستور</span>
+              <span>ادخل لمتجر وصلي</span>
             </Link>
           </div>
 
           {/* روابط التواصل والحقوق */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10 text-sm">
             <div className="flex items-center gap-3">
-              <span className="text-lg font-black">أبو الأكبر للتوصيل</span>
-              <span className="font-mono text-xs text-white/40">© 2026 - صنع بكل فخر لأهالي أبي الخصيب</span>
+              <img src="/images/wasly-logo.png" alt="وصلي" className="w-7 h-7 object-contain rounded-full bg-white shadow-sm" />
+              <span className="text-lg font-black text-white">وصلي للتوصيل</span>
+              <span className="font-mono text-xs text-white/40">© 2026 - توصيل أسرع .. لكل مكان</span>
             </div>
 
             <div className="flex items-center gap-3">

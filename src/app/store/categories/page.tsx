@@ -4,8 +4,8 @@ import { Metadata } from "next";
 import { getDefaultStoreMetadata } from "@/lib/store-meta";
 
 export const metadata: Metadata = getDefaultStoreMetadata(
-  "جميع الأقسام | خصيب ستور — أبو الأكبر للتوصيل",
-  "تصفح جميع أقسام وفئات متجر أبو الأكبر للتوصيل وتسوق كل ما تحتاجه بسهولة."
+  "جميع الأقسام | خصيب ستور — وصلي للتوصيل",
+  "تصفح جميع أقسام وفئات متجر وصلي للتوصيل وتسوق كل ما تحتاجه بسهولة."
 );
 
 export default async function CategoriesPage() {

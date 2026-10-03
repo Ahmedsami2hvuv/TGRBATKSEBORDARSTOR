@@ -10,7 +10,7 @@ import { ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير التجهيز حسب اليوم — أبو الأكبر للتوصيل",
+  title: "تقارير التجهيز حسب اليوم — وصلي للتوصيل",
 };
 
 // كلمات الاستبعاد (للتأكيد)

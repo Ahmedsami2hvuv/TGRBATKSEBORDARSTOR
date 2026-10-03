@@ -5,7 +5,7 @@ import { AdminDebtsWidget } from "../../admin-debts-widget";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export const metadata = {
-  title: "ديون المحلات — أبو الأكبر للتوصيل",
+  title: "ديون المحلات — وصلي للتوصيل",
 };
 
 export default function DebtsReportPage() {

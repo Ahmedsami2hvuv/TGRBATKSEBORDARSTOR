@@ -15,7 +15,7 @@ import { CancelOrderButton } from "./cancel-order-button";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "سجل الطلبات — أبو الأكبر للتوصيل",
+  title: "سجل الطلبات — وصلي للتوصيل",
 };
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {
@@ -129,7 +129,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
       <div className="kse-app-inner mx-auto max-w-lg space-y-5">
         <header className="kse-glass-dark rounded-2xl border border-sky-200 p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-sky-800">
-            أبو الأكبر للتوصيل
+            وصلي للتوصيل
           </p>
           <h1 className="mt-2 text-xl font-bold text-slate-900">سجل الطلبات</h1>
           <p className="mt-1 text-sm font-semibold text-emerald-900">{employee.shop.name}</p>

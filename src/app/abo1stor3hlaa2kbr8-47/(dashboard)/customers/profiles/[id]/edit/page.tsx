@@ -8,7 +8,7 @@ import { CustomerProfileDeleteForm } from "../../customer-profile-delete-form";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تعديل تفاصيل زبون — أبو الأكبر للتوصيل",
+  title: "تعديل تفاصيل زبون — وصلي للتوصيل",
 };
 
 export default async function EditCustomerProfilePage({

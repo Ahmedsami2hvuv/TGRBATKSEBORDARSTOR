@@ -9,7 +9,7 @@ import { ProfitsAnalyticsClient } from "./profits-analytics-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تحليلات الأرباح السنوية والشهرية — أبو الأكبر للتوصيل",
+  title: "تحليلات الأرباح السنوية والشهرية — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";

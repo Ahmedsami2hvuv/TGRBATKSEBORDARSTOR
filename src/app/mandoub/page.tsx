@@ -49,7 +49,7 @@ import type { MandoubWalletLedgerLine } from "./mandoub-wallet-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "لوحة المندوب — أبو الأكبر للتوصيل",
+  title: "لوحة المندوب — وصلي للتوصيل",
 };
 
 /** حالات تظهر للمندوب في القائمة النشطة */

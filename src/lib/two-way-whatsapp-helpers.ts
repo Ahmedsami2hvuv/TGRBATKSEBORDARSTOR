@@ -43,7 +43,7 @@ export function getDefaultTwoWayLocationSenderTemplate(): string {
     "مرحباً (المرسل)،",
     "نرجو تزويدنا بموقعك الجغرافي (اللوكيشن) لاستلام الطلبية رقم {orderNumber}.",
     "منطقة الاستلام: {senderRegion}",
-    "شكراً لتعاونكم مع شركة أبو الأكبر للتوصيل.",
+    "شكراً لتعاونكم مع شركة وصلي للتوصيل.",
   ].join("\n");
 }
 
@@ -51,7 +51,7 @@ export function getDefaultTwoWayLocationRecipientTemplate(): string {
   return [
     "السلام عليكم 👋",
     "وياكم كابتن {{{delivery}}} 👨🏻✈️",
-    "من خدمة أبو الأكبر للتوصيل 🚚",
+    "من خدمة وصلي للتوصيل 🚚",
     "عدكم طلبية من {{{clientshop}}} 🏪",
     "متجهة لمنطقة {{{city}}} 📍",
     "المبلغ الكلي هو {{{total_price}}} 💰",
@@ -73,7 +73,7 @@ export function getDefaultTwoWayNotifySenderTemplate(): string {
   return [
     "مرحباً (المرسل)،",
     "نحيطكم علماً بأنه تم استلام الطلبية رقم {orderNumber} من موقعكم بنجاح وهي في الطريق للتوصيل إلى: {recipientRegion}.",
-    "شكراً لاختياركم شركة أبو الأكبر للتوصيل.",
+    "شكراً لاختياركم شركة وصلي للتوصيل.",
   ].join("\n");
 }
 

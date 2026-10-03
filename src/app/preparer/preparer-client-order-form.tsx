@@ -310,7 +310,7 @@ function ClientOrderFormInner({
         <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
 
         <header className="kse-glass-dark rounded-2xl border border-sky-200 p-6">
-          <p className="text-xs font-bold uppercase tracking-wide text-sky-800">أبو الأكبر للتوصيل</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-sky-800">وصلي للتوصيل</p>
           {resolvePublicImageSrc(shop.photoUrl) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

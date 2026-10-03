@@ -7,7 +7,7 @@ import InvoiceReportSearch from "./InvoiceReportSearch";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "تقارير الفواتير — أبو الأكبر للتوصيل",
+  title: "تقارير الفواتير — وصلي للتوصيل",
 };
 
 type Props = {

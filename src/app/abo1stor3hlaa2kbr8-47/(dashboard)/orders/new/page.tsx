@@ -16,7 +16,7 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إضافة طلب من الإدارة — أبو الأكبر للتوصيل",
+  title: "إضافة طلب من الإدارة — وصلي للتوصيل",
 };
 
 export default async function AdminCreateOrderPage() {

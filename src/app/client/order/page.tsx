@@ -12,7 +12,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "إدخال طلب — أبو الأكبر للتوصيل",
+  title: "إدخال طلب — وصلي للتوصيل",
 };
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {

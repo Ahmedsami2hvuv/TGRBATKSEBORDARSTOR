@@ -298,7 +298,7 @@ export function StaffOutreachClient({
       return {
         id: "default",
         title: "رسالة ترحيبية",
-        content: "مرحباً بك عزيزي الزبون، يسعدنا تواصلك مع أبو الأكبر للتوصيل والخدمات السريعة 🚗📦",
+        content: "مرحباً بك عزيزي الزبون، يسعدنا تواصلك مع وصلي للتوصيل والخدمات السريعة 🚗📦",
         isActive: true,
       };
     }

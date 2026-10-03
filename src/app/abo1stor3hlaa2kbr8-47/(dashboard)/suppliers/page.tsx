@@ -9,7 +9,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الموردين — أبو الأكبر للتوصيل",
+  title: "الموردين — وصلي للتوصيل",
 };
 
 export default async function SuppliersPage() {

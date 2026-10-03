@@ -8,7 +8,7 @@ import { isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "خريطة المندوبين والمجهزين والموظفين — أبو الأكبر للتوصيل",
+  title: "خريطة المندوبين والمجهزين والموظفين — وصلي للتوصيل",
 };
 
 export default async function AdminCouriersMapPage() {

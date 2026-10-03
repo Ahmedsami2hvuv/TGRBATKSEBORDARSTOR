@@ -14,11 +14,11 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "أبو الأكبر للتوصيل",
-  description: "إدارة التوصيل والطلبات — لوحة الإدارة",
+  title: "وصلي للتوصيل",
+  description: "خدمة وصلي للتوصيل — توصيل أسرع .. لكل مكان",
   manifest: "/site.webmanifest",
   icons: { icon: "/icon.png", apple: "/apple-icon.png" },
-  appleWebApp: { capable: true, title: "أبو الأكبر للتوصيل", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "وصلي للتوصيل", statusBarStyle: "default" },
   // إصدار التصميم الفاخر المكيش لكروت الطلبات v2.5
 };
 

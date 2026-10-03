@@ -32,7 +32,7 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "smart-hints", label: "الاستدلال الذكي", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/smart-hints" },
   { slug: "super-search", label: "البحث الخارق", iconKey: "ui_search", href: "/abo1stor3hlaa2kbr8-47/search" },
   { slug: "prep-notices", label: "إشعارات تجهيز المجهزين", iconKey: "ui_announcement", href: "/abo1stor3hlaa2kbr8-47/prep-notices" },
-  { slug: "ai-settings", label: "مساعد أبو الأكبر (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },
+  { slug: "ai-settings", label: "مساعد وصلي (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },
   { slug: "notification-settings", label: "إشعارات المتصفح", iconKey: "ui_notification", href: "/abo1stor3hlaa2kbr8-47/settings#notifications" },
   { slug: "strong-alert", label: "التنبيه القوي 🚨", iconKey: "ui_notification", href: "/abo1stor3hlaa2kbr8-47/strong-alert" },
   { slug: "job-applications", label: "طلبات توظيف المندوبين", iconKey: "ui_user_add", href: "/abo1stor3hlaa2kbr8-47/job-applications" },

@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props) {
     select: { orderNumber: true },
   });
   return {
-    title: o ? `تعديل الطلب #${o.orderNumber} — أبو الأكبر للتوصيل` : "تعديل طلب — أبو الأكبر للتوصيل",
+    title: o ? `تعديل الطلب #${o.orderNumber} — وصلي للتوصيل` : "تعديل طلب — وصلي للتوصيل",
   };
 }
 

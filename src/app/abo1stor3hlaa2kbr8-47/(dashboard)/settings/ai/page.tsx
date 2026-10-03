@@ -6,7 +6,7 @@ import { AiProvidersForm } from "./ai-providers-form";
 import { Sparkles, ArrowRight, KeyRound, ShieldCheck } from "lucide-react";
 
 export const metadata = {
-  title: "إعدادات الذكاء الاصطناعي — أبو الأكبر",
+  title: "إعدادات الذكاء الاصطناعي — وصلي",
 };
 
 export default async function AiSettingsPage() {

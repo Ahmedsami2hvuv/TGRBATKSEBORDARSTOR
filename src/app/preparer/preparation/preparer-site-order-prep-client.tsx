@@ -467,7 +467,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const previewInvoice =
     previewPayload && deliveryAlf != null
       ? buildCustomerInvoiceText({
-          brandLabel: "أبو الأكبر للتوصيل",
+          brandLabel: "وصلي للتوصيل",
           orderNumberLabel: "مسودة",
           regionTitle: previewPayload.titleLine,
           phone: customerPhone.trim() || "—",

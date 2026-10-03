@@ -12,7 +12,7 @@ import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "لوحة المندوب (منذ التصفير) — أبو الأكبر للتوصيل",
+  title: "لوحة المندوب (منذ التصفير) — وصلي للتوصيل",
 };
 
 function vehicleAr(v: string) {

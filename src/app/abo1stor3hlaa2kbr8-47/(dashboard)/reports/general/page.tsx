@@ -6,7 +6,7 @@ import { GeneralReportsClient } from "./general-reports-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "التقارير العامة والإحصائيات — أبو الأكبر للتوصيل",
+  title: "التقارير العامة والإحصائيات — وصلي للتوصيل",
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
