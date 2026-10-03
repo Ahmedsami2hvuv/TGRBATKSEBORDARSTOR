@@ -298,7 +298,7 @@ export default async function ClientOrderPage(props: Props) {
     }
 
     return (
-      <div className="min-h-screen bg-[#FFFEFB]" dir="rtl">
+      <div className="min-h-screen bg-[#FFFFFF]" dir="rtl">
         <ClientOrderForm
           shopId={shop.id}
           shopName={shop.name}
