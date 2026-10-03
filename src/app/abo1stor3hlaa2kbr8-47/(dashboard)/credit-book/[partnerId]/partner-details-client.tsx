@@ -1128,6 +1128,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
         ) : (
           (() => {
             // استبعاد أي معاملة مبلغها صفر لضمان عدم ظهورها في دفتر الديون نهائياً
+            // وحساب الرصيد التراكمي الصحيح لكل حركة زمنياً من الأقدم إلى الأحدث
             const validTransactions = partner.transactions.filter(tx => Number(tx.amount || 0) > 0);
 
             // حساب الرصيد التراكمي الصحيح لكل حركة زمنياً من الأقدم إلى الأحدث
