@@ -9,6 +9,7 @@ import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
 import { ClientFeedbackModal } from "./client-feedback-modal";
 import { ClientSettingsModal, STORAGE_KEY_AUTO_WA } from "./client-settings-modal";
+import { ClientRebrandModal } from "./client-rebrand-modal";
 import "leaflet/dist/leaflet.css";
 import { submitOrder, type ClientOrderState } from "./actions";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -1541,6 +1542,9 @@ function ClientOrderFormInner({
         onClose={() => setShowSettingsModal(false)}
         onOpenFeedback={() => setShowFeedbackModal(true)}
       />
+
+      {/* نافذة التنويه والترحيب بتغيير اسم الخدمة إلى وصلي */}
+      <ClientRebrandModal greetingName={greetingName} />
     </div>
   );
 }
