@@ -18,7 +18,8 @@ function formatYMDLocal(d: Date): string {
 }
 
 export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string }) {
-  // --- احتساب التواريخ لنوبة العمل (تبدأ 6:00 صباحاً وتنتهي 5:59:59 صباحاً اليوم التالي) ---
+  try {
+    // --- احتساب التواريخ لنوبة العمل (تبدأ 6:00 صباحاً وتنتهي 5:59:59 صباحاً اليوم التالي) ---
   let from: Date;
   let defaultDayString: string;
 
@@ -206,7 +207,11 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
     }))
   };
 
-  return (
-    <AdminProfitsClientContent {...data} />
-  );
+    return (
+      <AdminProfitsClientContent {...data} />
+    );
+  } catch (error) {
+    console.error("AdminProfitsWidget error:", error);
+    return null;
+  }
 }

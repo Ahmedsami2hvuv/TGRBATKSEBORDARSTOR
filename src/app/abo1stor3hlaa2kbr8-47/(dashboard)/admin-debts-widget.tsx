@@ -5,51 +5,52 @@ import Link from "next/link";
 import { AdminDebtsClientModal } from "./admin-debts-client-modal";
 
 export async function AdminDebtsWidget({ inline = false }: { inline?: boolean }) {
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  try {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-  const orders = await prisma.order.findMany({
-    where: {
-      preparerDebtHidden: false, // الديون غير المخفية من قبل الإدارة
-      status: { notIn: ["cancelled"] },
-      orderSubtotal: { gt: 0 },
-      createdAt: { gte: sixtyDaysAgo },
-      shop: {
-        hideDebts: false,
+    const orders = await prisma.order.findMany({
+      where: {
+        preparerDebtHidden: false, // الديون غير المخفية من قبل الإدارة
+        status: { notIn: ["cancelled"] },
+        orderSubtotal: { gt: 0 },
+        createdAt: { gte: sixtyDaysAgo },
+        shop: {
+          hideDebts: false,
+        },
       },
-    },
-    include: {
-      moneyEvents: {
-        where: { kind: MONEY_KIND_PICKUP, deletedAt: null },
+      include: {
+        moneyEvents: {
+          where: { kind: MONEY_KIND_PICKUP, deletedAt: null },
+        },
+        customerRegion: { select: { name: true } },
+        shop: { select: { name: true } },
       },
-      customerRegion: { select: { name: true } },
-      shop: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 500,
-  });
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
 
-  const debtOrders = orders.filter(o => {
-    const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
-    const subtotal = Number(o.orderSubtotal || 0);
-    return totalPaid < subtotal;
-  }).map(o => {
-    const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
-    const subtotal = Number(o.orderSubtotal || 0);
-    return {
-      id: o.id,
-      orderNumber: o.orderNumber,
-      debtAmount: subtotal - totalPaid,
-      orderSubtotal: subtotal,
-      totalPaid,
-      shop: { name: o.shop.name },
-      customerRegion: o.customerRegion,
-      createdAt: o.createdAt,
-      shopId: o.shopId, // إضافة shopId لتجنب أية أخطاء في الفلترة
-    };
-  });
+    const debtOrders = orders.filter(o => {
+      const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
+      const subtotal = Number(o.orderSubtotal || 0);
+      return totalPaid < subtotal;
+    }).map(o => {
+      const totalPaid = o.moneyEvents.reduce((sum, e) => sum + Number(e.amountDinar), 0);
+      const subtotal = Number(o.orderSubtotal || 0);
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        debtAmount: subtotal - totalPaid,
+        orderSubtotal: subtotal,
+        totalPaid,
+        shop: { name: o.shop?.name || "بدون محل" },
+        customerRegion: o.customerRegion,
+        createdAt: o.createdAt,
+        shopId: o.shopId, // إضافة shopId لتجنب أية أخطاء في الفلترة
+      };
+    });
 
-  const totalDebtsSum = debtOrders.reduce((sum, o) => sum + o.debtAmount, 0);
+    const totalDebtsSum = debtOrders.reduce((sum, o) => sum + o.debtAmount, 0);
 
   return (
     <section className="kse-glass-dark rounded-[1.25rem] border border-rose-200 p-5 sm:p-6 shadow-xl shadow-rose-900/5">
@@ -85,4 +86,8 @@ export async function AdminDebtsWidget({ inline = false }: { inline?: boolean })
       )}
     </section>
   );
+  } catch (error) {
+    console.error("AdminDebtsWidget error:", error);
+    return null;
+  }
 }
