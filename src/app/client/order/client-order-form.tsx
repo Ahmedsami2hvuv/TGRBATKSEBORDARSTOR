@@ -138,6 +138,7 @@ function ClientOrderFormInner({
   const [isOtherDetailsOpen, setIsOtherDetailsOpen] = useState(false);
 
   const orderTypeRef = useRef<HTMLInputElement>(null);
+  const orderTimeRef = useRef<HTMLInputElement>(null);
   const orderPriceRef = useRef<HTMLInputElement>(null);
   const customerPhoneRef = useRef<HTMLInputElement>(null);
   const regionSearchRef = useRef<HTMLInputElement>(null);
@@ -517,6 +518,15 @@ function ClientOrderFormInner({
         title: "نوع الطلب مطلوب 📦",
         message: "يرجى إدخال أو اختيار نوع الطلب (مثل: طعام، ملابس)",
         targetRef: orderTypeRef,
+      });
+      return false;
+    }
+
+    if (!orderTime.trim()) {
+      setFieldErrorModal({
+        title: "وقت الطلب مطلوب 🕐",
+        message: "يرجى كتابة وقت الطلب (مثل: هسه، بعد ساعة، الساعة 5)",
+        targetRef: orderTimeRef,
       });
       return false;
     }
@@ -1047,22 +1057,24 @@ function ClientOrderFormInner({
               </div>
             )}
 
-            {/* وقت الطلب يُسجّل تلقائياً */}
-            <div className="mt-[14px] rounded-[18px] bg-[#F0F9FF] border-[1.5px] border-[#38BDF8]/30 p-[12px] flex items-center gap-[12px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]">
-              <div className="w-[44px] h-[44px] rounded-[14px] bg-white border border-[#38BDF8]/30 shadow-sm flex items-center justify-center shrink-0">
-                <Clock className="w-[20px] h-[20px] text-[#0369A1]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[11px] font-black text-[#0369A1] leading-[1]">
-                  وقت الطلب
-                </p>
-                <p className="text-[10px] font-bold text-[#64748B] mt-[5px]">
-                  يتم تسجيل وقت الطلب تلقائياً عند رفع الطلب
-                </p>
-              </div>
-              <div className="shrink-0 rounded-full bg-white border border-[#38BDF8]/30 px-[10px] py-[6px] text-[11px] font-black text-[#0369A1]">
-                الآن
-              </div>
+            {/* وقت الطلب: كتابة يدوية بدون اختصارات */}
+            <div className="mt-[14px] flex flex-col gap-[6px]">
+              <label className="text-[11px] font-black text-[#1E293B] pr-[4px] flex items-center gap-[4px]">
+                <span className="w-[14px] h-[14px] rounded-[5px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center">
+                  <Clock className="w-[9px] h-[9px] text-[#0369A1]" />
+                </span>
+                وقت الطلب
+              </label>
+              <input
+                ref={orderTimeRef}
+                value={orderTime}
+                onChange={(ev) => {
+                  setOrderTime(ev.target.value);
+                  triggerTypingAnimation();
+                }}
+                placeholder="اكتب وقت الطلب..." 
+                className="focus-ring w-full h-[44px] rounded-[14px] border-[1.8px] border-[#38BDF8]/40 bg-white px-[12px] text-[13px] font-black text-[#1E293B] outline-none placeholder:text-[#94A3B8]"
+              />
             </div>
 
             {/* السطر الرابع: مفتاحا "كلشي واصل" و "طلب عكسي" */}
