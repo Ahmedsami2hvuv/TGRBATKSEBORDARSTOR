@@ -313,7 +313,10 @@ export function OrderDetailSection({
 
   return (
     <>
-      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#38BDF8]/40 bg-gradient-to-b from-[#FFFFFF] via-[#F0F9FF] to-[#FFFFFF] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0369A1] shadow-[0_10px_35px_rgba(2,132,199,0.08)] text-base leading-relaxed select-none" dir="rtl">
+      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#38BDF8]/40 bg-gradient-to-b from-[#FFFFFF] via-[#F0F9FF] to-[#FFFFFF] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0369A1] shadow-[0_10px_35px_rgba(2,132,199,0.08)] text-base leading-relaxed select-none overflow-hidden" dir="rtl">
+
+        {/* نقش وهوية وصلي في الخلفية خلف البطاقات */}
+        <div className="absolute inset-0 bg-[radial-gradient(#38BDF8_1.2px,transparent_1.2px)] [background-size:24px_24px] opacity-35 pointer-events-none" />
 
         {/* زخرفة ناعمة أعلى الصفحة بهوية وصلي */}
         <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[#38BDF8] to-transparent opacity-90 pointer-events-none" />

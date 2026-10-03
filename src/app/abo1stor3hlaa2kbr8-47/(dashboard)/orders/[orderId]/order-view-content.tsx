@@ -268,30 +268,32 @@ export function OrderViewContent({
 
   return (
     <>
-      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#C9A86A]/50 bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0A3D2E] shadow-[0_10px_35px_rgba(201,168,106,0.15)] text-base leading-relaxed select-none" dir="rtl">
+      <div className="relative mt-2 rounded-[28px] border-[1.5px] border-[#38BDF8]/40 bg-gradient-to-b from-[#FFFFFF] via-[#F0F9FF] to-[#FFFFFF] p-2.5 sm:p-5 pb-24 sm:pb-32 text-[#0369A1] shadow-[0_10px_35px_rgba(2,132,199,0.08)] text-base leading-relaxed select-none overflow-hidden" dir="rtl">
 
-        {/* زخرفة دمشقية مذهبة في أعلى الصفحة */}
-        <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9A86A] to-transparent opacity-90 pointer-events-none" />
+        {/* نقش وهوية وصلي في الخلفية خلف البطاقات */}
+        <div className="absolute inset-0 bg-[radial-gradient(#38BDF8_1.2px,transparent_1.2px)] [background-size:24px_24px] opacity-35 pointer-events-none" />
 
-        {/* قواعد التصميم الملكي الزمردي الإسلامي */}
+        {/* زخرفة ناعمة أعلى الصفحة بهوية وصلي */}
+        <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[#38BDF8] to-transparent opacity-90 pointer-events-none" />
+
+        {/* قواعد التصميم الملكي لهوية وصلي الزرقاء */}
         <style>{`
           .gold-foil {
-            background: linear-gradient(180deg, #E8C77E 0%, #C9A86A 45%, #9C7D46 100%);
+            background: linear-gradient(180deg, #38BDF8 0%, #0284C7 50%, #0369A1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: drop-shadow(0 1px 0 rgba(156,125,70,0.3));
+            filter: drop-shadow(0 1px 0 rgba(2,132,199,0.2));
           }
           .gold-grad {
-            background: linear-gradient(180deg, #F1D99A 0%, #E8C77E 15%, #C9A86A 55%, #A8864A 100%);
+            background: linear-gradient(180deg, #BAE6FD 0%, #38BDF8 30%, #0284C7 70%, #0369A1 100%);
           }
           .emerald-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A86A' fill-opacity='0.08'%3E%3Cpath d='M40 0L42.5 15.5L55 10L45 20L60 28L45 30L55 45L42.5 36L40 52L37.5 36L25 45L35 30L20 28L35 20L25 10L37.5 15.5L40 0Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background-image: radial-gradient(rgba(2, 132, 199, 0.08) 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
           }
           .islamic-border {
-            background-image: 
-              linear-gradient(90deg, transparent 0%, #C9A86A 50%, transparent 100%),
-              url("data:image/svg+xml,%3Csvg width='24' height='6' viewBox='0 0 24 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 3 L6 0 L12 3 L18 0 L24 3 L18 6 L12 3 L6 6 Z' fill='%23C9A86A' fill-opacity='0.6'/%3E%3C/svg%3E");
+            background-image: linear-gradient(90deg, transparent 0%, #38BDF8 50%, transparent 100%);
           }
           @keyframes animated-gradient {
             0% { background-position: 0% 50%; }
@@ -299,15 +301,15 @@ export function OrderViewContent({
             100% { background-position: 0% 50%; }
           }
           .prepaid-rgb-block {
-            background: linear-gradient(120deg, #059669, #0891b2, #2563eb, #7c3aed, #db2777, #059669);
+            background: linear-gradient(120deg, #0284C7, #0369A1, #2563eb, #0891b2, #0284C7);
             background-size: 300% 300%;
             animation: animated-gradient 8s ease infinite;
           }
         `}</style>
 
-        {/* --- بلوك كلشي واصل المشع والمتحرك (RGB) --- */}
+        {/* --- بلوك كلشي واصل المشع والمتحرك --- */}
         {order.prepaidAll && (
-          <div className="relative mb-4 overflow-hidden rounded-2xl p-5 shadow-xl text-white prepaid-rgb-block border-2 border-[#F5D77F]/60">
+          <div className="relative mb-4 overflow-hidden rounded-2xl p-5 shadow-xl text-white prepaid-rgb-block border-2 border-[#38BDF8]/60">
             <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start z-10">
               <div className="flex size-[4rem] shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-md border border-white/20">
                 <svg className="size-10 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -325,7 +327,7 @@ export function OrderViewContent({
         )}
 
         {customerDebt !== null && customerDebt > 0 && (
-          <div className="mb-4 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#B45309] to-[#78350F] p-4 text-right shadow-xl animate-pulse text-white">
+          <div className="mb-4 rounded-2xl border-2 border-[#38BDF8] bg-gradient-to-r from-[#B45309] to-[#78350F] p-4 text-right shadow-xl animate-pulse text-white">
             <p className="text-base font-black text-[#F5D77F] flex items-center gap-2 drop-shadow-md">
               <span>⚠️ تنبيه مالي للزبون:</span>
               نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
@@ -343,33 +345,33 @@ export function OrderViewContent({
         )}
 
         {/* --- بطاقة ترويسة الطلبية الملكية الثابتة في الأعلى (Sticky Header) --- */}
-        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB]/95 backdrop-blur-md p-3.5 shadow-[0_8px_25px_rgba(201,168,106,0.22)] select-none mb-3.5" dir="rtl">
-          {/* معينات الزوايا الذهبية الأربعة */}
-          <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
-          <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
-          <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
-          <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#C9A86A] opacity-80 pointer-events-none" />
+        <div className="sticky top-0 z-40 rounded-[22px] border-[1.5px] border-[#38BDF8]/40 bg-white/95 backdrop-blur-md p-3.5 shadow-[0_8px_25px_rgba(2,132,199,0.08)] select-none mb-3.5" dir="rtl">
+          {/* معينات الزوايا الهندسية الناعمة */}
+          <div className="absolute top-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#38BDF8] opacity-60 pointer-events-none" />
+          <div className="absolute top-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#38BDF8] opacity-60 pointer-events-none" />
+          <div className="absolute bottom-[8px] right-[8px] w-[6px] h-[6px] rotate-45 bg-[#38BDF8] opacity-60 pointer-events-none" />
+          <div className="absolute bottom-[8px] left-[8px] w-[6px] h-[6px] rotate-45 bg-[#38BDF8] opacity-60 pointer-events-none" />
 
           {/* السطر الأول: رقم الطلب والحالة (يمين) | الإسناد والإغلاق (يسار) */}
           <div className="flex items-center justify-between gap-2">
             {/* جهة اليمين: رقم الطلب + شارة الحالة */}
             <div className="flex items-center gap-[6px] flex-nowrap shrink-0">
-              {/* صندوق رقم الطلب الذهبي */}
+              {/* صندوق رقم الطلب */}
               <div
-                className="inline-flex items-center justify-center rounded-[10px] border-[2px] border-[#C9A86A] px-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.25),inset_0_1px_0_white] shrink-0"
-                style={{ background: "linear-gradient(135deg, #FDF6E3 0%, #F7E9B0 100%)", height: "32px", minWidth: "64px" }}
+                className="inline-flex items-center justify-center rounded-[10px] border-[2px] border-[#38BDF8] px-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.15),inset_0_1px_0_white] shrink-0"
+                style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 100%)", height: "32px", minWidth: "64px" }}
               >
-                <span className="font-mono text-[18px] font-black leading-none text-[#8B6A2A] tracking-wide [direction:ltr]">
+                <span className="font-mono text-[18px] font-black leading-none text-[#0369A1] tracking-wide [direction:ltr]">
                   #{order.orderNumber}
                 </span>
               </div>
 
               {/* شارة حالة الطلب */}
               <div
-                className="inline-flex items-center gap-1.5 px-[10px] rounded-full bg-[#FFF8E0] border border-[#E8C77E]/60 text-[#8B6A2A] font-black shadow-[inset_0_1px_0_white] shrink-0"
+                className="inline-flex items-center gap-1.5 px-[10px] rounded-full bg-[#F0F9FF] border border-[#38BDF8]/50 text-[#0369A1] font-black shadow-[inset_0_1px_0_white] shrink-0"
                 style={{ whiteSpace: "nowrap", height: "30px", fontSize: "11px" }}
               >
-                <div className="w-[6px] h-[6px] rounded-full bg-[#D4A017] animate-pulse shadow-[0_0_6px_#E8C77E] shrink-0" />
+                <div className="w-[6px] h-[6px] rounded-full bg-[#0284C7] animate-pulse shadow-[0_0_6px_#38BDF8] shrink-0" />
                 <span style={{ whiteSpace: "nowrap" }}>
                   {STATUS_AR[order.status] ?? order.status}
                 </span>
@@ -383,8 +385,8 @@ export function OrderViewContent({
                   type="button"
                   id="assignBtnTop"
                   onClick={() => setShowAssignCourierModal(true)}
-                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#C9A86A] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(10,61,46,0.15)] active:scale-95 shrink-0 cursor-pointer"
-                  style={{ height: "28px", background: "#0A3D2E", color: "#E8C77E", whiteSpace: "nowrap" }}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#38BDF8] px-[10px] text-[11px] font-black shadow-[0_2px_8px_rgba(2,132,199,0.2)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "linear-gradient(to right, #0284C7, #0369A1)", color: "#FDE047", whiteSpace: "nowrap" }}
                 >
                   {order.courier.name}
                 </button>
@@ -393,8 +395,8 @@ export function OrderViewContent({
                   type="button"
                   id="assignBtnTop"
                   onClick={() => setShowAssignCourierModal(true)}
-                  className="inline-flex items-center justify-center rounded-full border-[1.5px] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(201,168,106,0.25)] active:scale-95 shrink-0 cursor-pointer"
-                  style={{ height: "28px", background: "linear-gradient(180deg, #E8C77E 0%, #C9A86A 100%)", borderColor: "#0A3D2E", color: "#0A3D2E", whiteSpace: "nowrap" }}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#38BDF8] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(2,132,199,0.2)] active:scale-95 shrink-0 cursor-pointer"
+                  style={{ height: "28px", background: "linear-gradient(to right, #0284C7, #0369A1)", color: "#FFFFFF", whiteSpace: "nowrap" }}
                 >
                   إسناد
                 </button>
@@ -414,11 +416,11 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* الفاصل الأرابيسك المذهب في المنتصف */}
+          {/* الفاصل بهوية وصلي في المنتصف */}
           <div className="relative my-[10px] flex items-center justify-center w-full">
-            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-[#E8D5A3] w-full" />
-            <div className="relative z-10 w-[12px] h-[12px] bg-[#FFFEFB] border border-[#E8D5A3] rotate-45 flex items-center justify-center shadow-[0_1px_3px_rgba(201,168,106,0.2)]">
-              <div className="w-[4px] h-[4px] bg-[#C9A86A] rotate-45" />
+            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-[#BAE6FD] w-full" />
+            <div className="relative z-10 w-[12px] h-[12px] bg-[#FFFFFF] border border-[#38BDF8] rotate-45 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.2)]">
+              <div className="w-[4px] h-[4px] bg-[#0284C7] rotate-45" />
             </div>
           </div>
 
@@ -427,14 +429,14 @@ export function OrderViewContent({
             {/* زر تعديل الطلب */}
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(201,168,106,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#FDF6E3] transition"
+              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#F0F9FF] transition"
             >
-              <span className="text-[12px] font-black text-[#0A3D2E] leading-none whitespace-nowrap">تعديل</span>
+              <span className="text-[12px] font-black text-[#0369A1] leading-none whitespace-nowrap">تعديل</span>
               <span
-                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0A3D2E]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
-                style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0284C7]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(2,132,199,0.2)] shrink-0"
+                style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}
               >
-                <svg className="w-[10px] h-[10px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-[10px] h-[10px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 20h9" />
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                 </svg>
@@ -445,13 +447,13 @@ export function OrderViewContent({
             {isPreparationOrder && (
               <Link
                 href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                className="h-[34px] rounded-full bg-gradient-to-r from-[#0A3D2E] to-[#06281D] border-[1.5px] border-[#C9A86A] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(10,61,46,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
+                className="h-[34px] rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
                 title="تعديل أسعار ومواد التجهيز"
               >
-                <span className="text-[12px] font-black text-[#F5D77F] leading-none whitespace-nowrap">تعديل التسعير</span>
+                <span className="text-[12px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل التسعير</span>
                 <span
-                  className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#C9A86A]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(201,168,106,0.3)] shrink-0"
-                  style={{ background: "linear-gradient(180deg, #F1D99A 0%, #E8C77E 50%, #C9A86A 100%)" }}
+                  className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#38BDF8]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(2,132,199,0.2)] shrink-0"
+                  style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}
                 >
                   <span className="text-[11px] leading-none">🏷️</span>
                 </span>
@@ -489,17 +491,17 @@ export function OrderViewContent({
         {(voiceSrc || adminVoiceSrc) && (
           <div className="mb-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {voiceSrc && (
-              <div className="rounded-2xl border-2 border-[#C9A86A]/70 bg-[#0A241C]/90 p-3 shadow-md">
+              <div className="rounded-2xl border-2 border-[#38BDF8] bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] p-3 shadow-md text-white">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-xs font-black text-[#F5D77F] flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+                  <span className="text-xs font-black text-[#FDE047] flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
                 </div>
                 <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
               </div>
             )}
             {adminVoiceSrc && (
-              <div className="rounded-2xl border-2 border-[#C9A86A]/70 bg-[#0A241C]/90 p-3 shadow-md">
+              <div className="rounded-2xl border-2 border-[#38BDF8] bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] p-3 shadow-md text-white">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-xs font-black text-rose-300 flex items-center gap-1"><span>🎧</span> بصمة المدير (المسجلة)</span>
+                  <span className="text-xs font-black text-[#FDE047] flex items-center gap-1"><span>🎧</span> بصمة المدير (المسجلة)</span>
                   <DeleteAdminVoiceNoteButton orderId={order.id} compact />
                 </div>
                 <VoiceNoteAudio src={adminVoiceSrc} streamKey={`${order.id}-admin-voice`} className="w-full" />
@@ -540,16 +542,16 @@ export function OrderViewContent({
                   }
                   smartHintNode={
                     isSmartHintValid(order.smartHintLine) ? (
-                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                      <div className="bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] border-2 border-[#38BDF8] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
                         <div className="flex-1 text-right">
-                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                          <p className="text-[10px] font-black text-[#FDE047] flex items-center gap-1 justify-end">
                             <span>💡 الاستدلال الذكي</span>
                           </p>
                           <p className="text-xs font-black text-white mt-1">
                             {order.smartHintLine!.trim()}
                           </p>
                         </div>
-                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                        <div className="h-9 w-9 bg-[#075985] border border-[#38BDF8] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
                           💡
                         </div>
                       </div>
@@ -592,14 +594,14 @@ export function OrderViewContent({
 
               {/* الفاصل الأرابيسك المذهب */}
               <div className="flex items-center justify-center gap-2 py-2 my-0.5">
-                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#38BDF8]/30 bg-[#F0F9FF] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
                   <div className="w-[12px] h-[12px] relative">
-                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
-                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                    <div className="absolute inset-0 rotate-45 border border-[#38BDF8]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#38BDF8]/80" />
                   </div>
                 </div>
-                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
               </div>
 
               {/* بطاقة المحل / العميل بالأسفل للتسليم */}
@@ -633,34 +635,34 @@ export function OrderViewContent({
               {/* الفاصل الأرابيسك المذهب بين كارت المحل وكارت الزبون */}
               {!isDoubleRoute && !shouldCollapseSender && (
                 <div className="flex items-center justify-center gap-2 py-2 my-0.5">
-                  <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-                  <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                  <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
+                  <div className="w-[22px] h-[22px] rounded-full border border-[#38BDF8]/30 bg-[#F0F9FF] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
                     <div className="w-[12px] h-[12px] relative">
-                      <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
-                      <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                      <div className="absolute inset-0 rotate-45 border border-[#38BDF8]/60" />
+                      <div className="absolute inset-[3px] rotate-45 bg-[#38BDF8]/80" />
                     </div>
                   </div>
-                  <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+                  <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
                 </div>
               )}
 
               {shouldCollapseSender && (
                 <div
                   onClick={() => setIsSenderExpanded(true)}
-                  className="bg-[#0A3D2E]/90 border-2 border-[#C9A86A] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:bg-[#0F4D3A] transition-all mb-1 active:scale-[0.99]"
+                  className="bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] border-2 border-[#38BDF8] rounded-[1.5rem] p-3.5 shadow-lg flex items-center justify-between cursor-pointer hover:brightness-105 transition-all mb-1 active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#F5D77F] to-[#C9A86A] text-[#06281D] flex items-center justify-center font-black text-sm shadow-md">✓</span>
+                    <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FDE047] to-[#FACC15] text-[#0369A1] flex items-center justify-center font-black text-sm shadow-md">✓</span>
                     <div>
-                      <h4 className="text-sm font-black text-[#F5D77F]">
+                      <h4 className="text-sm font-black text-[#FDE047]">
                         المرسل (الوجهة الأولى) - تم الاستلام بنجاح ✅
                       </h4>
-                      <p className="text-xs font-bold text-emerald-200">
+                      <p className="text-xs font-bold text-sky-100">
                         📍 {order.customerRegion?.name || "منطقة المرسل"} {order.customerPhone ? `| 📞 ${contactLine(order.customerPhone)}` : ""}
                       </p>
                     </div>
                   </div>
-                  <button type="button" className="px-3.5 py-1.5 bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] rounded-xl text-xs font-black text-[#F5D77F] shadow-sm border border-[#C9A86A]">
+                  <button type="button" className="px-3.5 py-1.5 bg-[#075985] rounded-xl text-xs font-black text-[#FDE047] shadow-sm border border-[#38BDF8]">
                     عرض التفاصيل 🔽
                   </button>
                 </div>
@@ -692,16 +694,16 @@ export function OrderViewContent({
                     }
                     smartHintNode={
                       isSmartHintValid(order.smartHintLine) ? (
-                        <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
+                        <div className="bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] border-2 border-[#38BDF8] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg">
                           <div className="flex-1 text-right">
-                            <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                            <p className="text-[10px] font-black text-[#FDE047] flex items-center gap-1 justify-end">
                               <span>💡 الاستدلال الذكي</span>
                             </p>
                             <p className="text-xs font-black text-white mt-1">
                               {order.smartHintLine!.trim()}
                             </p>
                           </div>
-                          <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                          <div className="h-9 w-9 bg-[#075985] border border-[#38BDF8] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
                             💡
                           </div>
                         </div>
@@ -750,14 +752,14 @@ export function OrderViewContent({
           {!isDoubleRoute && designerConfigState?.enabledPortals?.admin !== false && (
             <>
               <div className="flex items-center justify-center gap-2 py-2 my-0.5">
-                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#38BDF8]/30 bg-[#F0F9FF] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
                   <div className="w-[12px] h-[12px] relative">
-                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
-                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                    <div className="absolute inset-0 rotate-45 border border-[#38BDF8]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#38BDF8]/80" />
                   </div>
                 </div>
-                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
               </div>
               <div className="w-full">
                 <AdminLuxuryOrderInfoCard
@@ -776,11 +778,11 @@ export function OrderViewContent({
             <>
               {/* فاصل أرابيسك مذهب ملكي بين المرسل والمستلم */}
               <div className="flex items-center justify-center gap-2 py-2.5 my-1">
-                <div className="h-[1.5px] w-[45px] bg-gradient-to-l from-[#C9A86A] to-transparent" />
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-l from-[#38BDF8] to-transparent" />
                 <div className="px-3 py-1 rounded-full border border-[#C9A86A]/40 bg-gradient-to-r from-[#FFF8E1] via-[#FFFEF8] to-[#FFF8E1] shadow-[0_2px_8px_rgba(201,168,106,0.18)] flex items-center gap-1.5">
                   <span className="text-[11px] font-black text-[#8B6A2A]">⮯ الوجهة الثانية للتسليم (المستلم)</span>
                 </div>
-                <div className="h-[1.5px] w-[45px] bg-gradient-to-r from-[#C9A86A] to-transparent" />
+                <div className="h-[1.5px] w-[45px] bg-gradient-to-r from-[#38BDF8] to-transparent" />
               </div>
 
               <div className="w-full">
@@ -814,16 +816,16 @@ export function OrderViewContent({
                   }
                   smartHintNode={
                     isSmartHintValid(order.secondSmartHintLine) ? (
-                      <div className="bg-gradient-to-r from-[#0F4D3A] via-[#1B4D3E] to-[#0F4D3A] border-2 border-[#C9A86A] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
+                      <div className="bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] border-2 border-[#38BDF8] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between shadow-lg mt-2">
                         <div className="flex-1 text-right">
-                          <p className="text-[10px] font-black text-[#F5D77F] flex items-center gap-1 justify-end">
+                          <p className="text-[10px] font-black text-[#FDE047] flex items-center gap-1 justify-end">
                             <span>💡 الاستدلال الذكي (المستلم)</span>
                           </p>
                           <p className="text-xs font-black text-white mt-1">
                             {order.secondSmartHintLine!.trim()}
                           </p>
                         </div>
-                        <div className="h-9 w-9 bg-[#06281D] border border-[#C9A86A] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                        <div className="h-9 w-9 bg-[#075985] border border-[#38BDF8] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
                           💡
                         </div>
                       </div>
@@ -866,14 +868,14 @@ export function OrderViewContent({
 
               {/* فاصل أرابيسك مذهب بين المستلم وكارت تفاصيل الطلب */}
               <div className="flex items-center justify-center gap-2 py-2 my-0.5">
-                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-                <div className="w-[22px] h-[22px] rounded-full border border-[#C9A86A]/30 bg-[#FDF6E3] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
+                <div className="h-[1px] w-[36px] bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
+                <div className="w-[22px] h-[22px] rounded-full border border-[#38BDF8]/30 bg-[#F0F9FF] flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.15)]">
                   <div className="w-[12px] h-[12px] relative">
-                    <div className="absolute inset-0 rotate-45 border border-[#C9A86A]/60" />
-                    <div className="absolute inset-[3px] rotate-45 bg-[#C9A86A]/80" />
+                    <div className="absolute inset-0 rotate-45 border border-[#38BDF8]/60" />
+                    <div className="absolute inset-[3px] rotate-45 bg-[#38BDF8]/80" />
                   </div>
                 </div>
-                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+                <div className="h-[1px] w-[36px] bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
               </div>
 
               <div className="w-full">
@@ -892,21 +894,21 @@ export function OrderViewContent({
         {/* --- تفاصيل الطلب والأسعار وصورة الطلب (في حالة التصميم القديم أو عدم تفعيل الواجهة الفاخرة) --- */}
         {designerConfigState?.enabledPortals?.admin === false ? (
           <div className={gridInfoPhoto}>
-            <div className="space-y-3.5 rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 sm:p-5 shadow-2xl ring-1 ring-[#F5D77F]/30 relative overflow-hidden backdrop-blur-md">
-              <div className="absolute inset-0 bg-[radial-gradient(#C9A86A_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+            <div className="space-y-3.5 rounded-[2rem] border-2 border-[#38BDF8] bg-gradient-to-br from-[#0284C7] via-[#0369A1] to-[#075985] p-4 sm:p-5 shadow-2xl ring-1 ring-[#38BDF8]/40 relative overflow-hidden backdrop-blur-md">
+              <div className="absolute inset-0 bg-[radial-gradient(#38BDF8_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
 
               {/* نوع الطلب */}
-              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
-                <span className="text-xs sm:text-sm font-bold text-[#F5D77F] whitespace-nowrap">الطلب:</span>
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#38BDF8]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#FDE047] whitespace-nowrap">الطلب:</span>
                 <div className="text-left font-black text-white text-xs sm:text-sm">
-                  <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl text-xs sm:text-sm shadow-md inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-white" />
+                  <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-[#0369A1] bg-gradient-to-r from-[#FDE047] to-[#FACC15] px-2.5 py-1 rounded-xl text-xs sm:text-sm shadow-md inline-block ml-1" restClassName="text-xs sm:text-sm font-black text-white" />
                 </div>
               </div>
 
               {/* وقت الطلب */}
-              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#C9A86A]/30 pb-2.5">
-                <span className="text-xs sm:text-sm font-bold text-[#F5D77F]">الوقت:</span>
-                <span className="text-xs sm:text-sm font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-1 rounded-xl border border-[#C9A86A]/60 shadow-inner">
+              <div className="relative z-10 flex items-center justify-between gap-2 border-b border-[#38BDF8]/30 pb-2.5">
+                <span className="text-xs sm:text-sm font-bold text-[#FDE047]">الوقت:</span>
+                <span className="text-xs sm:text-sm font-black text-[#FDE047] bg-[#075985] px-3 py-1 rounded-xl border border-[#38BDF8]/60 shadow-inner">
                   {order.orderNoteTime || "فوري"}
                 </span>
               </div>
@@ -931,7 +933,7 @@ export function OrderViewContent({
                   <div className="relative z-10 space-y-2.5 pt-0.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-white">سعر البضاعة:</span>
-                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.orderSubtotal || "0"}</span>
+                      <span className="font-mono text-base font-black text-white bg-[#075985] px-3 py-0.5 rounded-xl border border-[#38BDF8]/50 shadow-inner">{order.orderSubtotal || "0"}</span>
                     </div>
 
                     {hasDebt && (
@@ -943,20 +945,20 @@ export function OrderViewContent({
 
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs sm:text-sm font-bold text-white">التوصيل:</span>
-                      <span className="font-mono text-base font-black text-[#F5D77F] bg-[#0F4D3A] px-3 py-0.5 rounded-xl border border-[#C9A86A]/50 shadow-inner">{order.deliveryPrice || "0"}</span>
+                      <span className="font-mono text-base font-black text-white bg-[#075985] px-3 py-0.5 rounded-xl border border-[#38BDF8]/50 shadow-inner">{order.deliveryPrice || "0"}</span>
                     </div>
                   </div>
                 );
               })()}
 
               {/* المبلغ الكلي أو كلشي واصل */}
-              <div className={`relative z-10 rounded-2xl border-2 p-3 shadow-xl flex items-center justify-between gap-2 mt-2 ${order.prepaidAll ? "border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#1B4D3E] text-[#F5D77F]" : "border-[#C9A86A] bg-gradient-to-r from-[#06281D] to-[#0A3D2E] text-[#F5D77F]"}`}>
+              <div className={`relative z-10 rounded-2xl border-2 p-3 shadow-xl flex items-center justify-between gap-2 mt-2 ${order.prepaidAll ? "border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white" : "border-[#38BDF8] bg-gradient-to-r from-[#0369A1] to-[#075985] text-white"}`}>
                 <span className="text-xs sm:text-sm font-black">
                   {order.prepaidAll ? "حالة الدفع:" : "المبلغ الكلي:"}
                 </span>
                 <span className="font-mono text-xl sm:text-2xl font-black tabular-nums drop-shadow-md">
                   {order.prepaidAll ? (
-                    <span className="text-[#F5D77F] font-black animate-pulse">كل شي واصل ✓</span>
+                    <span className="text-[#FDE047] font-black animate-pulse">كل شي واصل ✓</span>
                   ) : (
                     order.totalAmount || "—"
                   )}
@@ -964,10 +966,10 @@ export function OrderViewContent({
               </div>
             </div>
 
-            <div className="self-start rounded-[2rem] border-2 border-[#C9A86A] bg-gradient-to-br from-[#0A3D2E] via-[#06281D] to-[#0A3D2E] p-4 shadow-2xl ring-1 ring-[#F5D77F]/30 backdrop-blur-md">
-              <p className="mb-2 text-xs sm:text-sm font-black text-[#F5D77F]">صورة الطلبية</p>
+            <div className="self-start rounded-[2rem] border-2 border-[#38BDF8] bg-gradient-to-br from-[#0284C7] via-[#0369A1] to-[#075985] p-4 shadow-2xl ring-1 ring-[#38BDF8]/40 backdrop-blur-md">
+              <p className="mb-2 text-xs sm:text-sm font-black text-[#FDE047]">صورة الطلبية</p>
               {imgOrder ? (
-                <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#C9A86A] shadow-xl bg-black/40">
+                <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-[#38BDF8] shadow-xl bg-black/40">
                   <img
                     src={imgOrder}
                     alt=""
@@ -1010,7 +1012,7 @@ export function OrderViewContent({
               {isPreparationOrder && (
                 <Link
                   href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] text-[#06281D] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white border border-[#38BDF8] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
                 >
                   <span>🏷️</span>
                   <span>تعديل التسعير والمواد</span>
@@ -1020,10 +1022,10 @@ export function OrderViewContent({
 
             {hasCart && (
               <div className="mb-4 space-y-2.5">
-                <p className="text-[11px] font-black text-[#06281D] bg-gradient-to-r from-[#F5D77F] to-[#C9A86A] px-2.5 py-1 rounded-xl shadow-md w-fit">تفاصيل السلة (المتجر)</p>
+                <p className="text-[11px] font-black text-[#0369A1] bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#38BDF8]/40 px-2.5 py-1 rounded-xl shadow-md w-fit">تفاصيل السلة (المتجر)</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {cartItems.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center p-3.5 rounded-2xl border-2 border-[#C9A86A]/60 bg-gradient-to-r from-[#0A3D2E] to-[#06281D] shadow-lg">
+                    <div key={idx} className="flex justify-between items-center p-3.5 rounded-2xl border-2 border-[#38BDF8]/60 bg-gradient-to-r from-[#0284C7] to-[#0369A1] shadow-lg">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-black text-white">{item.name} ×{item.quantity}</span>
@@ -1033,9 +1035,9 @@ export function OrderViewContent({
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-bold text-[#F5D77F]/80">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
+                        <span className="text-[10px] font-bold text-sky-100">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
                       </div>
-                      <span className="text-sm font-mono font-black text-[#F5D77F]">{(item.price * item.quantity).toLocaleString()} د.ع</span>
+                      <span className="text-sm font-mono font-black text-[#FDE047]">{(item.price * item.quantity).toLocaleString()} د.ع</span>
                     </div>
                   ))}
                 </div>
@@ -1044,7 +1046,7 @@ export function OrderViewContent({
 
             {hasNotes && (
               <ClickableNotesCard text={order.summary ?? ""}>
-                <div className="whitespace-pre-wrap p-4 pt-9 text-sm font-bold text-white leading-relaxed bg-gradient-to-br from-[#0A3D2E]/90 to-[#06281D]/90 rounded-2xl border-2 border-[#C9A86A]/60 shadow-lg">
+                <div className="whitespace-pre-wrap p-4 pt-9 text-sm font-bold text-white leading-relaxed bg-gradient-to-br from-[#0284C7]/95 to-[#0369A1]/95 rounded-2xl border-2 border-[#38BDF8] shadow-lg">
                   {normalizeOrderSummaryText(order.summary)}
                 </div>
               </ClickableNotesCard>

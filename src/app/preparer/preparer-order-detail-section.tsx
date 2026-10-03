@@ -401,7 +401,7 @@ export function PreparerOrderDetailSection({
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-black text-emerald-900">
+                <span className="text-[13px] font-black text-[#0284C7] bg-[#F0F9FF] px-2 py-0.5 rounded-lg border border-[#38BDF8]/40 inline-flex items-center gap-1">
                   💡 {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                 </span>
               </div>
@@ -419,7 +419,7 @@ export function PreparerOrderDetailSection({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-violet-900">
+                  <span className="text-[13px] font-black text-[#0369A1] bg-[#F0F9FF] px-2 py-0.5 rounded-lg border border-[#38BDF8]/40 inline-flex items-center gap-1">
                     💡 {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
                   </span>
                 </div>

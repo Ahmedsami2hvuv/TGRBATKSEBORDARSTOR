@@ -1905,9 +1905,9 @@ export function MandoubOrderTable({
       {/* نافذة تفاصيل الطلب الكاملة - تعمل أوفلاين */}
       {activeOrderData &&
         createPortal(
-          <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+          <div className="fixed inset-0 z-[110] bg-gradient-to-b from-[#F0F9FF] via-[#E0F2FE]/30 to-[#F0F9FF] overflow-y-auto">
             {/* الهيدر العلوي المثبت للطلب */}
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-2.5 sm:p-3.5 shadow-sm" dir="rtl">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#38BDF8]/40 p-2.5 sm:p-3.5 shadow-sm" dir="rtl">
               <div className="flex items-center justify-between gap-3">
                 {/* زر الإغلاق الأحمر الدائري في جهة اليمين */}
                 <button

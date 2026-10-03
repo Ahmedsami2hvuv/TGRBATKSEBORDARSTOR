@@ -636,15 +636,15 @@ export function UnifiedOrderListTable({
                                    title="الاستدلال الذكي"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${
                                      activeSmartHintId === o.id
-                                       ? "bg-emerald-700 text-white"
-                                       : "bg-slate-100 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                                       ? "bg-[#0284C7] text-[#FDE047] border border-[#38BDF8]"
+                                       : "bg-[#F0F9FF] text-[#0284C7] hover:bg-[#0284C7] hover:text-[#FDE047] border border-[#38BDF8]/40"
                                    }`}
                                  >
                                    <DynamicIcon iconKey="ui_note" config={icons} fallback="🧭" className="w-3.5 h-3.5" />
                                  </button>
                                  {activeSmartHintId === o.id ? (
-                                   <CenterModal title="الاستدلال الذكي" onClose={() => setActiveSmartHintId(null)}>
-                                     <div className="p-3 text-sm font-black text-slate-800">{o.smartHintLine}</div>
+                                   <CenterModal title="💡 الاستدلال الذكي" onClose={() => setActiveSmartHintId(null)}>
+                                     <div className="p-3 text-sm font-black text-[#0369A1] bg-[#F0F9FF] rounded-xl border border-[#38BDF8]/40">{o.smartHintLine}</div>
                                    </CenterModal>
                                  ) : null}
                                </div>

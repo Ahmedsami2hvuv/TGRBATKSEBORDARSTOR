@@ -6405,11 +6405,17 @@ function OrderCardsLivePreview({
               </div>
 
               {/* 3. بلوك الاستدلال الذكي */}
-              <div className="p-2 rounded-xl bg-black/60 border border-purple-500/40 flex items-start gap-2">
-                <span className="text-base shrink-0">🧠</span>
-                <div className="text-xs min-w-0">
-                  <span className="text-purple-300 font-bold block text-[11px]">الاستدلال الذكي:</span>
-                  <span className="text-white/90 font-medium text-[11px]">المنطقة تشهد حركة خفيفة بعد الساعة 6 مساءً</span>
+              <div className="bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#075985] border-2 border-[#38BDF8] rounded-2xl p-2.5 flex items-center justify-between shadow-lg">
+                <div className="flex-1 text-right">
+                  <p className="text-[10px] font-black text-[#FDE047] flex items-center gap-1 justify-end">
+                    <span>💡 الاستدلال الذكي</span>
+                  </p>
+                  <p className="text-xs font-black text-white mt-1">
+                    المنطقة تشهد حركة خفيفة بعد الساعة 6 مساءً
+                  </p>
+                </div>
+                <div className="h-9 w-9 bg-[#075985] border border-[#38BDF8] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 mr-2">
+                  💡
                 </div>
               </div>
 
@@ -6428,7 +6434,7 @@ function OrderCardsLivePreview({
                     key={btn.id}
                     onClick={(e) => handleElementClick(e, `wa_${btn.id}`, "wa_buttons")}
                     style={getElementStyle(btnCustom)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] font-black text-[11px] shadow-md cursor-pointer transition-all m-0.5 ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white font-black text-[11px] shadow-md cursor-pointer transition-all m-0.5 ${
                       isSelected ? "ring-4 ring-[#F5D77F] ring-offset-1 ring-offset-black scale-105 shadow-amber-400/40" : "hover:opacity-90 hover:scale-105 hover:ring-2 hover:ring-amber-400/70"
                     }`}
                     title={`انقر لتعديل زر الواتساب: ${btn.label}`}
