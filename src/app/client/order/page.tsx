@@ -279,27 +279,22 @@ export default async function ClientOrderPage(props: Props) {
       }
     }
 
-    // جلب آخر طلبيات للمحل لاستخراج اقتراحات نوع الطلب ووقت الاستلام
+    // جلب آخر طلبيات للمحل لاستخراج اقتراحات نوع الطلب
     const recentOrders = await prisma.order.findMany({
       where: { shopId: shop.id },
-      select: { orderType: true, orderNoteTime: true },
+      select: { orderType: true },
       orderBy: { createdAt: "desc" },
       take: 10,
     });
 
     const recentOrderTypes: string[] = [];
-    const recentOrderTimes: string[] = [];
 
     for (const ord of recentOrders) {
       const cleanType = ord.orderType ? ord.orderType.replace(/^طلب عكسي\s*-\s*/, "").trim() : "";
       if (cleanType && !recentOrderTypes.includes(cleanType)) {
         recentOrderTypes.push(cleanType);
       }
-      const cleanTime = ord.orderNoteTime ? ord.orderNoteTime.trim() : "";
-      if (cleanTime && !recentOrderTimes.includes(cleanTime)) {
-        recentOrderTimes.push(cleanTime);
-      }
-      if (recentOrderTypes.length >= 2 && recentOrderTimes.length >= 2) break;
+      if (recentOrderTypes.length >= 2) break;
     }
 
     return (
@@ -322,7 +317,6 @@ export default async function ClientOrderPage(props: Props) {
           noCarsMode={currentNoCarsMode}
           employeePhone={employee.phone}
           recentOrderTypes={recentOrderTypes}
-          recentOrderTimes={recentOrderTimes}
         />
       </div>
     );
