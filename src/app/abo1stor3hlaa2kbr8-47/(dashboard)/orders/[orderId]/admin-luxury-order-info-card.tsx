@@ -203,7 +203,7 @@ export function AdminLuxuryOrderInfoCard({
                   className="w-full h-[70px] rounded-[16px] border-[2px] border-[#38BDF8] shadow-[0_4px_14px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.3)] flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, #0284C7 0%, #0369A1 100%)" }}
                 >
-                  <span className="text-[42px] font-black leading-none text-[#0F172A] font-mono tracking-tight [direction:ltr]">
+                  <span className="text-[42px] font-black leading-none text-white drop-shadow-sm font-mono tracking-tight [direction:ltr]">
                     {order.totalAmount != null ? formatDinarAsAlf(totalVal) : "0"}
                   </span>
                 </div>
