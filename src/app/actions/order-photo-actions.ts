@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { saveOrderImageUploaded, MAX_ORDER_IMAGE_BYTES } from "@/lib/order-image";
 import { deleteFromR2 } from "@/lib/upload-storage";
-import { verifyDelegatePortalQuery, isCourierPortalBlocked } from "@/lib/delegate-link";
+import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
+import { isCourierPortalBlocked } from "@/lib/courier-delegate-access";
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
