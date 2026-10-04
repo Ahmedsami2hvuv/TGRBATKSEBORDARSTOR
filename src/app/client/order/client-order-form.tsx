@@ -1389,14 +1389,17 @@ function ClientOrderFormInner({
             : "cursor-grab"
         }`}
       >
-        {/* زر رفع الطلب بهوية وصلي: أزرق + أبيض + أصفر */}
-        <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-[#0369A1] via-[#0284C7] to-[#075985] border-[3px] border-[#FDE047] shadow-[0_8px_28px_rgba(2,132,199,0.45)] flex flex-col items-center justify-center gap-[2px] pointer-events-none">
-          <Send className="w-[27px] h-[27px] text-[#FDE047] fill-[#FDE047] -rotate-45" strokeWidth={2.5} />
-          <span className="text-white text-[12px] font-black leading-none">رفع الطلب</span>
-          <span className="text-[#FDE047] text-[9px] font-black leading-none">وصلي ⚡</span>
-        </div>
-
-        {/* مؤشر التحميل أثناء الرفع */}
+        {/* صورة الختم الملكي الذهبي AK المفرغة بدقة ووضوح عالي مع عبارة رفع الطلب المدمجة */}
+        <div className="absolute inset-0 pointer-events-none">
+          <Image
+            src="/images/wasly-submit-btn.png"
+            alt="رفع الطلب"
+            fill
+            priority
+            unoptimized
+            className="object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
+          />
+        </div>        {/* مؤشر التحميل أثناء الرفع */}
         {pending && (
           <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
             <Loader2 className="w-[38px] h-[38px] text-[#FDE047] animate-spin" />
@@ -1408,11 +1411,19 @@ function ClientOrderFormInner({
       {showNewBtnHint && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px] bg-[#075985]/75 backdrop-blur-[8px] animate-in fade-in duration-300" dir="rtl">
           <div className="relative w-full max-w-[350px] rounded-[30px] border-[2.5px] border-[#0284C7] bg-gradient-to-b from-[#FFFFFF] via-[#FFFFFF] to-[#FFFFFF] p-[24px] text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
-            {/* رمز وصلي لزر رفع الطلب */}
-            <div className="relative mx-auto w-[92px] h-[92px] rounded-full bg-gradient-to-br from-[#0369A1] via-[#0284C7] to-[#075985] border-[3px] border-[#FDE047] flex flex-col items-center justify-center shadow-[0_8px_28px_rgba(2,132,199,0.35)] mb-[14px]">
-              <Send className="w-[30px] h-[30px] text-[#FDE047] fill-[#FDE047] -rotate-45" strokeWidth={2.5} />
-              <span className="text-white text-[12px] font-black mt-[2px]">رفع الطلب</span>
-              <span className="text-[#FDE047] text-[9px] font-black">وصلي ⚡</span>
+            {/* أيقونة الختم الملكي مع هالة ذهبية */}
+            <div className="relative mx-auto w-[92px] h-[92px] rounded-full p-1 bg-gradient-to-b from-[#FFFFFF] to-[#FDE047] border-2 border-[#0284C7] flex items-center justify-center shadow-lg mb-[14px]">
+              <div className="relative w-full h-full rounded-full overflow-hidden">
+                <Image
+                  src="/images/wasly-submit-btn.png"
+                  alt="زر رفع الطلب الجديد"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#0369A1] border border-[#FDE047] text-white flex items-center justify-center text-xs shadow-md">
+                👑
+              </div>
             </div>
 
             <h3 className="text-[17px] font-black text-[#0369A1] tracking-tight">
