@@ -439,31 +439,22 @@ export function AdminLuxuryCustomerCard({
               <div
                 onClick={handleLandmarkBlockClick}
                 title={hasLandmarkText ? "انقر لقراءة النقطة الدالة بخط كبير" : "انقر لإضافة أقرب نقطة دالة"}
-                className="group relative rounded-[14px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
+                className="group relative rounded-[14px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[76px] flex items-center cursor-pointer"
               >
                 <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#0284C7] to-[#38BDF8]" />
-                <div className="flex items-start gap-2 w-full pr-1">
-                  <span className="w-[24px] h-[24px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.15)] shrink-0 mt-[1px] group-hover:bg-[#F0F9FF] transition">
+                <div className="flex items-start gap-2.5 w-full pr-1">
+                  <span className="w-[24px] h-[24px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.15)] shrink-0 mt-[2px] group-hover:bg-[#F0F9FF] transition">
                     <svg className="w-3.5 h-3.5 text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <div className="text-[10px] font-black text-[#0369A1] leading-none tracking-wide">
-                        أقرب نقطة دالة
-                      </div>
-                      <span className="text-[10px] font-bold text-[#0284C7] flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        <span>{hasLandmarkText ? "عرض / تعديل" : "إضافة"}</span>
-                      </span>
+                    <div className="text-[10px] font-bold text-[#0369A1]/70 leading-none mb-1">
+                      ن داله
                     </div>
-                    <p className="text-[12px] sm:text-[13px] leading-snug font-bold text-[#1E293B] text-right line-clamp-3">
-                      {landmarkTextState || "لا توجد نقطة دالة مسجلة بعد (انقر للإضافة)"}
+                    <p className="text-[15px] sm:text-[17px] leading-tight font-black text-[#0369A1] text-right break-words">
+                      {landmarkTextState || "لا توجد نقطة دالة (انقر للإضافة)"}
                     </p>
                   </div>
                 </div>
