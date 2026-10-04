@@ -227,6 +227,33 @@ export function ImageZoomModal({
             </button>
           )}
           
+          {/* زر فتح الصورة في نافذة / تبويب جديد */}
+          <a
+            href={finalImageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-9 px-3.5 items-center justify-center gap-1.5 rounded-full bg-blue-600/90 hover:bg-blue-500 text-white border border-blue-300/60 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer backdrop-blur-md"
+            title="فتح الصورة في علامة تبويب جديدة"
+          >
+            <span>🔗</span>
+            <span>فتح في نافذة أخرى</span>
+          </a>
+
+          {/* زر تنزيل الصورة مباشرة */}
+          <a
+            href={finalImageUrl}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-9 px-3.5 items-center justify-center gap-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-300/60 transition-all text-xs font-black shadow-xl active:scale-95 cursor-pointer backdrop-blur-md"
+            title="تنزيل وحفظ الصورة"
+          >
+            <span>📥</span>
+            <span>تنزيل</span>
+          </a>
+          
           <div className="flex bg-white/20 rounded-full border border-white/20 px-1 py-0.5 shadow-xl backdrop-blur-md">
             <button
               onClick={zoomOut}
@@ -254,7 +281,7 @@ export function ImageZoomModal({
 
         {/* حاوية الصورة مع التحويلات (CSS transform) */}
         <div
-          className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-2xl p-1 max-w-[98vw] max-h-[85vh] flex items-center justify-center transition-transform duration-75 ease-out"
+          className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-2xl p-1 max-w-[98vw] max-h-[85vh] flex items-center justify-center transition-transform duration-75 ease-out select-auto"
           style={{
             transform: `translate3d(${position.x}px, ${position.y}px, 0) scale3d(${scale}, ${scale}, 1)`,
           }}
@@ -276,8 +303,7 @@ export function ImageZoomModal({
               ref={imgRef}
               src={finalImageUrl}
               alt={title || "معاينة الصورة"}
-              className="max-w-[95vw] max-h-[80vh] object-contain rounded-xl pointer-events-none"
-              draggable={false}
+              className="max-w-[95vw] max-h-[80vh] object-contain rounded-xl select-auto"
               onError={() => setHasError(true)}
             />
           )}
