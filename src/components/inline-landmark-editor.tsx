@@ -214,8 +214,11 @@ export function InlineLandmarkEditor({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg sm:text-xl shadow-inner shrink-0">
-                  📍
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-inner shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100">
@@ -248,7 +251,11 @@ export function InlineLandmarkEditor({
               {/* Error Message if any */}
               {error && (
                 <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                  <span>⚠️</span>
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
                   <span>{error}</span>
                 </div>
               )}
@@ -308,10 +315,7 @@ export function InlineLandmarkEditor({
                     <span>جارٍ الحفظ...</span>
                   </>
                 ) : (
-                  <>
-                    <span>💾</span>
-                    <span>حفظ النقطة الدالة</span>
-                  </>
+                  <span>حفظ النقطة الدالة</span>
                 )}
               </button>
             </div>

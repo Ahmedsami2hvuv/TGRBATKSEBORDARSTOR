@@ -140,11 +140,22 @@ export function AdminLuxuryCustomerCard({
       : "الزبون (المستلم)");
 
   // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت
+  const [landmarkViewOpen, setLandmarkViewOpen] = useState(false);
   const [landmarkModalOpen, setLandmarkModalOpen] = useState(false);
   const [landmarkTextState, setLandmarkTextState] = useState((rawLandmark || "").trim());
   const [landmarkLoading, setLandmarkLoading] = useState(false);
   const [landmarkError, setLandmarkError] = useState<string | null>(null);
   const landmarkInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const hasLandmarkText = Boolean(landmarkTextState && landmarkTextState.trim().length > 0);
+
+  const handleLandmarkBlockClick = () => {
+    if (hasLandmarkText) {
+      setLandmarkViewOpen(true);
+    } else {
+      setLandmarkModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     setLandmarkTextState((rawLandmark || "").trim());
@@ -426,28 +437,32 @@ export function AdminLuxuryCustomerCard({
 
               {/* بطاقة أقرب نقطة دالة - قابلة للنقر والتعديل المباشر */}
               <div
-                onClick={() => setLandmarkModalOpen(true)}
-                title="انقر لتعديل أو إضافة أقرب نقطة دالة"
-                className="group relative rounded-[12px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
+                onClick={handleLandmarkBlockClick}
+                title={hasLandmarkText ? "انقر لقراءة النقطة الدالة بخط كبير" : "انقر لإضافة أقرب نقطة دالة"}
+                className="group relative rounded-[14px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[86px] flex items-center cursor-pointer"
               >
                 <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#0284C7] to-[#38BDF8]" />
                 <div className="flex items-start gap-2 w-full pr-1">
-                  <span className="w-[22px] h-[22px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.15)] shrink-0 mt-[1px] group-hover:bg-[#F0F9FF] transition">
-                    <svg className="w-[11px] h-[11px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <span className="w-[24px] h-[24px] rounded-full bg-white border border-[#38BDF8]/40 flex items-center justify-center shadow-[0_1px_3px_rgba(2,132,199,0.15)] shrink-0 mt-[1px] group-hover:bg-[#F0F9FF] transition">
+                    <svg className="w-3.5 h-3.5 text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <div className="text-[9px] font-black text-[#0369A1]/80 leading-none tracking-wide">
+                      <div className="text-[10px] font-black text-[#0369A1] leading-none tracking-wide">
                         أقرب نقطة دالة
                       </div>
-                      <span className="text-[9px] font-bold text-[#0284C7] flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        ✏️ تعديل
+                      <span className="text-[10px] font-bold text-[#0284C7] flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        <span>{hasLandmarkText ? "عرض / تعديل" : "إضافة"}</span>
                       </span>
                     </div>
-                    <p className="text-[11px] leading-[1.35] font-bold text-[#1E293B] text-right">
+                    <p className="text-[12px] sm:text-[13px] leading-snug font-bold text-[#1E293B] text-right line-clamp-3">
                       {landmarkTextState || "لا توجد نقطة دالة مسجلة بعد (انقر للإضافة)"}
                     </p>
                   </div>
@@ -559,7 +574,83 @@ export function AdminLuxuryCustomerCard({
         </div>
       </div>
 
-      {/* نافذة تعديل أقرب نقطة دالة المنبثقة المذهبة */}
+      {/* نافذة عرض أقرب نقطة دالة بخط ضخم ومريح للقراءة */}
+      {landmarkViewOpen && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => setLandmarkViewOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl bg-white rounded-[24px] border-[2px] border-[#38BDF8] p-5 sm:p-7 shadow-2xl text-right animate-in zoom-in-95 duration-200 relative overflow-hidden flex flex-col max-h-[90vh] my-auto"
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
+            {/* الترويسة */}
+            <div className="flex items-center justify-between border-b border-[#38BDF8]/20 pb-4 mb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E0F2FE] to-[#BAE6FD] flex items-center justify-center border border-[#0284C7]/20 text-[#0284C7] shadow-sm shrink-0">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#0369A1] leading-none">
+                    أقرب نقطة دالة ({isSecondDestination ? "المستلم" : "المرسل"})
+                  </h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    يمكنك قراءة النص بوضوح أو النقر على تعديل
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLandmarkViewOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer text-sm transition-colors"
+                title="إغلاق"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* نص النقطة الدالة بخط ضخم */}
+            <div className="overflow-y-auto py-4 sm:py-6 flex-1 px-1">
+              <div className="rounded-[20px] bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE]/40 border-2 border-[#38BDF8]/40 p-5 sm:p-7 shadow-inner">
+                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#075985] text-center leading-[1.8] break-words whitespace-pre-wrap select-text">
+                  {landmarkTextState}
+                </p>
+              </div>
+            </div>
+
+            {/* أزرار الإجراءات في الأسفل */}
+            <div className="flex items-center justify-end gap-2.5 pt-4 mt-2 border-t border-[#38BDF8]/20 shrink-0">
+              <button
+                type="button"
+                onClick={() => setLandmarkViewOpen(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm active:scale-95 transition-all cursor-pointer"
+              >
+                إغلاق
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLandmarkViewOpen(false);
+                  setLandmarkModalOpen(true);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] hover:from-[#0369A1] hover:to-[#075985] border border-[#38BDF8] text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <span>تعديل</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تعديل أقرب نقطة دالة المنبثقة */}
       {landmarkModalOpen && (
         <div
           className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
@@ -573,7 +664,10 @@ export function AdminLuxuryCustomerCard({
           >
             <div className="flex items-center justify-between border-b border-[#38BDF8]/20 pb-3 mb-3">
               <h4 className="text-sm sm:text-base font-black text-[#0369A1] flex items-center gap-2">
-                <span>📍</span>
+                <svg className="w-4 h-4 text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
                 <span>تعديل أقرب نقطة دالة ({isSecondDestination ? "المستلم" : "المرسل"})</span>
               </h4>
               <button
@@ -599,11 +693,11 @@ export function AdminLuxuryCustomerCard({
                 value={landmarkTextState}
                 onChange={(e) => setLandmarkTextState(e.target.value)}
                 placeholder="اكتب أقرب نقطة دالة بالتفصيل..."
-                className="w-full rounded-xl border border-[#C9A86A] bg-white p-2.5 text-xs sm:text-sm font-bold text-[#0369A1] focus:outline-none focus:ring-2 focus:ring-[#0A3D2E]/20 resize-none shadow-inner"
+                className="w-full rounded-xl border border-[#38BDF8]/60 bg-white p-3 text-sm sm:text-base font-bold text-[#0369A1] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 resize-none shadow-inner leading-relaxed"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-[#C9A86A]/15">
+            <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-[#38BDF8]/20">
               <button
                 type="button"
                 onClick={() => setLandmarkModalOpen(false)}
@@ -617,9 +711,16 @@ export function AdminLuxuryCustomerCard({
                 type="button"
                 onClick={handleSaveLandmark}
                 disabled={landmarkLoading}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-white font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] text-white font-black text-xs shadow-md active:scale-95 transition cursor-pointer flex items-center gap-1.5"
               >
-                {landmarkLoading ? "جاري الحفظ..." : "💾 حفظ النقطة الدالة"}
+                {landmarkLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>جاري الحفظ...</span>
+                  </>
+                ) : (
+                  <span>حفظ النقطة الدالة</span>
+                )}
               </button>
             </div>
           </div>
