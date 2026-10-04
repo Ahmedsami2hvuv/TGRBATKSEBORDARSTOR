@@ -24,6 +24,7 @@ export function InlineLandmarkEditor({
   uploadedByName
 }: InlineLandmarkEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isReadOnlyOpen, setIsReadOnlyOpen] = useState(false);
   const [landmark, setLandmark] = useState(initialLandmark);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,21 @@ export function InlineLandmarkEditor({
       }, 50);
     }
   }, [isOpen]);
+
+  const hasLandmark = initialLandmark.trim().length > 0;
+
+  const handleOpen = () => {
+    if (hasLandmark) {
+      setIsReadOnlyOpen(true);
+      return;
+    }
+    setIsOpen(true);
+  };
+
+  const handleEditFromReadOnly = () => {
+    setIsReadOnlyOpen(false);
+    setIsOpen(true);
+  };
 
   const handleSave = async () => {
     if (loading) return;
@@ -81,8 +97,8 @@ export function InlineLandmarkEditor({
     <>
       {/* Trigger Block */}
       <div
-        onClick={() => setIsOpen(true)}
-        title="انقر لتعديل النقطة الدالة"
+        onClick={handleOpen}
+        title={hasLandmark ? "انقر لقراءة النقطة الدالة" : "انقر لإضافة النقطة الدالة"}
         className="group relative flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/20 p-2.5 border border-rose-200/80 dark:border-rose-800/40 kse-landmark-text cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 w-full"
       >
         <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
@@ -120,6 +136,64 @@ export function InlineLandmarkEditor({
           <ImageUploaderCaption name={uploadedByName} />
         </div>
       ) : null}
+
+      {/* Read-only modal: shown first when a landmark already exists */}
+      {isReadOnlyOpen && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => setIsReadOnlyOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 shrink-0">
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-black text-slate-800 dark:text-slate-100">
+                  أقرب نقطة دالة
+                </h3>
+                <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  اضغط تعديل إذا تريد تغيير النص
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReadOnlyOpen(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="إغلاق"
+              >
+                <span className="text-lg font-black leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto py-6 sm:py-8 flex-1">
+              <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/50 px-5 py-6 sm:px-7 sm:py-8">
+                <p className="text-2xl sm:text-4xl md:text-5xl font-black leading-[1.7] text-rose-950 dark:text-rose-100 break-words whitespace-pre-wrap text-center">
+                  {initialLandmark}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsReadOnlyOpen(false)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-black transition-all active:scale-95 cursor-pointer"
+              >
+                إغلاق
+              </button>
+              <button
+                type="button"
+                onClick={handleEditFromReadOnly}
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-sm font-black shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                تعديل
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Modal Window */}
       {isOpen && (
