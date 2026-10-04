@@ -1,6 +1,7 @@
 "use client";
 
 import { whatsappMeUrl, whatsappAppUrl, telHref, openUrlFromUserGesture } from "@/lib/whatsapp";
+import { useModalBackHandler } from "@/hooks/use-modal-back-handler";
 
 export type PhoneActionModalProps = {
   type: "whatsapp" | "call";
@@ -17,6 +18,7 @@ export function PhoneActionModal({
   messageText = "",
   onClose,
 }: PhoneActionModalProps) {
+  useModalBackHandler(true, onClose);
   const isWhatsapp = type === "whatsapp";
 
   const handleSelectPhone = (chosenPhone: string) => {

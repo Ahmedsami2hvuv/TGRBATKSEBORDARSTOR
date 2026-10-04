@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
+import { useModalBackHandler } from "@/hooks/use-modal-back-handler";
 
 interface InlineLandmarkEditorProps {
   orderId: string;
@@ -25,6 +26,8 @@ export function InlineLandmarkEditor({
 }: InlineLandmarkEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isReadOnlyOpen, setIsReadOnlyOpen] = useState(false);
+  useModalBackHandler(isOpen, () => setIsOpen(false));
+  useModalBackHandler(isReadOnlyOpen, () => setIsReadOnlyOpen(false));
   const [landmark, setLandmark] = useState(initialLandmark);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

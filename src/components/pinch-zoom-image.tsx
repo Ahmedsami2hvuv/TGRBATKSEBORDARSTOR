@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { useModalBackHandler } from "@/hooks/use-modal-back-handler";
 
 export function ImageZoomModal({
   imageUrl,
@@ -32,6 +33,7 @@ export function ImageZoomModal({
 }) {
   const rawUrl = (imageUrl || src || "").trim();
   const finalImageUrl = resolvePublicAssetSrc(rawUrl) || rawUrl;
+  useModalBackHandler(!!finalImageUrl, onClose);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [hasError, setHasError] = useState(false);

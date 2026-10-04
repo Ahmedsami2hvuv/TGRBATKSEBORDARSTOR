@@ -18,6 +18,7 @@ import { AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
+import { useModalBackHandler } from "@/hooks/use-modal-back-handler";
 
 const initial: CustomerDoorPhotoState = {};
 
@@ -142,6 +143,8 @@ export function AdminLuxuryCustomerCard({
   // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت
   const [landmarkViewOpen, setLandmarkViewOpen] = useState(false);
   const [landmarkModalOpen, setLandmarkModalOpen] = useState(false);
+  useModalBackHandler(landmarkViewOpen, () => setLandmarkViewOpen(false));
+  useModalBackHandler(landmarkModalOpen, () => setLandmarkModalOpen(false));
   const [landmarkTextState, setLandmarkTextState] = useState((rawLandmark || "").trim());
   const [landmarkLoading, setLandmarkLoading] = useState(false);
   const [landmarkError, setLandmarkError] = useState<string | null>(null);
