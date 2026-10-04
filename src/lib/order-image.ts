@@ -291,11 +291,30 @@ async function processAndUploadImage(
     }
   }
 
+  // 1.8 التحويل الفائق إلى صيغة WebP مع الضغط الذكي والحفاظ على النقاء والشفافية
+  try {
+    sharp.cache(false);
+    buf = await sharp(buf)
+      .rotate()
+      .resize({
+        width: 1024,
+        height: 1024,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 80, effort: 4, alphaQuality: 85 })
+      .toBuffer();
+    mime = "image/webp";
+  } catch (convErr) {
+    console.error("[processAndUploadImage] WebP conversion error:", convErr);
+  }
+
   // 2. الرفع إلى Cloudflare R2
-  const fileName = `${randomUUID()}.${mime.split("/")[1] || 'jpg'}`;
+  const extension = mime === "image/webp" ? "webp" : (mime.split("/")[1] || 'jpg');
+  const fileName = `${randomUUID()}.${extension}`;
   const key = `${folder}/${fileName}`;
 
-  const uploadedKey = await uploadToR2(buf, key, mime);
+  const uploadedKey = await uploadToR2(buf, key, mime, true);
 
   if (uploadedKey) {
     return `/uploads/${uploadedKey}`;

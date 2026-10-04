@@ -50,16 +50,13 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
         });
 
       if (key.toLowerCase().endsWith(".png") || contentType === "image/png") {
-        finalBuffer = await pipeline.png({ palette: true, compressionLevel: 6 }).toBuffer();
-        finalContentType = "image/png";
-      } else if (key.toLowerCase().endsWith(".webp") || contentType === "image/webp") {
-        finalBuffer = await pipeline.webp({ quality: 75 }).toBuffer();
+        finalBuffer = await pipeline.webp({ quality: 80, effort: 4, alphaQuality: 85 }).toBuffer();
         finalContentType = "image/webp";
       } else {
-        finalBuffer = await pipeline.jpeg({ quality: 75 }).toBuffer();
-        finalContentType = "image/jpeg";
+        finalBuffer = await pipeline.webp({ quality: 78, effort: 4 }).toBuffer();
+        finalContentType = "image/webp";
       }
-      console.log(`[R2 Auto-Compress] Compressed ${key} from ${(buffer.length / 1024).toFixed(1)}KB to ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / buffer.length) * 100).toFixed(1)}%)`);
+      console.log(`[R2 Auto-Compress] Compressed ${key} to WebP from ${(buffer.length / 1024).toFixed(1)}KB to ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / buffer.length) * 100).toFixed(1)}%)`);
     } catch (sharpError) {
       console.error("Failed to auto-compress image in uploadToR2:", sharpError);
     }

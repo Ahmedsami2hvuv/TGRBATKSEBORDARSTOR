@@ -4,10 +4,13 @@
 import sharp from "sharp";
 
 const MAX_EDGE = 1024; // تقليل الأبعاد لتسريع التحميل وتقليل حجم قاعدة البيانات
-const JPEG_QUALITY = 75; // جودة متوازنة جداً للويب
+const WEBP_QUALITY = 80; // جودة متوازنة جداً وفائقة النقاء للويب
 
-/** يعيد Buffer للصورة المصغرة - يدعم JPEG و PNG */
-export async function resizeImageBufferForShop(input: Buffer, format: 'jpeg' | 'png' = 'jpeg'): Promise<Buffer> {
+/** يعيد Buffer للصورة المصغرة - يدعم WebP و PNG و JPEG */
+export async function resizeImageBufferForShop(
+  input: Buffer,
+  format: 'jpeg' | 'png' | 'webp' = 'webp'
+): Promise<Buffer> {
   const pipeline = sharp(input)
     .rotate()
     .resize({
@@ -18,8 +21,12 @@ export async function resizeImageBufferForShop(input: Buffer, format: 'jpeg' | '
     });
 
   if (format === 'png') {
-    return pipeline.png({ quality: 90, compressionLevel: 9 }).toBuffer();
+    return pipeline.webp({ quality: WEBP_QUALITY, effort: 4, alphaQuality: 85 }).toBuffer();
   }
 
-  return pipeline.jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer();
+  if (format === 'jpeg') {
+    return pipeline.webp({ quality: WEBP_QUALITY, effort: 4 }).toBuffer();
+  }
+
+  return pipeline.webp({ quality: WEBP_QUALITY, effort: 4, alphaQuality: 85 }).toBuffer();
 }

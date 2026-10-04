@@ -34,14 +34,11 @@ export async function compressR2ImageAction(key: string) {
     let compressedBuffer: Buffer;
     
     if (key.toLowerCase().endsWith(".png")) {
-      compressedBuffer = await pipeline.png({ palette: true, compressionLevel: 6 }).toBuffer();
-      contentType = "image/png";
-    } else if (key.toLowerCase().endsWith(".webp")) {
-      compressedBuffer = await pipeline.webp({ quality: 75 }).toBuffer();
+      compressedBuffer = await pipeline.webp({ quality: 80, effort: 4, alphaQuality: 85 }).toBuffer();
       contentType = "image/webp";
     } else {
-      compressedBuffer = await pipeline.jpeg({ quality: 75 }).toBuffer();
-      contentType = "image/jpeg";
+      compressedBuffer = await pipeline.webp({ quality: 78, effort: 4 }).toBuffer();
+      contentType = "image/webp";
     }
 
     const uploadedKey = await uploadToR2(compressedBuffer, key, contentType, true);

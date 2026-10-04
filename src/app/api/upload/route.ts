@@ -13,32 +13,32 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const originalBuffer = Buffer.from(bytes);
 
-    // تطبيق كود تقليل الحجم الشديد الضغط (بنسبة تصل لـ 96%، تحويل من ميغا إلى كيلو بايت)
+    // تطبيق كود تقليل الحجم والتحويل لصيغة WebP الفائقة الخفة
     let finalBuffer = originalBuffer;
-    let contentType = file.type || "image/jpeg";
-    const filename = `market_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+    let contentType = "image/webp";
+    const filename = `market_${Date.now()}_${Math.random().toString(36).substring(7)}.webp`;
     const r2Key = `market/${filename}`;
 
     try {
       const sharp = (await import("sharp")).default;
       sharp.cache(false);
 
-      // تقليل الأبعاد والجودة للحصول على حجم كيلوبايتات ضئيل جداً
+      // تقليل الأبعاد والجودة والتحويل إلى صيغة WebP للحصول على حجم كيلوبايتات ضئيل جداً وسرعة خيالية
       finalBuffer = await sharp(originalBuffer)
         .rotate()
         .resize({
-          width: 800,
-          height: 800,
+          width: 900,
+          height: 900,
           fit: "inside",
           withoutEnlargement: true
         })
-        .jpeg({ quality: 60, progressive: true, mozjpeg: true })
+        .webp({ quality: 80, effort: 4 })
         .toBuffer();
 
-      contentType = "image/jpeg";
+      contentType = "image/webp";
 
       console.log(
-        `[High Compression R2] Original: ${(originalBuffer.length / 1024 / 1024).toFixed(2)}MB (${(originalBuffer.length / 1024).toFixed(1)}KB) -> Compressed: ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / originalBuffer.length) * 100).toFixed(1)}%)`
+        `[High Compression WebP R2] Original: ${(originalBuffer.length / 1024 / 1024).toFixed(2)}MB (${(originalBuffer.length / 1024).toFixed(1)}KB) -> Compressed WebP: ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / originalBuffer.length) * 100).toFixed(1)}%)`
       );
     } catch (sharpErr) {
       console.error("Sharp compression failed in upload route:", sharpErr);
