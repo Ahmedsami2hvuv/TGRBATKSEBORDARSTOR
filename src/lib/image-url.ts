@@ -57,17 +57,24 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
     }
   }
 
-  // الروابط النسبية
-  if (raw.toLowerCase().startsWith("/uploads/")) return raw;
-  if (raw.toLowerCase().startsWith("uploads/")) return `/${raw}`;
-
-  // مسارات الأصول الثابتة من images/
-  if (raw.toLowerCase().startsWith("/images/") || raw.toLowerCase().startsWith("images/")) {
+  let finalResult = raw;
+  if (raw.toLowerCase().startsWith("/uploads/")) {
+    finalResult = raw;
+  } else if (raw.toLowerCase().startsWith("uploads/")) {
+    finalResult = `/${raw}`;
+  } else if (raw.toLowerCase().startsWith("/images/") || raw.toLowerCase().startsWith("images/")) {
     return raw.startsWith("/") ? raw : `/${raw}`;
+  } else {
+    const finalPath = raw.startsWith("/") ? raw.slice(1) : raw;
+    finalResult = `/uploads/${finalPath}`;
   }
 
-  const finalPath = raw.startsWith("/") ? raw.slice(1) : raw;
-  return `/uploads/${finalPath}`;
+  // توجيه الامتداد تلقائياً إلى webp للحصول على أخف وأسرع تحميل مع التوافق التام
+  if (finalResult.startsWith("/uploads/") && /\.(jpg|jpeg|png)$/i.test(finalResult)) {
+    finalResult = finalResult.replace(/\.(jpg|jpeg|png)$/i, ".webp");
+  }
+
+  return finalResult;
 }
 
 export function resolvePublicImageSrc(url: string | null | undefined): string | null {
