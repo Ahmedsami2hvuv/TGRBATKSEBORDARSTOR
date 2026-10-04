@@ -32,13 +32,29 @@ import { safeMandoubReturn } from "@/lib/mandoub-loc-flash-url";
 import { digitsOnly, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 async function verifyDelegateAllowed(
   c: string,
   exp: string,
   s: string,
 ): Promise<{ ok: true; courierId: string } | { ok: false }> {
-  const v = verifyDelegatePortalQuery(c, exp, s);
+  let actualC = (c || "").trim();
+  let actualExp = (exp || "").trim();
+  let actualS = (s || "").trim();
+
+  if (!actualC || !actualS) {
+    try {
+      const cookieStore = await cookies();
+      actualC = actualC || (cookieStore.get("mandoub_c")?.value || "").trim();
+      actualExp = actualExp || (cookieStore.get("mandoub_exp")?.value || "").trim();
+      actualS = actualS || (cookieStore.get("mandoub_s")?.value || "").trim();
+    } catch {
+      // ignore
+    }
+  }
+
+  const v = verifyDelegatePortalQuery(actualC, actualExp, actualS);
   if (!v.ok) return { ok: false };
   if (await isCourierPortalBlocked(v.courierId)) return { ok: false };
   return { ok: true, courierId: v.courierId };
@@ -814,7 +830,7 @@ export async function uploadMandoubOrderImage(
   const exp = String(formData.get("exp") ?? "");
   const s = String(formData.get("s") ?? "");
   const orderId = String(formData.get("orderId") ?? "").trim();
-  const nextRaw = String(formData.get("next") ?? "/mandoub");
+  const nextRaw = String(formData.get("next") ?? formData.get("nextUrl") ?? "/mandoub");
 
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok) {

@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useRef, useState, useActionState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
-import {
-  assignFileToInput,
-  compressImageForMandoubUpload,
-} from "@/lib/client-image-compress";
-import { uploadMandoubOrderImage } from "@/app/mandoub/actions";
+import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
+import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
 
 export function AdminLuxuryOrderInfoCard({
   order,
@@ -32,14 +29,22 @@ export function AdminLuxuryOrderInfoCard({
   const router = useRouter();
   const [zoomOpen, setZoomOpen] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(order?.imageUrl || null);
+  const [uploadedByName, setUploadedByName] = useState<string | null>(order?.orderImageUploadedByName || null);
+
+  useEffect(() => {
+    setCurrentImageUrl(order?.imageUrl || null);
+    setUploadedByName(order?.orderImageUploadedByName || null);
+  }, [order?.imageUrl, order?.orderImageUploadedByName]);
 
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  const [, formAction, pending] = useActionState(uploadMandoubOrderImage, {});
-
-  const orderImageUrl = resolvePublicAssetSrc(order.imageUrl);
+  const orderImageUrl = resolvePublicAssetSrc(currentImageUrl);
 
   const parseNum = (val: string | number | null | undefined): number => {
     if (val === null || val === undefined) return 0;
@@ -50,29 +55,59 @@ export function AdminLuxuryOrderInfoCard({
   };
 
   const subtotalVal = order.orderSubtotal != null ? parseNum(order.orderSubtotal) : 0;
-  const deliveryVal = order.deliveryPrice != null ? parseNum(order.deliveryPrice) : 0;
+  const deliveryPriceNum = order.deliveryPrice != null ? parseNum(order.deliveryPrice) : 0;
   const totalVal = order.totalAmount != null ? parseNum(order.totalAmount) : 0;
 
   async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
     if (!(file instanceof File) || file.size <= 0) return;
 
+    setErrorMessage(null);
+    setSuccessMessage(null);
     setCompressing(true);
+
     let photoToUpload = file;
     try {
       photoToUpload = await compressImageForMandoubUpload(file);
-      assignFileToInput(inputEl, photoToUpload);
     } catch (err) {
-      console.error("خطأ في ضغط الصورة:", err);
+      console.warn("تجاوز ضغط الصورة:", err);
     } finally {
       setCompressing(false);
     }
 
-    if (formRef.current) {
-      formRef.current.requestSubmit();
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("orderId", String(order.id));
+      fd.append("orderImage", photoToUpload);
+      fd.append("isMandoubPortal", isMandoubPortal ? "true" : "false");
+
+      if (auth?.c) fd.append("c", auth.c);
+      if (auth?.exp) fd.append("exp", auth.exp);
+      if (auth?.s) fd.append("s", auth.s);
+
+      const res = await uploadOrderImageUniversal(fd);
+
+      if (res.ok && res.imageUrl) {
+        setCurrentImageUrl(res.imageUrl);
+        setUploadedByName(isMandoubPortal ? "المندوب" : "النظام");
+        setSuccessMessage("تم رفع صورة الطلب بنجاح");
+        setTimeout(() => setSuccessMessage(null), 4000);
+        router.refresh();
+      } else {
+        setErrorMessage(res.error || "تعذّر رفع الصورة");
+      }
+    } catch (err: any) {
+      console.error("خطأ في رفع صورة الطلب:", err);
+      setErrorMessage(err?.message || "حدث خطأ أثناء رفع الصورة");
+    } finally {
+      setUploading(false);
+      if (inputEl) {
+        inputEl.value = "";
+      }
     }
   }
 
-  const busy = compressing || pending;
+  const busy = compressing || uploading;
   const orderTitle = order.orderType || order.summary || "أدوية";
 
   const cameraInputUniqueId = `order-img-cam-${order.id}`;
@@ -80,48 +115,32 @@ export function AdminLuxuryOrderInfoCard({
 
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
-      <form ref={formRef} action={formAction} className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]">
-        <input type="hidden" name="orderId" value={order.id} />
-        {nextUrl && <input type="hidden" name="nextUrl" value={nextUrl} />}
-        {auth && (
-          <>
-            <input type="hidden" name="c" value={auth.c} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-          </>
-        )}
-        <input
-          id={cameraInputUniqueId}
-          ref={cameraFileRef}
-          type="file"
-          name="orderImageCamera"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            void handleFileSelected(file, cameraFileRef.current);
-          }}
-        />
-        <input
-          id={galleryInputUniqueId}
-          ref={galleryFileRef}
-          type="file"
-          name="orderImageGallery"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            void handleFileSelected(file, galleryFileRef.current);
-          }}
-        />
-      </form>
+      {/* مدخلات الكاميرا والمعرض المستقلة والخفيفة */}
+      <input
+        id={cameraInputUniqueId}
+        ref={cameraFileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          void handleFileSelected(file, cameraFileRef.current);
+        }}
+      />
+      <input
+        id={galleryInputUniqueId}
+        ref={galleryFileRef}
+        type="file"
+        accept="image/*"
+        className="fixed -top-[9999px] -left-[9999px] opacity-0 pointer-events-none w-[1px] h-[1px]"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          void handleFileSelected(file, galleryFileRef.current);
+        }}
+      />
 
       <div className="relative unified-card rounded-[20px] border-[1.5px] border-[#38BDF8]/40 bg-[#FFFFFF] shadow-[0_6px_20px_rgba(2,132,199,0.08)] overflow-hidden">
-        {/* معينات الزوايا الأربعة */}
-        <div className="hidden top-[10px] right-[10px]" />
-        <div className="hidden top-[10px] left-[10px]" />
-        <div className="hidden bottom-[10px] right-[10px]" />
-        <div className="hidden bottom-[10px] left-[10px]" />
-
         {/* الهيدر */}
         <div className="unified-header px-3.5 py-3 flex items-center justify-between bg-gradient-to-r from-[#F0F9FF] to-[#FFFFFF] border-b border-[#38BDF8]/20">
           <div className="flex items-center gap-2.5">
@@ -134,13 +153,19 @@ export function AdminLuxuryOrderInfoCard({
             </div>
             <h3 className="text-[14px] font-black text-[#0369A1] leading-none">تفاصيل الطلبية والمبلغ</h3>
           </div>
+          {busy && (
+            <div className="flex items-center gap-1.5 text-xs font-black text-[#0284C7] bg-[#E0F2FE] px-2.5 py-1 rounded-full border border-[#38BDF8]/40 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-ping" />
+              <span>{compressing ? "جارٍ ضغط الصورة..." : "جارٍ الرفع والحفظ..."}</span>
+            </div>
+          )}
         </div>
 
-        {/* المحتوى: التفاصيل يمين (أدوية بدون "نوع الطلب")، الصورة يسار 110px */}
+        {/* المحتوى: التفاصيل يمين، الصورة يسار 110px */}
         <div className="p-3.5 bg-[#FFFFFF]">
           <div className="flex gap-3 items-start" dir="rtl">
             <div className="flex-1 min-w-0 space-y-3" style={{ flex: "1.5" }}>
-              {/* اسم الطلب مباشرة بدون كلمة "نوع الطلب" */}
+              {/* اسم الطلب */}
               <div className="flex items-center gap-2.5">
                 <div className="w-[38px] h-[38px] rounded-[11px] bg-[#F0F9FF] border border-[#38BDF8]/40 flex items-center justify-center shadow-[inset_0_1px_0_white]">
                   <svg className="w-[18px] h-[18px] text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -192,13 +217,13 @@ export function AdminLuxuryOrderInfoCard({
                   </div>
                   <div className="flex items-baseline gap-1 shrink-0">
                     <span className="text-[14px] font-black text-[#0F172A] font-mono [direction:ltr]">
-                      {order.deliveryPrice != null ? formatDinarAsAlf(deliveryVal) : "0"}
+                      {order.deliveryPrice != null ? formatDinarAsAlf(deliveryPriceNum) : "0"}
                     </span>
                     <span className="text-[11px] font-bold text-[#0369A1] whitespace-nowrap">ألف</span>
                   </div>
                 </div>
 
-                {/* الصندوق الكلي العريض 100% بارتفاع 70px ورقم 42px فقط بدون كلمة ألف */}
+                {/* الصندوق الكلي */}
                 <div
                   className="w-full h-[70px] rounded-[16px] border-[2px] border-[#38BDF8] shadow-[0_4px_14px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.3)] flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, #0284C7 0%, #0369A1 100%)" }}
@@ -210,7 +235,7 @@ export function AdminLuxuryOrderInfoCard({
               </div>
             </div>
 
-            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض المباشرين للجهاز */}
+            {/* صورة الطلب يسار 110px مع زري الكاميرا والمعرض المباشرين */}
             <div className="shrink-0 flex flex-col items-center justify-start" style={{ flex: "0 0 110px" }}>
               <SwipeableLuxuryPhotoBox
                 size={110}
@@ -239,6 +264,18 @@ export function AdminLuxuryOrderInfoCard({
               />
             </div>
           </div>
+
+          {/* تنبيهات النجاح والخطأ أسفل الكارت */}
+          {errorMessage && (
+            <div className="mt-2.5 rounded-xl border border-rose-200 bg-rose-50 p-2 text-center text-xs font-black text-rose-700 animate-fadeIn">
+              ⚠️ {errorMessage}
+            </div>
+          )}
+          {successMessage && (
+            <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-center text-xs font-black text-emerald-700 animate-fadeIn">
+              ✅ {successMessage}
+            </div>
+          )}
         </div>
       </div>
 
@@ -246,7 +283,7 @@ export function AdminLuxuryOrderInfoCard({
         <ImageZoomModal
           imageUrl={orderImageUrl}
           title="صورة الطلبية"
-          uploadedByName={order.orderImageUploadedByName}
+          uploadedByName={uploadedByName}
           onClose={() => setZoomOpen(false)}
         />
       )}
