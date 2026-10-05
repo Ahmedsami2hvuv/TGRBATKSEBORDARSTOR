@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useActionState, useEffect } from "react";
+import React, { useRef, useState, useActionState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { telHref, whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
 import { PhoneActionModal } from "@/components/phone-action-modal";
