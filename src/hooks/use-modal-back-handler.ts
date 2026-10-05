@@ -10,6 +10,8 @@ import { useEffect, useRef } from "react";
 export function useModalBackHandler(isOpen: boolean, onClose: () => void) {
   const isClosedByPopStateRef = useRef(false);
   const pushedStateRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -25,7 +27,7 @@ export function useModalBackHandler(isOpen: boolean, onClose: () => void) {
 
     const handlePopState = () => {
       isClosedByPopStateRef.current = true;
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -39,5 +41,5 @@ export function useModalBackHandler(isOpen: boolean, onClose: () => void) {
         }
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 }

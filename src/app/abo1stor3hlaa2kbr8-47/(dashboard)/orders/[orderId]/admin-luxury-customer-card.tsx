@@ -140,23 +140,29 @@ export function AdminLuxuryCustomerCard({
         : "المرسل (الوجهة الأولى)"
       : "الزبون (المستلم)");
 
-  // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت (نافذة موحدة تمنع انغلاق المودال)
+  // حالات تعديل النقطة الدالة بالنقر المباشر على الكارت (نافذة موحدة وثابتة)
   const [landmarkModalOpen, setLandmarkModalOpen] = useState(false);
   const [isEditingLandmark, setIsEditingLandmark] = useState(false);
-  useModalBackHandler(landmarkModalOpen, () => {
-    setLandmarkModalOpen(false);
-    setIsEditingLandmark(false);
-  });
+  const [savedLandmark, setSavedLandmark] = useState((rawLandmark || "").trim());
   const [landmarkTextState, setLandmarkTextState] = useState((rawLandmark || "").trim());
   const [landmarkLoading, setLandmarkLoading] = useState(false);
   const [landmarkError, setLandmarkError] = useState<string | null>(null);
   const landmarkInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const hasLandmarkText = Boolean(landmarkTextState && landmarkTextState.trim().length > 0);
+  const handleCloseLandmarkModal = useCallback(() => {
+    setLandmarkModalOpen(false);
+    setIsEditingLandmark(false);
+    setLandmarkTextState(savedLandmark);
+  }, [savedLandmark]);
+
+  useModalBackHandler(landmarkModalOpen, handleCloseLandmarkModal);
+
+  const hasSavedLandmark = Boolean(savedLandmark && savedLandmark.length > 0);
 
   const handleLandmarkBlockClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (hasLandmarkText) {
+    setLandmarkTextState(savedLandmark);
+    if (hasSavedLandmark) {
       setIsEditingLandmark(false);
     } else {
       setIsEditingLandmark(true);
@@ -165,7 +171,9 @@ export function AdminLuxuryCustomerCard({
   };
 
   useEffect(() => {
-    setLandmarkTextState((rawLandmark || "").trim());
+    const clean = (rawLandmark || "").trim();
+    setSavedLandmark(clean);
+    setLandmarkTextState(clean);
   }, [rawLandmark]);
 
   useEffect(() => {
@@ -185,14 +193,16 @@ export function AdminLuxuryCustomerCard({
     setLandmarkLoading(true);
     setLandmarkError(null);
     try {
+      const trimmed = landmarkTextState.trim();
       const res = await updateOrderLandmarkAction(
         order.id,
-        landmarkTextState.trim(),
+        trimmed,
         isSecondDestination
       );
       if (res.error) {
         setLandmarkError(res.error);
       } else {
+        setSavedLandmark(trimmed);
         setLandmarkModalOpen(false);
         setIsEditingLandmark(false);
         router.refresh();
@@ -411,7 +421,7 @@ export function AdminLuxuryCustomerCard({
                         customerRegionName={effectiveRegionName}
                         alternatePhone={effectiveAlternatePhone}
                         customerLocationUrl={effectiveLocationUrl || undefined}
-                        customerLandmark={landmarkTextState || undefined}
+                        customerLandmark={savedLandmark || undefined}
                         customerProfileId={effectiveProfileId}
                         userRole={userRole}
                       />
@@ -435,7 +445,7 @@ export function AdminLuxuryCustomerCard({
                       customerRegionName={effectiveRegionName}
                       alternatePhone={effectivePhone}
                       customerLocationUrl={effectiveLocationUrl || undefined}
-                      customerLandmark={landmarkTextState || undefined}
+                      customerLandmark={savedLandmark || undefined}
                       customerProfileId={effectiveProfileId}
                       userRole={userRole}
                     />
@@ -446,7 +456,7 @@ export function AdminLuxuryCustomerCard({
               {/* بطاقة أقرب نقطة دالة - قابلة للنقر والتعديل المباشر */}
               <div
                 onClick={handleLandmarkBlockClick}
-                title={hasLandmarkText ? "انقر لقراءة النقطة الدالة بخط كبير" : "انقر لإضافة أقرب نقطة دالة"}
+                title={hasSavedLandmark ? "انقر لقراءة النقطة الدالة بخط كبير" : "انقر لإضافة أقرب نقطة دالة"}
                 className="group relative rounded-[14px] border-[1.5px] border-[#38BDF8]/50 bg-gradient-to-br from-[#F0F9FF] via-[#FFFFFF] to-[#E0F2FE]/50 p-2.5 shadow-[0_2px_8px_rgba(2,132,199,0.08),inset_0_1px_0_white] hover:shadow-[0_4px_14px_rgba(2,132,199,0.2)] hover:border-[#0284C7] active:scale-[0.99] transition-all overflow-hidden w-full min-h-[76px] flex items-center cursor-pointer"
               >
                 <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#0284C7] to-[#38BDF8]" />
@@ -462,7 +472,7 @@ export function AdminLuxuryCustomerCard({
                       ن داله
                     </div>
                     <p className="text-[15px] sm:text-[17px] leading-tight font-black text-[#0369A1] text-right break-words">
-                      {landmarkTextState || "لا توجد نقطة دالة (انقر للإضافة)"}
+                      {savedLandmark || "لا توجد نقطة دالة (انقر للإضافة)"}
                     </p>
                   </div>
                 </div>
@@ -638,7 +648,7 @@ export function AdminLuxuryCustomerCard({
                 <div className="overflow-y-auto py-4 sm:py-6 flex-1 px-1">
                   <div className="rounded-[20px] bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE]/40 border-2 border-[#38BDF8]/40 p-5 sm:p-7 shadow-inner">
                     <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#075985] text-center leading-[1.8] break-words whitespace-pre-wrap select-text">
-                      {landmarkTextState || "لا توجد نقطة دالة"}
+                      {savedLandmark || "لا توجد نقطة دالة"}
                     </p>
                   </div>
                 </div>
@@ -658,6 +668,7 @@ export function AdminLuxuryCustomerCard({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      setLandmarkTextState(savedLandmark);
                       setIsEditingLandmark(true);
                     }}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] hover:from-[#0369A1] hover:to-[#075985] border border-[#38BDF8] text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
@@ -681,6 +692,9 @@ export function AdminLuxuryCustomerCard({
                     value={landmarkTextState}
                     onChange={(e) => setLandmarkTextState(e.target.value)}
                     placeholder="اكتب أقرب نقطة دالة بالتفصيل..."
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-full rounded-xl border border-[#38BDF8]/60 bg-white p-3.5 text-base sm:text-lg font-bold text-[#0369A1] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/30 resize-none shadow-inner leading-relaxed"
                   />
                 </div>
@@ -690,8 +704,8 @@ export function AdminLuxuryCustomerCard({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (hasLandmarkText) {
-                        setLandmarkTextState((rawLandmark || "").trim());
+                      setLandmarkTextState(savedLandmark);
+                      if (hasSavedLandmark) {
                         setIsEditingLandmark(false);
                       } else {
                         setLandmarkModalOpen(false);
