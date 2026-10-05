@@ -112,6 +112,14 @@ export function AdminLuxuryCustomerCard({
       : isSecondDestination
       ? order.secondCustomerDoorPhotoUrl || null
       : order.customerDoorPhotoUrl || null;
+
+  const [localDoorPhoto, setLocalDoorPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalDoorPhoto(null);
+  }, [effectiveDoorPhoto]);
+
+  const currentDisplayPhoto = localDoorPhoto || effectiveDoorPhoto;
   const effectiveAlternatePhone =
     customerPhone2 !== undefined && customerPhone2 !== null
       ? customerPhone2
@@ -235,6 +243,11 @@ export function AdminLuxuryCustomerCard({
       console.error("خطأ في ضغط الصورة:", err);
     }
 
+    try {
+      const previewUrl = URL.createObjectURL(photoToUpload);
+      setLocalDoorPhoto(previewUrl);
+    } catch (e) {}
+
     const fd = new FormData();
     fd.set("customerDoorPhoto", photoToUpload);
     if (isSecondDestination) {
@@ -256,6 +269,7 @@ export function AdminLuxuryCustomerCard({
     setDeleting(true);
     try {
       await deleteCustomerDoorPhotoAction(order.id, isSecondDestination);
+      setLocalDoorPhoto(null);
       setZoomOpen(false);
       router.refresh();
     } finally {
@@ -483,7 +497,7 @@ export function AdminLuxuryCustomerCard({
             <SwipeableLuxuryPhotoBox
               size={130}
               variant="customer"
-              imageUrl={effectiveDoorPhoto}
+              imageUrl={currentDisplayPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
               isBusy={pending}
               cameraInputId={cameraInputUniqueId}
@@ -491,8 +505,8 @@ export function AdminLuxuryCustomerCard({
               onCameraClick={() => cameraFileRef.current?.click()}
               onGalleryClick={() => galleryFileRef.current?.click()}
               onClickPreview={() => {
-                if (effectiveDoorPhoto) {
-                  setPreviewImageUrl(effectiveDoorPhoto);
+                if (currentDisplayPhoto) {
+                  setPreviewImageUrl(currentDisplayPhoto);
                   setZoomOpen(true);
                 } else {
                   cameraFileRef.current?.click();
@@ -741,9 +755,9 @@ export function AdminLuxuryCustomerCard({
       )}
 
       {/* مودال معاينة وتكبير صورة باب الزبون/المستلم مع زر المسح */}
-      {zoomOpen && effectiveDoorPhoto && (
+      {zoomOpen && currentDisplayPhoto && (
         <ImageZoomModal
-          imageUrl={effectiveDoorPhoto}
+          imageUrl={currentDisplayPhoto}
           onClose={() => setZoomOpen(false)}
           title={isSecondDestination ? "صورة باب المستلم" : "صورة باب الزبون"}
           uploadedByName={effectiveUploaderName}

@@ -1273,7 +1273,9 @@ export function MandoubOrderTable({
   const [activeOrderId, setActiveOrderId] = useState<string | null>(activeOrderParam || null);
 
   useEffect(() => {
-    setActiveOrderId(activeOrderParam);
+    if (activeOrderParam) {
+      setActiveOrderId(activeOrderParam);
+    }
   }, [activeOrderParam]);
   const [showWallet, setShowWallet] = useState(false);
   const [bulkState, bulkAction, bulkPending] = useActionState(
