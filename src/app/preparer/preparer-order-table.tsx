@@ -1053,18 +1053,14 @@ export function PreparerOrderTable({
                                 {o.orderNoteTime || o.timeLine || "فوري"}
                               </span>
                             </div>
-                            <OrderCountUpTimer
-                              createdAt={o.createdAt}
-                              orderStatus={o.orderStatus}
-                              variant="luxury"
-                            />
                           </div>
                         </div>
 
                         {/* 3. القسم السفلي: زر التعديل باليمين + أزرار المجهز (دفع للعميل والإسناد) باليسار */}
                         <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 pt-0.5 pb-0.5 w-full shrink-0">
                           {/* الجهة اليمنى: زر تعديل الطلب للمجهز الملكي */}
-                          <div className="flex items-center mr-0.5 shrink-0">
+                          {/* الجهة اليمنى: زر تعديل الطلب للمجهز وبجانبه إلى اليسار عداد الوقت */}
+                          <div className="flex items-center gap-1.5 sm:gap-2 mr-0.5 shrink-0">
                             <Link
                               href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
                               onClick={(e) => e.stopPropagation()}
@@ -1074,6 +1070,13 @@ export function PreparerOrderTable({
                               <span className="text-sm">✏️</span>
                               <span>تعديل</span>
                             </Link>
+                            <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center">
+                              <OrderCountUpTimer
+                                createdAt={o.createdAt}
+                                orderStatus={o.orderStatus}
+                                variant="luxury"
+                              />
+                            </div>
                           </div>
 
                           {/* الجهة اليسرى: أزرار المجهز (دفع للعميل وإسناد لمندوب مع اسم المندوب المسند) */}
