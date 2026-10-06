@@ -283,43 +283,54 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             </div>
           ) : (
             (() => {
-              const pinnedTxs = transactions.filter((tx: any) => tx.kind === "expense" || tx.note?.includes("[مصروفات]"));
-              const normalTxs = transactions.filter((tx: any) => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+              const pinnedTxs = transactions.filter((tx: any) => (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && !tx.note?.includes("[مصفّرة]"));
+              const normalTxs = transactions.filter((tx: any) => !((tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && !tx.note?.includes("[مصفّرة]")));
               const displayTxs = [...pinnedTxs, ...normalTxs];
 
               return (
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-0.5">
                   {displayTxs.map((tx: any) => {
-                    const isExpense = tx.kind === "expense" || tx.note?.includes("[مصروفات]");
+                    const isPendingExpense = (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && !tx.note?.includes("[مصفّرة]");
+                    const isSettledExpense = (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && tx.note?.includes("[مصفّرة]");
+                    const isExpense = isPendingExpense || isSettledExpense;
                     const isGave = tx.kind === "gave"; // أعطيت = تسديد
                     return (
                       <div
                         key={tx.id}
                         className={`rounded-2xl border p-3 sm:p-3.5 shadow-2xs transition-all bg-[#FFFEFB] ${
-                          isExpense
+                          isPendingExpense
                             ? "border-sky-400 ring-2 ring-sky-200 bg-sky-50/40"
-                            : isGave
-                              ? "border-emerald-300 ring-1 ring-emerald-100"
-                              : "border-rose-300 ring-1 ring-rose-100"
+                            : isSettledExpense
+                              ? "border-slate-300 bg-slate-50/50"
+                              : isGave
+                                ? "border-emerald-300 ring-1 ring-emerald-100"
+                                : "border-rose-300 ring-1 ring-rose-100"
                         }`}
                       >
-                        {isExpense && (
+                        {isPendingExpense && (
                           <div className="text-[10px] font-black text-sky-800 bg-sky-100 px-2 py-0.5 rounded-lg mb-1.5 inline-flex items-center gap-1 border border-sky-200">
-                            📌 <span>مصروفات مثبتة في بداية كشف الديون</span>
+                            📌 <span>مصروفات مثبتة حالياً في بداية كشف الديون</span>
+                          </div>
+                        )}
+                        {isSettledExpense && (
+                          <div className="text-[10px] font-black text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded-lg mb-1.5 inline-flex items-center gap-1 border border-slate-300">
+                            📦 <span>مصروفات مصفّرة (تم تسويتها وتصفيتها)</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                                isExpense
+                                isPendingExpense
                                   ? "bg-sky-600 text-white border-sky-600"
-                                  : isGave
-                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                    : "bg-rose-100 text-rose-800 border-rose-300"
+                                  : isSettledExpense
+                                    ? "bg-slate-600 text-white border-slate-600"
+                                    : isGave
+                                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                      : "bg-rose-100 text-rose-800 border-rose-300"
                               }`}
                             >
-                              {isExpense ? "📦 مصروفات" : isGave ? "🟢 تسديد / استلام" : "🔴 طلب / دين"}
+                              {isSettledExpense ? "📦 مصروفات مصفّرة" : isPendingExpense ? "📦 مصروفات قائمة" : isGave ? "🟢 تسديد / استلام" : "🔴 طلب / دين"}
                             </span>
                             {tx.isPaid && (
                               <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">

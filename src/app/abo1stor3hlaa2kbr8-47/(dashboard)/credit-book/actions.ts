@@ -2200,7 +2200,32 @@ export async function zeroPartnerAccount(partnerId: string) {
       }
     }
 
-    // 5. حساب الرصيد الكلي الصافي للشريك بعد كافة التسويات لضمان تصفيره إلى 0.00 د.ع تماماً
+    // 5. تحديث كافة معاملات المصروفات الحالية المعلقة لهذا الشريك لتصبح [مصفّرة] وتنزل في كشف الحساب التاريخي
+    const activeExpenseTxs = await prisma.creditBookTransaction.findMany({
+      where: {
+        partnerId: partner.id,
+        OR: [
+          { kind: "expense" },
+          { note: { contains: "[مصروفات]" } }
+        ],
+        NOT: [
+          { note: { contains: "[مصفّرة]" } }
+        ]
+      }
+    });
+
+    for (const expTx of activeExpenseTxs) {
+      const currentNote = expTx.note || "[مصروفات]";
+      const updatedNote = currentNote.includes("[مصفّرة]")
+        ? currentNote
+        : `${currentNote} [مصفّرة]`;
+      await prisma.creditBookTransaction.update({
+        where: { id: expTx.id },
+        data: { note: updatedNote }
+      });
+    }
+
+    // 6. حساب الرصيد الكلي الصافي للشريك بعد كافة التسويات لضمان تصفيره إلى 0.00 د.ع تماماً
     const partnerDetails = await getPartnerDetails(partnerId);
     const netCurrentBalance = partnerDetails ? partnerDetails.balance : 0;
 

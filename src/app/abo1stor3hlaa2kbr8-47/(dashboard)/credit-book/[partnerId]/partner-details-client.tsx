@@ -987,7 +987,11 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
       {/* 📦 زر المصروفات المختصر الجذاب */}
       {isExpenseAllowed && (() => {
-        const expenseTxs = partner.transactions.filter(tx => Number(tx.amount || 0) > 0 && (tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+        const expenseTxs = partner.transactions.filter(tx => 
+          Number(tx.amount || 0) > 0 && 
+          (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) &&
+          !tx.note?.includes("[مصفّرة]")
+        );
         if (expenseTxs.length === 0) return null;
 
         const totalExpenseAmount = expenseTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -1156,11 +1160,14 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
 
-            // تصفية المعاملات العادية للكشف الرئيسي (إخفاء المصروفات من القائمة العادية لأنها محفوظة ومجمعة بداخل زر المصروفات أعلاه)
-            const displayTxs = filteredTxs.filter(tx => !(tx.kind === "expense" || tx.note?.includes("[مصروفات]")));
+            // تصفية المعاملات العادية للكشف الرئيسي (إخفاء المصروفات غير المصفّرة من القائمة العادية لأنها محفوظة ومجمعة بداخل زر المصروفات أعلاه)
+            const displayTxs = filteredTxs.filter(tx => {
+              const isPendingExpense = (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && !tx.note?.includes("[مصفّرة]");
+              return !isPendingExpense;
+            });
 
             if (displayTxs.length === 0 && filteredTxs.length > 0) {
-              return <div className="py-10 text-center text-sky-700 dark:text-sky-300 font-bold bg-sky-50/50 rounded-2xl border border-sky-100">المعاملات المسجلة لهذا الحساب هي مصروفات فقط، وهي محفوظة بداخل زر "قائمة المصروفات" أعلى الكشف.</div>;
+              return <div className="py-10 text-center text-sky-700 dark:text-sky-300 font-bold bg-sky-50/50 rounded-2xl border border-sky-100">المعاملات المسجلة لهذا الحساب هي مصروفات معلقة فقط، وهي محفوظة بداخل زر "قائمة المصروفات" أعلى الكشف.</div>;
             }
 
             if (displayTxs.length === 0) {
@@ -1188,6 +1195,9 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   } else if (isTransfer) {
                     containerClasses = "border-violet-700 bg-violet-600 text-white hover:bg-violet-650/95 dark:bg-violet-900 dark:border-violet-800 dark:text-violet-100 ring-2 ring-violet-500/30";
                     tagClasses = "bg-white/20 text-white border-white/25 dark:bg-violet-950/40 dark:text-violet-350 dark:border-violet-900";
+                  } else if (isExpense) {
+                    containerClasses = "border-2 border-sky-400 bg-gradient-to-r from-sky-100/65 via-sky-50/20 to-white hover:from-sky-200/70 hover:via-sky-50/30 hover:to-white/95 dark:from-sky-950/40 dark:to-slate-950 text-sky-950 dark:text-sky-300 ring-2 ring-sky-400/20";
+                    tagClasses = "bg-sky-600 text-white border-sky-600 dark:bg-sky-700 dark:border-sky-700 font-black shadow-sm";
                   } else if (tx.kind === "gave") {
                     containerClasses = "border-2 border-emerald-500 bg-gradient-to-r from-emerald-100/65 via-emerald-50/20 to-white hover:from-emerald-200/70 hover:via-emerald-50/30 hover:to-white/95 dark:from-emerald-950/40 dark:to-slate-950 text-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-400/20";
                     tagClasses = "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-700 dark:border-emerald-700 font-black shadow-sm";
