@@ -185,66 +185,6 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     } catch (syncErr) {
       console.error("[CreditBook] Auto sync system partners failed:", syncErr);
     }
-    // تحديث صامت وتلقائي للملاحظات القديمة في قاعدة البيانات لتأخذ التنسيق والترتيب الجديد لمرة واحدة
-    try {
-      const oldNotesTxs = await prisma.creditBookTransaction.findMany({
-        where: {
-          OR: [
-            { note: { contains: "طلب رقم:" } },
-            { note: { startsWith: "#" } }
-          ],
-          partner: {
-            type: "customer"
-          }
-        },
-        take: 50 // نحدث دفعات صغيرة عند كل فتح لتفادي أي بطء!
-      });
-
-      if (oldNotesTxs.length > 0) {
-        for (const tx of oldNotesTxs) {
-          const match = tx.note?.match(/#(\d+)/);
-          if (match && match[1]) {
-            const orderNumber = parseInt(match[1]);
-            const order = await prisma.order.findFirst({
-              where: { orderNumber },
-              include: {
-                customerRegion: { select: { name: true } },
-                courier: { select: { name: true } },
-                shop: { select: { name: true } },
-                moneyEvents: {
-                  where: {
-                    kind: "delivery_in",
-                    deletedAt: null
-                  }
-                }
-              }
-            });
-
-            if (order) {
-              const expectedDinar = Number(order.totalAmount || 0);
-              const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
-              const difference = expectedDinar - receivedDinar;
-
-              const regionName = order.customerRegion?.name || "غير محدد";
-              const courierName = order.courier?.name || "بدون مندوب";
-              const orderType = order.orderType || "غير محدد";
-              const shopName = order.shop?.name || "بدون محل";
-              
-              const newNote = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | Mتبقي: ${difference.toLocaleString()} د.ع`.replace("Mتبقي", "المتبقي");
-
-              if (tx.note !== newNote) {
-                await prisma.creditBookTransaction.update({
-                  where: { id: tx.id },
-                  data: { note: newNote }
-                });
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to silently auto-update old notes layout:", err);
-    }
 
 
 
@@ -2074,47 +2014,8 @@ export async function zeroPartnerAccount(partnerId: string) {
       return { success: false, error: "الشريك غير موجود" };
     }
 
-    // 1. إذا كان زبوناً (customer): تسديد وإغلاق كافة فوارق الطلبيات المرتبطة به
-    if (partner.type === "customer") {
-      for (const tx of partner.transactions) {
-        if (tx.note) {
-          const match = tx.note.match(/#(\d+)/);
-          if (match && match[1]) {
-            const orderNum = parseInt(match[1], 10);
-            const order = await prisma.order.findFirst({
-              where: { orderNumber: orderNum },
-              include: {
-                moneyEvents: {
-                  where: { kind: "delivery_in", deletedAt: null }
-                }
-              }
-            });
-
-            if (order) {
-              const expectedDinar = Number(order.totalAmount || 0);
-              const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
-              const diff = expectedDinar - receivedDinar;
-
-              if (diff > 0) {
-                // تسجيل حركة وارد delivery_in لتسديد فارق الطلب بالكامل حتى لا يعاد احتسابه كدين
-                await prisma.orderCourierMoneyEvent.create({
-                  data: {
-                    orderId: order.id,
-                    courierId: null,
-                    kind: "delivery_in",
-                    amountDinar: new Decimal(diff),
-                    expectedDinar: order.totalAmount,
-                    matchesExpected: true,
-                    mismatchReason: "",
-                    mismatchNote: "تم تسديد دين الطلب عبر تصفير الحساب في دفتر الديون",
-                  }
-                });
-              }
-            }
-          }
-        }
-      }
-    }
+    // 1. تصفير وإغلاق حسابات الزبائن (customer) والمحلات والموردين والمناديب بموازنة صريحة دون التعديل على أحداث الطلبيات الأخرى
+    // يتم التصفير بنظافة وشفافية على مستوى الحساب المالي دون توليد أحداث تسديد هجينة بالخطأ
 
     // 2. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
     if (partner.type === "shop" && partner.externalId) {
