@@ -1791,7 +1791,19 @@ export function OrderTrackingBulkTable({
         <TrackingCardsView
           rows={rows}
           onOpenRow={(id) => router.push(`${SECRET_ADMIN_PATH}/orders/${id}`)}
-          onAssignOrder={(r) => setAssignOrder(r)}
+          onAssignOrder={(r) => {
+            if (couriers.length === 1 && (!r.assignedCourierId || r.assignedCourierId === "")) {
+              const fd = new FormData();
+              fd.append("orderIds", r.id);
+              fd.append("targetStatus", "assigned");
+              fd.append("courierId", couriers[0].id);
+              bulkUpdateOrdersStatus({}, fd).then((res) => {
+                if (res?.error) alert(res.error);
+              });
+            } else {
+              setAssignOrder(r);
+            }
+          }}
           onRejectOrder={(r) => setRejectOrder(r)}
           onRestoreOrder={(r) => setRestoreOrder(r)}
           onAdminPickup={(r) => setAdminPickupOrder(r)}
@@ -1846,7 +1858,17 @@ export function OrderTrackingBulkTable({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (originalRow) setAssignOrder(originalRow);
+                  if (couriers.length === 1 && (!row.assignedCourierName || row.assignedCourierName === "—")) {
+                    const fd = new FormData();
+                    fd.append("orderIds", row.id);
+                    fd.append("targetStatus", "assigned");
+                    fd.append("courierId", couriers[0].id);
+                    bulkUpdateOrdersStatus({}, fd).then((res) => {
+                      if (res?.error) alert(res.error);
+                    });
+                  } else if (originalRow) {
+                    setAssignOrder(originalRow);
+                  }
                 }}
                 className={`flex h-11 px-3 items-center justify-center gap-1 rounded-2xl bg-white border-2 shadow-sm transition hover:bg-emerald-50 active:scale-90 text-xs font-black ${
                   isAssigned ? "border-violet-300 text-violet-700 hover:border-violet-500" : "border-emerald-200 text-emerald-700 hover:border-emerald-400"

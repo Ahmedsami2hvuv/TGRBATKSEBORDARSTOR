@@ -3150,6 +3150,43 @@ export default function PendingOrdersClient({
   const router = useRouter();
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
   const [activeAssignOrderId, setActiveAssignOrderId] = useState<string | null>(initialAssignOrderId);
+  const [quickAssigningOrderId, setQuickAssigningOrderId] = useState<string | null>(null);
+
+  const handleAssignOrderClick = async (order: PendingOrderRow) => {
+    if (couriers.length === 1) {
+      const singleCourier = couriers[0];
+      setQuickAssigningOrderId(order.id);
+      try {
+        const fd = new FormData();
+        fd.append("orderId", order.id);
+        fd.append("courierId", singleCourier.id);
+        if (order.submissionLabel === "مسودة مشتركة" || isDraftMode) {
+          fd.append("isDraft", "true");
+          fd.append("prepareByAdmin", "on");
+        }
+        if (order.customerLocationUrl) fd.append("customerLocationUrl", order.customerLocationUrl);
+        if (order.customerLandmark) fd.append("customerLandmark", order.customerLandmark);
+        if (order.customerAlternatePhone) fd.append("customerAlternatePhone", order.customerAlternatePhone);
+        if (order.customerDoorPhotoUrl) fd.append("customerDoorPhotoUrl", order.customerDoorPhotoUrl);
+        if (order.secondCustomerLocationUrl) fd.append("secondCustomerLocationUrl", order.secondCustomerLocationUrl);
+        if (order.secondCustomerLandmark) fd.append("secondCustomerLandmark", order.secondCustomerLandmark);
+        if (order.secondCustomerDoorPhotoUrl) fd.append("secondCustomerDoorPhotoUrl", order.secondCustomerDoorPhotoUrl);
+
+        const res = await assignPendingOrderToCourier({}, fd);
+        if (res?.error) {
+          alert(res.error);
+        } else {
+          router.refresh();
+        }
+      } catch (err: any) {
+        alert("حدث خطأ أثناء الإسناد: " + (err?.message || ""));
+      } finally {
+        setQuickAssigningOrderId(null);
+      }
+    } else {
+      setActiveAssignOrderId(order.id);
+    }
+  };
   const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
   const [activeAssignPreparerOrderId, setActiveAssignPreparerOrderId] = useState<string | null>(null);
 
@@ -3707,11 +3744,13 @@ export default function PendingOrdersClient({
 
                 <div className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap justify-between sm:justify-start items-center gap-3">
                   <button
-                    onClick={() => setActiveAssignOrderId(order.id)}
-                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0"
+                    type="button"
+                    disabled={quickAssigningOrderId === order.id}
+                    onClick={() => handleAssignOrderClick(order)}
+                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0 disabled:opacity-50"
                   >
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
-                    إسناد للمندوب
+                    {quickAssigningOrderId === order.id ? "جاري الإسناد..." : "إسناد للمندوب"}
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
                     {/* بادج وقت الطلب للابتوب (الحاسوب) */}
@@ -3947,12 +3986,13 @@ export default function PendingOrdersClient({
               {/* Assign to Couriers Button */}
               <button
                 type="button"
-                onClick={() => setActiveAssignOrderId(order.id)}
-                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl bg-violet-600 hover:bg-violet-750 text-white text-[10px] sm:text-xs font-black shadow-sm flex items-center justify-center gap-1 transition-colors flex-1 sm:flex-initial"
+                disabled={quickAssigningOrderId === order.id}
+                onClick={() => handleAssignOrderClick(order)}
+                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl bg-violet-600 hover:bg-violet-750 text-white text-[10px] sm:text-xs font-black shadow-sm flex items-center justify-center gap-1 transition-colors flex-1 sm:flex-initial disabled:opacity-50"
               >
                 <DynamicIcon icon={icons?.ui_package} fallback="📦" width={10} height={10} />
-                <span className="hidden sm:inline">إسناد لمندوبين</span>
-                <span className="inline sm:hidden">إسناد مناديب</span>
+                <span className="hidden sm:inline">{quickAssigningOrderId === order.id ? "جاري الإسناد..." : "إسناد لمندوبين"}</span>
+                <span className="inline sm:hidden">{quickAssigningOrderId === order.id ? "..." : "إسناد مناديب"}</span>
               </button>
             </div>
           </div>

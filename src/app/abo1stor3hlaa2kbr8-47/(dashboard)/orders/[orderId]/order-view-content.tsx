@@ -394,11 +394,18 @@ export function OrderViewContent({
                 <button
                   type="button"
                   id="assignBtnTop"
-                  onClick={() => setShowAssignCourierModal(true)}
-                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#38BDF8] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(2,132,199,0.2)] active:scale-95 shrink-0 cursor-pointer"
+                  disabled={assignLoading}
+                  onClick={() => {
+                    if (couriers.length === 1) {
+                      handleAssignCourier(couriers[0].id);
+                    } else {
+                      setShowAssignCourierModal(true);
+                    }
+                  }}
+                  className="inline-flex items-center justify-center rounded-full border-[1.5px] border-[#38BDF8] px-[12px] text-[11px] font-black shadow-[0_2px_8px_rgba(2,132,199,0.2)] active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
                   style={{ height: "28px", background: "linear-gradient(to right, #0284C7, #0369A1)", color: "#FFFFFF", whiteSpace: "nowrap" }}
                 >
-                  إسناد
+                  {assignLoading ? "جاري الإسناد…" : "إسناد"}
                 </button>
               )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
@@ -852,7 +852,19 @@ export function PreparerOrderTable({
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setAssignOrder(o);
+                                       if (couriers.length === 1 && !hasAssignedCourier) {
+                                         const fd = new FormData();
+                                         fd.append("p", auth.p);
+                                         fd.append("exp", auth.exp);
+                                         fd.append("s", auth.s);
+                                         fd.append("orderIds", o.id);
+                                         fd.append("courierId", couriers[0].id);
+                                         startTransition(() => {
+                                           bulkAction(fd);
+                                         });
+                                       } else {
+                                         setAssignOrder(o);
+                                       }
                                     }}
                                     className={`h-7.5 px-2.5 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all select-none border shadow-2xs cursor-pointer hover:scale-105 active:scale-95 ${
                                       hasAssignedCourier
@@ -1089,7 +1101,19 @@ export function PreparerOrderTable({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setAssignOrder(o);
+                                  if (couriers.length === 1 && !hasAssignedCourier) {
+                                    const fd = new FormData();
+                                    fd.append("p", auth.p);
+                                    fd.append("exp", auth.exp);
+                                    fd.append("s", auth.s);
+                                    fd.append("orderIds", o.id);
+                                    fd.append("courierId", couriers[0].id);
+                                    startTransition(() => {
+                                      bulkAction(fd);
+                                    });
+                                  } else {
+                                    setAssignOrder(o);
+                                  }
                                 }}
                                 className="relative w-11.5 h-11.5 sm:w-13 sm:h-13 rounded-full text-xs sm:text-sm font-black flex flex-col items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md overflow-hidden p-1 text-center"
                                 style={{

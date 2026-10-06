@@ -31,6 +31,8 @@ class OrderAlertActivity : Activity() {
     private var adminToken: String? = null
     private var currentOrderNumber: Int = 0
     private var isStoreOrder = false
+    private var couriersList = mutableListOf<Pair<String, String>>()
+    private var isAssignRequested = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -146,10 +148,16 @@ class OrderAlertActivity : Activity() {
         }
 
         findViewById<Button>(R.id.btnAssignOrder).setOnClickListener {
-            layoutMainButtons.visibility = View.GONE
-            layoutAssign.visibility = View.VISIBLE
-            val cgCouriers = findViewById<ChipGroup>(R.id.cgCouriers)
-            if (cgCouriers.childCount == 0) {
+            if (couriersList.size == 1) {
+                val (singleId, singleName) = couriersList[0]
+                Toast.makeText(this@OrderAlertActivity, "جاري الإسناد لـ " + singleName + "...", Toast.LENGTH_SHORT).show()
+                sendOrderAction("assign", singleId)
+            } else if (couriersList.size > 1) {
+                layoutMainButtons.visibility = View.GONE
+                layoutAssign.visibility = View.VISIBLE
+            } else {
+                isAssignRequested = true
+                Toast.makeText(this@OrderAlertActivity, "جاري التحقق من المندوب المتاح...", Toast.LENGTH_SHORT).show()
                 fetchCouriers()
             }
         }
@@ -226,11 +234,13 @@ class OrderAlertActivity : Activity() {
         cgCouriers.removeAllViews()
         cgCouriers.isSingleSelection = true
         cgCouriers.isSelectionRequired = true
+        couriersList.clear()
 
         for (i in 0 until array.length()) {
             val item = array.getJSONObject(i)
             val id = item.getString("id")
             val name = item.getString("name")
+            couriersList.add(Pair(id, name))
 
             val chip = Chip(this)
             chip.text = name
@@ -240,6 +250,20 @@ class OrderAlertActivity : Activity() {
                 sendOrderAction("assign", id)
             }
             cgCouriers.addView(chip)
+        }
+
+        if (isAssignRequested) {
+            isAssignRequested = false
+            if (couriersList.size == 1) {
+                val (singleId, singleName) = couriersList[0]
+                Toast.makeText(this@OrderAlertActivity, "جاري الإسناد لـ " + singleName + "...", Toast.LENGTH_SHORT).show()
+                sendOrderAction("assign", singleId)
+            } else if (couriersList.size > 1) {
+                findViewById<LinearLayout>(R.id.layoutMainButtons).visibility = View.GONE
+                findViewById<LinearLayout>(R.id.layoutAssign).visibility = View.VISIBLE
+            } else {
+                Toast.makeText(this@OrderAlertActivity, "لا يوجد مناديب متاحين للإسناد", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
