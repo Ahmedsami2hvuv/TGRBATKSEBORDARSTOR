@@ -20,6 +20,7 @@ import { PreparerDetailPhotoUploadRow } from "./preparer-order-detail-photo-butt
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
+import { OrderCountUpTimer } from "@/components/order-count-up-timer";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { type GlobalIconsConfig } from "@/lib/icon-settings";
@@ -945,8 +946,8 @@ export function PreparerOrderDetailSection({
     <div className="w-full max-w-[440px] mx-auto flex flex-col gap-3 text-right" dir="rtl">
       {/* 1. الهيدر الملكي الفاخر (سطر واحد فقط ارتفاع 52px) */}
       <header className="h-[52px] bg-[#FFFEF8] border-2 border-[#C9A86A] rounded-[16px] flex items-center justify-between px-2.5 shadow-[0_4px_16px_rgba(201,168,106,0.2)]">
-        {/* اليمين: رقم الطلب + منطقة الزبون (بدلاً من حالة الطلب) */}
-        <div className="flex items-center gap-2">
+        {/* اليمين: رقم الطلب + منطقة الزبون + عداد الرفع التصاعدي */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
           <div className="bg-[#FDF6E3] border-2 border-[#C9A86A] rounded-[10px] px-2 py-0.5 text-[#8B6A2A] font-extrabold text-[15px] font-mono leading-none shadow-[inset_0_1px_2px_rgba(201,168,106,0.2)]">
             #{order.orderNumber}
           </div>
@@ -957,6 +958,11 @@ export function PreparerOrderDetailSection({
             </svg>
             <span>{destRegionName}</span>
           </div>
+          <OrderCountUpTimer
+            createdAt={order.createdAt}
+            orderStatus={order.status}
+            variant="luxury"
+          />
         </div>
 
         {/* اليسار: زر تعديل + زر إغلاق */}

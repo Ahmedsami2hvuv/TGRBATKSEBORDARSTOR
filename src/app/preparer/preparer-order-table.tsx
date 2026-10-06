@@ -20,6 +20,8 @@ import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { toast } from "sonner";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
+import { OrderCountUpTimer } from "@/components/order-count-up-timer";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 function getHeaderBannerWebp(orderStatus?: string) {
   switch (orderStatus) {
@@ -824,6 +826,13 @@ export function PreparerOrderTable({
                                 <span>{o.orderNoteTime || o.timeLine || "فوري"}</span>
                               </span>
 
+                              {/* عداد وقت رفع الطلب التصاعدي (يظهر فقط إذا كان جديد أو مسند) */}
+                              <OrderCountUpTimer
+                                createdAt={o.createdAt}
+                                orderStatus={o.orderStatus}
+                                variant="normal"
+                              />
+
                               {/* مجموعة: زر التعديل بجانب زر الإسناد */}
                               <div className="inline-flex items-center gap-1 shrink-0">
                                 {/* زر التعديل */}
@@ -1025,13 +1034,18 @@ export function PreparerOrderTable({
                             </div>
                           </div>
 
-                          {/* النص الأيسر: وقت الطلب */}
-                          <div className="flex items-center justify-end flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
+                          {/* النص الأيسر: وقت الطلب + عداد رفع الطلب */}
+                          <div className="flex flex-col items-end justify-center flex-1 min-w-0 max-w-[32%] sm:max-w-[34%] gap-1">
                             <div className="inline-flex items-center justify-center px-2.5 sm:px-3.5 py-1 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
                               <span className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
                                 {o.orderNoteTime || o.timeLine || "فوري"}
                               </span>
                             </div>
+                            <OrderCountUpTimer
+                              createdAt={o.createdAt}
+                              orderStatus={o.orderStatus}
+                              variant="luxury"
+                            />
                           </div>
                         </div>
 
