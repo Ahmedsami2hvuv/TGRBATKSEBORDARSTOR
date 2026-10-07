@@ -1429,7 +1429,9 @@ export function MandoubOrderTable({
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (activeOrderId) {
-        if (e.state?.orderId === activeOrderId) {
+        const p = new URLSearchParams(window.location.search);
+        const currentActiveInUrl = p.get("activeOrderId");
+        if (e.state?.orderId === activeOrderId || currentActiveInUrl === activeOrderId) {
           return;
         }
         setActiveOrderId(null);
@@ -1489,9 +1491,18 @@ export function MandoubOrderTable({
 
   const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
 
+  const lastActiveOrderDataRef = useRef<MandoubRow | null>(null);
   const activeOrderData = useMemo(() => {
-    if (!activeOrderId) return null;
-    return displayRows.find(r => r.id === activeOrderId);
+    if (!activeOrderId) {
+      lastActiveOrderDataRef.current = null;
+      return null;
+    }
+    const found = displayRows.find(r => r.id === activeOrderId);
+    if (found) {
+      lastActiveOrderDataRef.current = found;
+      return found;
+    }
+    return lastActiveOrderDataRef.current?.id === activeOrderId ? lastActiveOrderDataRef.current : null;
   }, [activeOrderId, displayRows]);
 
   const detailsNextUrl = useMemo(() => {

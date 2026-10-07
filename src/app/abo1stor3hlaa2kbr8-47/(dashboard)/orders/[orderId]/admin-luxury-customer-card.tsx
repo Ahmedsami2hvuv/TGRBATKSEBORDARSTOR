@@ -213,7 +213,9 @@ export function AdminLuxuryCustomerCard({
         setSavedLandmark(trimmed);
         setLandmarkModalOpen(false);
         setIsEditingLandmark(false);
-        router.refresh();
+        if (userRole !== "mandoub") {
+          router.refresh();
+        }
       }
     } catch (err: any) {
       setLandmarkError(err.message || "حدث خطأ أثناء حفظ النقطة الدالة");
@@ -260,7 +262,9 @@ export function AdminLuxuryCustomerCard({
     if (inputEl) {
       inputEl.value = "";
     }
-    router.refresh();
+    if (userRole !== "mandoub") {
+      router.refresh();
+    }
   }
 
   async function handleDelete() {
@@ -271,7 +275,9 @@ export function AdminLuxuryCustomerCard({
       await deleteCustomerDoorPhotoAction(order.id, isSecondDestination);
       setLocalDoorPhoto(null);
       setZoomOpen(false);
-      router.refresh();
+      if (userRole !== "mandoub") {
+        router.refresh();
+      }
     } finally {
       setDeleting(false);
     }

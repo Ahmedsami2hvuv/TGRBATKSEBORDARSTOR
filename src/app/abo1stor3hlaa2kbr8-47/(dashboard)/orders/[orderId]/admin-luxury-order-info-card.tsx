@@ -92,7 +92,9 @@ export function AdminLuxuryOrderInfoCard({
         setUploadedByName(isMandoubPortal ? "المندوب" : "النظام");
         setSuccessMessage("تم رفع صورة الطلب بنجاح");
         setTimeout(() => setSuccessMessage(null), 4000);
-        router.refresh();
+        if (!isMandoubPortal) {
+          router.refresh();
+        }
       } else {
         setErrorMessage(res.error || "تعذّر رفع الصورة");
       }

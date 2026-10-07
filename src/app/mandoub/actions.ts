@@ -433,7 +433,7 @@ export async function updateMandoubCustomerDetails(
       await syncPhoneProfileFromOrder(orderId);
       if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
       revalidateMandoubPaths(nextRaw, orderId);
-      redirect(safeMandoubReturn(nextRaw));
+      redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
     }
     const created = await prisma.customer.create({
       data: {
@@ -460,7 +460,7 @@ export async function updateMandoubCustomerDetails(
     await syncPhoneProfileFromOrder(orderId);
     if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
     revalidateMandoubPaths(nextRaw, orderId);
-    redirect(safeMandoubReturn(nextRaw));
+    redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
   await updateOrderWithMandoubStatusReconcile(orderId, order.status, {
@@ -476,7 +476,7 @@ export async function updateMandoubCustomerDetails(
   await syncPhoneProfileFromOrder(orderId);
   if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
   revalidateMandoubPaths(nextRaw, orderId);
-  redirect(safeMandoubReturn(nextRaw));
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 /**
@@ -886,8 +886,8 @@ export async function uploadMandoubOrderImage(
     data: { imageUrl: url, orderImageUploadedByName: uploadedBy },
   });
 
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+  revalidateMandoubPaths(nextRaw, orderId);
+  redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }
 
 
