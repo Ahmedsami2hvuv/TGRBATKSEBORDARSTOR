@@ -1819,7 +1819,7 @@ export async function payShopOrderFromAdmin(orderId: string, amount: number) {
   }
 }
 
-// جلب الكيانات من النظام التي لم تُضاف بعد كشركاء لدفتر الديون
+// جلب الكيانات من النظام لربطها بدفتر الديون (يشمل كافة الكيانات مع حالة ما إذا كانت مضافة مسبقاً)
 export async function getUnaddedSystemPartners(type: PartnerType) {
   try {
     const { isAdminSession } = await import("@/lib/admin-session");
@@ -1827,61 +1827,95 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
       return [];
     }
 
-    // جلب معرفات الأطراف المضافة بالفعل لنفس النوع (النشطة فقط - لإتاحة إمكانية استعادة المحذوفة ناعماً)
-    const addedExternalIds = await prisma.creditBookPartner.findMany({
+    // جلب الحسابات الموجودة مسبقاً لنفس النوع (النشطة فقط)
+    const activePartners = await prisma.creditBookPartner.findMany({
       where: {
-        type
+        type,
+        NOT: {
+          type: {
+            startsWith: "deleted_"
+          }
+        }
       },
-      select: { externalId: true }
-    }).then(list => list.map(p => p.externalId).filter(Boolean) as string[]);
+      select: { id: true, externalId: true, name: true }
+    });
+
+    const addedMap = new Map<string, string>();
+    for (const ap of activePartners) {
+      if (ap.externalId) {
+        addedMap.set(ap.externalId, ap.id);
+      }
+    }
 
     if (type === "courier") {
       const list = await prisma.courier.findMany({
-        where: { id: { notIn: addedExternalIds } },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }
       });
-      return list;
+      return list.map(item => ({
+        id: item.id,
+        name: item.name,
+        phone: item.phone,
+        isAdded: addedMap.has(item.id),
+        creditBookPartnerId: addedMap.get(item.id)
+      }));
     }
 
     if (type === "preparer") {
       const list = await prisma.companyPreparer.findMany({
-        where: { id: { notIn: addedExternalIds } },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }
       });
-      return list;
+      return list.map(item => ({
+        id: item.id,
+        name: item.name,
+        phone: item.phone,
+        isAdded: addedMap.has(item.id),
+        creditBookPartnerId: addedMap.get(item.id)
+      }));
     }
 
     if (type === "shop") {
       const list = await prisma.shop.findMany({
-        where: {
-          id: { notIn: addedExternalIds },
-          hideFromCreditBook: false
-        },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }
       });
-      return list;
+      return list.map(item => ({
+        id: item.id,
+        name: item.name,
+        phone: item.phone,
+        isAdded: addedMap.has(item.id),
+        creditBookPartnerId: addedMap.get(item.id)
+      }));
     }
 
     if (type === "customer") {
       const list = await prisma.customer.findMany({
-        where: { id: { notIn: addedExternalIds } },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" },
-        take: 100
+        take: 300
       });
-      return list;
+      return list.map(item => ({
+        id: item.id,
+        name: item.name,
+        phone: item.phone,
+        isAdded: addedMap.has(item.id),
+        creditBookPartnerId: addedMap.get(item.id)
+      }));
     }
 
     if (type === "supplier") {
       const list = await prisma.storeSupplier.findMany({
-        where: { id: { notIn: addedExternalIds } },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }
       });
-      return list;
+      return list.map(item => ({
+        id: item.id,
+        name: item.name,
+        phone: item.phone,
+        isAdded: addedMap.has(item.id),
+        creditBookPartnerId: addedMap.get(item.id)
+      }));
     }
 
     return [];
