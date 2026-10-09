@@ -135,6 +135,68 @@ function PreparerWardSideBadge({ o }: { o: any }) {
   );
 }
 
+function PreparerCardMoneyBadges({ o, icons }: { o: any; icons?: GlobalIconsConfig | null }) {
+  const hasMismatch =
+    o.wardMismatchType ||
+    o.saderMismatchType ||
+    (o.orderStatus === "delivered" && o.noWardRecorded);
+
+  if (!hasMismatch) return null;
+
+  return (
+    <div
+      className="absolute -top-3.5 left-4 sm:left-6 z-30 pointer-events-none flex items-center gap-1.5 flex-wrap"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {o.wardMismatchType === "deficit" && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-rose-500 bg-rose-600 text-white animate-pulse drop-shadow-sm select-none pointer-events-auto"
+          title="نقص بالوارد"
+        >
+          <DynamicIcon iconKey="finance_deficit" config={icons} fallback="🔴" className="w-2.5 h-2.5" />
+          نقص بالوارد
+        </span>
+      )}
+      {o.wardMismatchType === "excess" && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-emerald-500 bg-emerald-600 text-white drop-shadow-sm select-none pointer-events-auto"
+          title="زيادة بالوارد"
+        >
+          <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
+          زيادة بالوارد
+        </span>
+      )}
+      {o.saderMismatchType === "deficit" && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-amber-500 bg-amber-600 text-white drop-shadow-sm select-none pointer-events-auto"
+          title="نقص بالصادر"
+        >
+          <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
+          نقص بالصادر
+        </span>
+      )}
+      {o.saderMismatchType === "excess" && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-sky-500 bg-sky-600 text-white drop-shadow-sm select-none pointer-events-auto"
+          title="زيادة بالصادر"
+        >
+          <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />
+          زيادة بالصادر
+        </span>
+      )}
+      {o.orderStatus === "delivered" && o.noWardRecorded && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-[#C9A86A] bg-slate-900 text-[#F5D77F] animate-pulse drop-shadow-sm select-none pointer-events-auto"
+          title="بدون وارد مسجل"
+        >
+          <DynamicIcon iconKey="ui_warning" config={icons} fallback="⚠️" className="w-2.5 h-2.5" />
+          بدون وارد
+        </span>
+      )}
+    </div>
+  );
+}
+
 function RedGlassOrbButton3D({
   onClick,
   title,
@@ -765,6 +827,9 @@ export function PreparerOrderTable({
                             selected ? "ring-2 ring-[#0A3D2E]" : ""
                           }`}
                         >
+                          {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
+                          <PreparerCardMoneyBadges o={o} icons={icons} />
+
                           {/* زخرفة إسلامية ناعمة في الزوايا بنمط ملكي إسلامي */}
                           <div className="absolute top-1 left-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">❧</div>
                           <div className="absolute top-1 right-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">☙</div>
@@ -928,6 +993,9 @@ export function PreparerOrderTable({
                           minHeight: "248px",
                         }}
                       >
+                        {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
+                        <PreparerCardMoneyBadges o={o} icons={icons} />
+
                         {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل */}
                         <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0">
                           {/* اليمين: بلوك اسم المحل */}
