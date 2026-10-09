@@ -191,12 +191,6 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                         زيادة بالوارد
                       </span>
                     )}
-                    {o.saderMismatchType === "deficit" && (
-                      <span className="whitespace-nowrap rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-orange-300 flex items-center gap-1">
-                        <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
-                        نقص بالصادر
-                      </span>
-                    )}
                     {o.saderMismatchType === "excess" && (
                       <span className="whitespace-nowrap rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-sky-300 flex items-center gap-1">
                         <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />

@@ -666,12 +666,6 @@ export function UnifiedOrderListTable({
                               زيادة بالوارد
                             </span>
                           )}
-                          {o.showMoneyBoxes !== false && o.saderMismatchType === "deficit" && (
-                            <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-orange-300 flex items-center gap-1">
-                              <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
-                              نقص بالصادر
-                            </span>
-                          )}
                           {o.showMoneyBoxes !== false && o.saderMismatchType === "excess" && (
                             <span className="rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-sky-300 flex items-center gap-1">
                               <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />

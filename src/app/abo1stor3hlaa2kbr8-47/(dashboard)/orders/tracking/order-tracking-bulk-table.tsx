@@ -536,9 +536,6 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   } else if (showAdminPickup) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
-  } else if (o.saderMismatchType === "deficit") {
-    text = "نقص";
-    tooltip = "نقص بالصادر";
   } else if (o.saderMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالصادر";
@@ -609,9 +606,9 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
 
 function TrackingCardMoneyBadges({ o, icons }: { o: TrackingTableRow; icons?: GlobalIconsConfig | null }) {
   const hasMismatch =
-    o.wardMismatchType ||
-    o.saderMismatchType ||
-    (o.orderStatus === "delivered" && o.noWardRecorded);
+    Boolean(o.wardMismatchType) ||
+    o.saderMismatchType === "excess" ||
+    Boolean(o.orderStatus === "delivered" && o.noWardRecorded);
 
   if (!hasMismatch) return null;
 
@@ -636,15 +633,6 @@ function TrackingCardMoneyBadges({ o, icons }: { o: TrackingTableRow; icons?: Gl
         >
           <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
           زيادة بالوارد
-        </span>
-      )}
-      {o.saderMismatchType === "deficit" && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-amber-500 bg-amber-600 text-white drop-shadow-sm select-none pointer-events-auto"
-          title="نقص بالصادر"
-        >
-          <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
-          نقص بالصادر
         </span>
       )}
       {o.saderMismatchType === "excess" && (
