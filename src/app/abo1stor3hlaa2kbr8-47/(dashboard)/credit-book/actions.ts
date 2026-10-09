@@ -620,6 +620,19 @@ export async function getPartnerDetails(partnerId: string) {
           else if (tx.kind === "took") courierAutoSum -= tx.amount;
         });
 
+        // العثور على أقدم تاريخ معاملة لضمان وضع قيد التسوية الافتتاحي في البداية الزمنية المطلقة قبل كل الحركات
+        let earliestDate = partner.createdAt.getTime();
+        partner.transactions.forEach(t => {
+          const tTime = new Date(t.createdAt).getTime();
+          if (tTime < earliestDate) earliestDate = tTime;
+        });
+        autoTransactions.forEach(t => {
+          const tTime = new Date(t.createdAt).getTime();
+          if (tTime < earliestDate) earliestDate = tTime;
+        });
+
+        const initialBaselineDate = new Date(earliestDate - 60000);
+
         const courierDiff = autoBalance - courierAutoSum;
         if (Math.abs(courierDiff) > 0.001) {
           autoTransactions.push({
@@ -627,9 +640,9 @@ export async function getPartnerDetails(partnerId: string) {
             partnerId: partner.id,
             amount: Math.abs(courierDiff),
             kind: courierDiff > 0 ? "gave" : "took",
-            note: `تسويات وتصفية أرباح ومحفظة المندوب النشطة`,
-            createdAt: resetAt || partner.createdAt,
-            updatedAt: resetAt || partner.createdAt,
+            note: `رصيد افتتاحي / تسوية وتصفية الحسابات السابقة للمندوب`,
+            createdAt: initialBaselineDate,
+            updatedAt: initialBaselineDate,
             isAuto: true
           });
         }
@@ -792,6 +805,19 @@ export async function getPartnerDetails(partnerId: string) {
           else if (tx.kind === "took") prepAutoSum -= tx.amount;
         });
 
+        // العثور على أقدم تاريخ معاملة للمجهز لضمان وضع قيد التسوية الافتتاحي في البداية الزمنية المطلقة
+        let prepEarliestDate = partner.createdAt.getTime();
+        partner.transactions.forEach(t => {
+          const tTime = new Date(t.createdAt).getTime();
+          if (tTime < prepEarliestDate) prepEarliestDate = tTime;
+        });
+        autoTransactions.forEach(t => {
+          const tTime = new Date(t.createdAt).getTime();
+          if (tTime < prepEarliestDate) prepEarliestDate = tTime;
+        });
+
+        const prepBaselineDate = new Date(prepEarliestDate - 60000);
+
         const prepDiff = autoBalance - prepAutoSum;
         if (Math.abs(prepDiff) > 0.001) {
           autoTransactions.push({
@@ -799,9 +825,9 @@ export async function getPartnerDetails(partnerId: string) {
             partnerId: partner.id,
             amount: Math.abs(prepDiff),
             kind: prepDiff > 0 ? "gave" : "took",
-            note: `تسويات وتصفية أرباح ومحفظة المجهز النشطة`,
-            createdAt: partner.createdAt,
-            updatedAt: partner.createdAt,
+            note: `رصيد افتتاحي / تسوية وتصفية الحسابات السابقة للمجهز`,
+            createdAt: prepBaselineDate,
+            updatedAt: prepBaselineDate,
             isAuto: true
           });
         }

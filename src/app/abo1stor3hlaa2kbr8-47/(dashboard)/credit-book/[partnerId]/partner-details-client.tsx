@@ -1297,16 +1297,17 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                                     : partner.balance < 0
                                       ? "bg-rose-50 text-rose-800 border-rose-300 font-black"
                                       : "bg-slate-100 text-slate-700 border-slate-300 font-black"
-                                  : tx.runningBalance > 0
-                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
-                                    : tx.runningBalance < 0
-                                      ? "bg-rose-50 text-rose-800 border-rose-200/80"
-                                      : "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
+                                  : Math.abs(tx.runningBalance) < 0.005
+                                    ? "bg-slate-100 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800"
+                                    : tx.runningBalance > 0
+                                      ? "bg-emerald-50 text-emerald-800 border-emerald-200/80"
+                                      : "bg-rose-50 text-rose-800 border-rose-200/80"
                             }`}>
                               {isExpense ? "المتبقي الحالي: " : "الرصيد حينها: "}
                               <span className="tabular-nums font-black">
                                 {(() => {
-                                  const displayBal = isExpense ? partner.balance : tx.runningBalance;
+                                  let displayBal = isExpense ? partner.balance : tx.runningBalance;
+                                  if (Math.abs(displayBal) < 0.005) displayBal = 0;
                                   return `${displayBal > 0 ? "+" : ""}${displayBal < 0 ? "-" : ""}${formatDinarAsAlfWithUnit(Math.abs(displayBal))} ${displayBal > 0 ? "(نطلبه)" : displayBal < 0 ? "(يطلبنا)" : "(مصفّر)"}`;
                                 })()}
                               </span>
