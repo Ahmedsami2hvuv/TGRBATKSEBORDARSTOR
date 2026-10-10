@@ -926,43 +926,6 @@ export function WasliOrderDetailView({
             </div>
 
             <div className="p-4">
-              {/* الدائرتان الماليتان */}
-              <div className="flex justify-center gap-6">
-                {/* استلام / وارد */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full border-[2px] border-[#FFE082] bg-[#FFFBEB] shadow-[inset_0_2px_8px_rgba(255,193,7,0.15)]">
-                    <span className="text-[11px] font-bold text-[#8A6A00]">استلام</span>
-                    <span className="mt-1 text-[18px] font-extrabold text-[#0B2E8C] font-mono">
-                      {formatDinarAsAlf(totalWard)}
-                    </span>
-                  </div>
-                  <span className="rounded-full bg-[#FFF8E1] px-2.5 py-0.5 text-[10px] font-bold text-[#8A6A00]">
-                    وارد
-                  </span>
-                </div>
-
-                {/* تسليم / صادر */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full border-[2px] border-[#0B2E8C] bg-[#0B2E8C] shadow-[0_8px_20px_rgba(11,46,140,0.25)] text-white">
-                    <span className="text-[11px] font-bold text-[#FFC107]">تسليم</span>
-                    <span className="mt-1 text-[18px] font-extrabold text-white font-mono">
-                      {formatDinarAsAlf(totalSader)}
-                    </span>
-                  </div>
-                  <span className="rounded-full bg-[#E8EEFF] px-2.5 py-0.5 text-[10px] font-bold text-[#0B2E8C]">
-                    صادر
-                  </span>
-                </div>
-              </div>
-
-              {/* الفاصل الهندسي */}
-              <div className="relative my-5 flex items-center justify-center">
-                <div className="h-[1px] w-full bg-[#E8EEFF]" />
-                <div className="absolute flex h-6 w-6 rotate-45 items-center justify-center rounded-[6px] border border-[#D0DDFB] bg-white shadow-xs">
-                  <div className="h-2 w-2 rotate-0 rounded-[2px] bg-[#0B2E8C]" />
-                </div>
-              </div>
-
               {/* المكون التفاعلي لتسجيل النقد والأحداث */}
               <MandoubOrderMoneyFlow
                 orderId={order.id}
