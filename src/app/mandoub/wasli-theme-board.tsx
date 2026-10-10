@@ -18,6 +18,8 @@ import {
   Wallet,
   Zap,
   ArrowUpDown,
+  ArrowDown,
+  ArrowUp,
   Camera,
   X,
   ExternalLink,
@@ -651,19 +653,22 @@ export function WasliThemeBoard({
                         </div>
                       )}
 
-                      {/* شريط المسار الملون حسب الحالة */}
+                      {/* شريط المسار الملون حسب الحالة - بحجم وخط كبير جداً للقراءة أثناء القيادة */}
                       <div
-                        className={`inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-3 py-1.5 max-w-[85%] ${getRouteBadgeStyle(
+                        className={`inline-flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-sm transition-all max-w-[82%] ${getRouteBadgeStyle(
                           r.orderStatus
                         )}`}
                       >
                         <Truck
-                          className={`w-3.5 h-3.5 shrink-0 ${
+                          className={`w-4 h-4 shrink-0 ${
                             isDelivering ? "text-[#0B2E8C]" : "text-[#FFC107]"
                           }`}
+                          strokeWidth={2.5}
                         />
-                        <span className="truncate">
-                          {r.shopName || "المحل"} إلى {r.regionLine || "الوجهة"}
+                        <span className="truncate tracking-wide flex items-center gap-1">
+                          <span className="font-black">{r.shopName || "المحل"}</span>
+                          <span className="opacity-70 text-[12px]">←</span>
+                          <span className="font-black">{r.regionLine || "الوجهة"}</span>
                         </span>
                       </div>
                     </div>
@@ -710,18 +715,54 @@ export function WasliThemeBoard({
                     </div>
                   </div>
 
-                  {/* الجزء الأوسط: تفاصيل الطلب، وقت الطلبية، ودائرة سعر الطلب الكبيرة (التي تنفذ الاستلام والتسليم) */}
+                  {/* الجزء الأوسط: تفاصيل الطلب، بلوكات الوارد (نقص، زيادة، بدون وارد)، ودائرة سعر الطلب */}
                   <div className="mt-2.5 flex items-center justify-between gap-3 relative z-10 min-h-[66px]">
                     <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
                       {/* تفاصيل المحتويات والملاحظات */}
-                      <div className="bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] text-[11px] font-bold rounded-[14px] px-3 py-1 max-w-[200px] truncate leading-tight">
+                      <div className="bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] text-[11px] font-bold rounded-[14px] px-3 py-1 max-w-[220px] truncate leading-tight">
                         {r.orderType || r.landmarkLine || "طلب توصيل"}
                       </div>
 
-                      {/* وقت الطلبية متناسق مع الثيم */}
-                      <div className="h-[24px] px-2.5 rounded-full border border-[#D0DDFB] bg-[#F0F4FF] text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs">
-                        <Clock className="w-3 h-3 text-[#1E4DB7]" />
-                        <span>{orderTimeText}</span>
+                      {/* بلوكات حالات الوارد المرتبة داخل الطلب */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* 1. بلوك نقص بالوارد: سهم أحمر متجه للأسفل */}
+                        {r.wardMismatchType === "deficit" && (
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-rose-50 border-[1.5px] border-rose-500 text-rose-700 shadow-xs animate-pulse select-none shrink-0"
+                            title="نقص بالوارد"
+                          >
+                            <div className="w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
+                              <ArrowDown className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <span className="text-[11px] font-black leading-none">نقص بالوارد</span>
+                          </div>
+                        )}
+
+                        {/* 2. بلوك زيادة بالوارد: سهم أخضر متجه للأعلى */}
+                        {r.wardMismatchType === "excess" && (
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-emerald-50 border-[1.5px] border-emerald-500 text-emerald-700 shadow-xs select-none shrink-0"
+                            title="زيادة بالوارد"
+                          >
+                            <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <ArrowUp className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <span className="text-[11px] font-black leading-none">زيادة بالوارد</span>
+                          </div>
+                        )}
+
+                        {/* 3. بلوك بدون وارد: تصميم أسود أنيق */}
+                        {(r.noWardRecorded || (r.orderStatus === "delivered" && (r.deliverySumDinar === 0 || r.deliverySumDinar == null))) && (
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-black border border-slate-700 text-white shadow-xs select-none shrink-0"
+                            title="بدون وارد مسجل"
+                          >
+                            <div className="w-3 h-3 rounded-full bg-slate-600 flex items-center justify-center shrink-0">
+                              <span className="text-[8px] font-black text-white leading-none">✕</span>
+                            </div>
+                            <span className="text-[11px] font-black leading-none">بدون وارد</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -755,37 +796,49 @@ export function WasliThemeBoard({
                   </div>
 
                   {/* شريط التواصل والاتصال والخيارات السفلي */}
-                  <div className="mt-2.5 h-[42px] rounded-[20px] bg-gradient-to-r from-[#E8EEFF] to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2 relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                    {/* بلوك الاتصال: يفتح خيارات الاتصال بالزبون أو العميل */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActionModal({ type: "call", row: r });
-                      }}
-                      className="flex items-center gap-1.5 active:scale-95 transition-transform text-inherit cursor-pointer"
-                      title="خيارات الاتصال الهاتفي"
-                    >
-                      <div className="w-6 h-6 rounded-full bg-[#FFC107] flex items-center justify-center shadow-xs shrink-0">
-                        <Phone
-                          className="w-3 h-3 text-[#0B2E8C]"
-                          fill="#0B2E8C"
-                          strokeWidth={2.2}
-                        />
+                  <div className="mt-2.5 h-[44px] rounded-[20px] bg-gradient-to-r from-[#E8EEFF] to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2 relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    {/* قسم اليمين: بلوك الاتصال بالزبون + وقت الطلبية بجانبه مباشرة */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* بلوك الاتصال: يفتح خيارات الاتصال بالزبون أو العميل */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActionModal({ type: "call", row: r });
+                        }}
+                        className="flex items-center gap-1.5 active:scale-95 transition-transform text-inherit cursor-pointer shrink-0"
+                        title="خيارات الاتصال الهاتفي"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-[#FFC107] flex items-center justify-center shadow-xs shrink-0">
+                          <Phone
+                            className="w-3 h-3 text-[#0B2E8C]"
+                            fill="#0B2E8C"
+                            strokeWidth={2.2}
+                          />
+                        </div>
+                        <span className="font-mono font-black text-[12px] tracking-wide text-[#0B2E8C] flex items-center gap-1.5">
+                          {r.customerPhone || "اتصال"}
+                          {!r.hasCustomerLocation && (
+                            <span
+                              className="relative flex h-2 w-2 shrink-0 mr-0.5"
+                              title="الزبون لا يمتلك موقع جغرافي"
+                            >
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_8px_#ef4444]" />
+                            </span>
+                          )}
+                        </span>
+                      </button>
+
+                      {/* وقت الطلبية بجانب رقم الزبون */}
+                      <div
+                        className="h-[24px] px-2 rounded-full border border-[#D0DDFB] bg-white text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs"
+                        title="وقت الطلبية"
+                      >
+                        <Clock className="w-3 h-3 text-[#1E4DB7]" />
+                        <span>{orderTimeText}</span>
                       </div>
-                      <span className="font-mono font-black text-[12px] tracking-wide text-[#0B2E8C] flex items-center gap-1.5">
-                        {r.customerPhone || "اتصال"}
-                        {!r.hasCustomerLocation && (
-                          <span
-                            className="relative flex h-2 w-2 shrink-0 mr-0.5"
-                            title="الزبون لا يمتلك موقع جغرافي"
-                          >
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_8px_#ef4444]" />
-                          </span>
-                        )}
-                      </span>
-                    </button>
+                    </div>
 
                     {/* أزرار الإجراءات: لوكيشن، واتساب، صورة الباب */}
                     <div className="flex items-center gap-1.5">
