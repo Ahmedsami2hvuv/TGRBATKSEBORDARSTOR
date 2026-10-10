@@ -228,37 +228,6 @@ export function WasliOrderDetailView({
       )}
 
       <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col">
-        {/* الترويسة العلوية */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-[#D0DDFB] bg-white px-3.5 py-3 shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-[#FFF0F0] px-3 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#DC2626] animate-pulse" />
-              <span className="text-[11px] font-extrabold text-[#DC2626]">الآن</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-3 py-1.5">
-              <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span className="text-[11px] font-bold text-[#0B2E8C]">
-                {formatBaghdadDateTime(order.createdAt)}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DC2626] text-white shadow-sm transition hover:bg-rose-700 active:scale-95 cursor-pointer"
-            title="إغلاق العرض"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </header>
-
         {/* محتوى الشاشة الرئيسي */}
         <main className="flex flex-col gap-3 px-3.5 pb-8 pt-3">
           {/* الشريط العلوي لرقم الطلب وحالته وزر التعديل */}
