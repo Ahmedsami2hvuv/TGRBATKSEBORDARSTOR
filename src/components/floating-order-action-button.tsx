@@ -115,6 +115,7 @@ export function FloatingOrderActionButton({
 
   // معالجة بدء اللمس أو الماوس
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
@@ -151,6 +152,13 @@ export function FloatingOrderActionButton({
   // معالجة التحريك والسحب
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDragging) return;
+
+    // منع أي رفرش للصفحة (pull-to-refresh) أو سحب للمتصفح أثناء تحريك الزر
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    e.stopPropagation();
+
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
@@ -270,6 +278,9 @@ export function FloatingOrderActionButton({
           height: `${size}px`,
           opacity: opacity / 100,
           touchAction: "none",
+          overscrollBehavior: "none",
+          WebkitTouchCallout: "none",
+          userSelect: "none",
         }}
         className={`fixed z-[105] select-none transition-[opacity,transform] duration-150 cursor-pointer ${
           isDragging
