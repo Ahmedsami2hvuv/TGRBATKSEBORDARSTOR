@@ -69,34 +69,34 @@ function PreparerSaderSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
+  let badgeStyle = "bg-[#E8F8F0] border border-[#34D399] text-[#065F46]"; // افتراضي أخضر فاتح
 
   if (showPreparerPickup) {
     text = formatDinarAsAlf(preparerPickup);
     tooltip = `صادر المجهز: ${text}`;
+    badgeStyle = "bg-[#FFFBEB] border border-[#FBBF24] text-[#92400E]"; // صادر المجهز أصفر
   } else if (showPickup) {
     text = formatDinarAsAlf(pickup);
     tooltip = `صادر المندوب: ${text}`;
+    badgeStyle = "bg-[#E8F8F0] border border-[#34D399] text-[#065F46]"; // صادر المندوب أخضر فاتح
   } else if (showAdminPickup) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
+    badgeStyle = "bg-[#EFF6FF] border border-[#60A5FA] text-[#1E40AF]"; // صادر الإدارة أزرق
   } else if (o.saderMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالصادر";
-  } else if (o.noSaderRecorded && (o.orderStatus === "delivering" || o.orderStatus === "delivered")) {
-    text = "بدون";
-    tooltip = "بدون صادر مسجل";
+    badgeStyle = "bg-[#FFFBEB] border border-amber-400 text-amber-800";
   }
 
   if (!text) return null;
 
   return (
     <div
-      className="h-[26px] px-2 rounded-[8px] bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
+      className={`h-[24px] px-2 rounded-[7px] flex items-center justify-center select-none shrink-0 shadow-2xs font-mono font-black text-[11px] leading-none tracking-tight ${badgeStyle}`}
       title={tooltip}
     >
-      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C]">
-        {text}
-      </span>
+      <span className="truncate max-w-full text-center">{text}</span>
     </div>
   );
 }
@@ -110,34 +110,38 @@ function PreparerWardSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
+  let badgeStyle = "bg-[#FEF2F2] border border-[#F87171] text-[#991B1B]"; // افتراضي أحمر
 
   if (showPreparerDelivery) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
+    badgeStyle = "bg-[#F5F3FF] border border-[#A78BFA] text-[#5B21B6]"; // وارد المجهز بنفسجي
   } else if (showDelivery) {
     text = formatDinarAsAlf(delivery);
     tooltip = `وارد المندوب: ${text}`;
+    badgeStyle = "bg-[#FEF2F2] border border-[#F87171] text-[#991B1B]"; // وارد المندوب أحمر
   } else if (o.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
+    badgeStyle = "bg-[#FEF2F2] border border-rose-500 text-rose-700";
   } else if (o.wardMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالوارد";
+    badgeStyle = "bg-[#ECFDF5] border border-emerald-500 text-emerald-700";
   } else if (o.noWardRecorded && o.orderStatus === "delivered") {
     text = "بدون";
     tooltip = "بدون وارد مسجل";
+    badgeStyle = "bg-slate-100 border border-slate-300 text-slate-700";
   }
 
   if (!text) return null;
 
   return (
     <div
-      className="h-[26px] px-2 rounded-[8px] bg-[#FFF8E1] border border-[#FFC107]/60 text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
+      className={`h-[24px] px-2 rounded-[7px] flex items-center justify-center select-none shrink-0 shadow-2xs font-mono font-black text-[11px] leading-none tracking-tight ${badgeStyle}`}
       title={tooltip}
     >
-      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C]">
-        {text}
-      </span>
+      <span className="truncate max-w-full text-center">{text}</span>
     </div>
   );
 }
@@ -820,47 +824,53 @@ export function PreparerOrderTable({
                         </div>
                       </div>
 
-                      {/* 2. الجزء الأوسط: نوع البضاعة وبادجات الصادر والوارد ودائرة السعر التفاعلية */}
+                      {/* 2. الجزء الأوسط: نوع البضاعة باليمين، ودائرة السعر التفاعلية باليسار وبجانبها الأيمن بادجات الصادر والوارد */}
                       <div className="mt-2.5 flex items-center justify-between gap-2.5 relative z-10 min-h-[66px]">
                         <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
                           {/* نوع البضاعة */}
                           <div className="bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] text-[11px] font-bold rounded-[14px] px-3 py-1 max-w-[200px] truncate leading-tight">
                             {displayGoodsType}
                           </div>
-
-                          {/* بادجات الصادر والوارد للمجهز */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <PreparerSaderSideBadge o={o} />
-                            <PreparerWardSideBadge o={o} />
-                          </div>
                         </div>
 
-                        {/* دائرة السعر التفاعلية للمجهز (تفتح نافذة الدفع للعميل) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPayOrder(o);
-                          }}
-                          className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
-                          title="سعر الطلب - اضغط لتسجيل دفع للعميل"
-                        >
-                          <div
-                            className={`w-[66px] h-[66px] rounded-full flex flex-col items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] border-[3px] transition-colors ${
-                              hasPaidSomething
-                                ? "bg-emerald-700 border-emerald-400 text-white"
-                                : "bg-[#0B2E8C] border-[#FFC107] text-[#FFC107]"
-                            }`}
-                          >
-                            {isAllPaid ? (
-                              <span className="font-black text-xs leading-none">واصل</span>
-                            ) : (
-                              <span className="font-mono font-black text-[26px] leading-none tracking-tight">
-                                {numericPrice || "—"}
-                              </span>
-                            )}
+                        {/* دائرة السعر التفاعلية وبجانبها الأيمن بادجات الصادر والوارد (الصادر فوق والوارد بالأسفل) */}
+                        <div className="flex items-center gap-1.5 shrink-0 relative">
+                          {/* حاوية الصادر والوارد: كلاهما على يمين دائرة السعر، الصادر فوق والوارد بالأسفل */}
+                          <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                            {/* الصادر فوق */}
+                            <PreparerSaderSideBadge o={o} />
+
+                            {/* الوارد بالأسفل */}
+                            <PreparerWardSideBadge o={o} />
                           </div>
-                        </button>
+
+                          {/* دائرة السعر التفاعلية للمجهز (تفتح نافذة الدفع للعميل) */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPayOrder(o);
+                            }}
+                            className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
+                            title="سعر الطلب - اضغط لتسجيل دفع للعميل"
+                          >
+                            <div
+                              className={`w-[66px] h-[66px] rounded-full flex flex-col items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] border-[3px] transition-colors ${
+                                hasPaidSomething
+                                  ? "bg-emerald-700 border-emerald-400 text-white"
+                                  : "bg-[#0B2E8C] border-[#FFC107] text-[#FFC107]"
+                              }`}
+                            >
+                              {isAllPaid ? (
+                                <span className="font-black text-xs leading-none">واصل</span>
+                              ) : (
+                                <span className="font-mono font-black text-[26px] leading-none tracking-tight">
+                                  {numericPrice || "—"}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        </div>
                       </div>
 
                       {/* 3. الشريط السفلي: زر التعديل، وقت الطلب، عداد الوقت، والأهم زر الإسناد */}

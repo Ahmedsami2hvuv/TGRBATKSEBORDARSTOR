@@ -121,6 +121,94 @@ function toInternationalWhatsApp(raw: string | null | undefined): string {
   return `https://wa.me/${digits}`;
 }
 
+function MandoubCardSaderBadge({ r }: { r: MandoubRow }) {
+  const pickup = r.pickupSumDinar ?? null;
+  const preparerPickup = r.preparerPickupSumDinar ?? null;
+  const adminPickup = (r as any).adminPickupSumDinar ?? null;
+
+  const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
+  const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
+  const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
+
+  let text = "";
+  let tooltip = "";
+  let badgeStyle = "bg-[#E8F8F0] border border-[#34D399] text-[#065F46]"; // افتراضي أخضر فاتح
+
+  if (showPickup) {
+    text = formatDinarAsAlf(pickup);
+    tooltip = `صادر المندوب: ${text}`;
+    badgeStyle = "bg-[#E8F8F0] border border-[#34D399] text-[#065F46]"; // صادر المندوب أخضر فاتح
+  } else if (showPreparerPickup) {
+    text = formatDinarAsAlf(preparerPickup);
+    tooltip = `صادر المجهز: ${text}`;
+    badgeStyle = "bg-[#FFFBEB] border border-[#FBBF24] text-[#92400E]"; // صادر المجهز أصفر
+  } else if (showAdminPickup) {
+    text = formatDinarAsAlf(adminPickup);
+    tooltip = `صادر الإدارة: ${text}`;
+    badgeStyle = "bg-[#EFF6FF] border border-[#60A5FA] text-[#1E40AF]"; // صادر الإدارة أزرق
+  } else if (r.saderMismatchType === "excess") {
+    text = "زيادة";
+    tooltip = "زيادة بالصادر";
+    badgeStyle = "bg-[#FFFBEB] border border-amber-400 text-amber-800";
+  }
+
+  if (!text) return null;
+
+  return (
+    <div
+      className={`h-[24px] px-2 rounded-[7px] flex items-center justify-center select-none shrink-0 shadow-2xs font-mono font-black text-[11px] leading-none tracking-tight ${badgeStyle}`}
+      title={tooltip}
+    >
+      <span className="truncate max-w-full text-center">{text}</span>
+    </div>
+  );
+}
+
+function MandoubCardWardBadge({ r }: { r: MandoubRow }) {
+  const delivery = r.deliverySumDinar ?? null;
+  const preparerDelivery = r.preparerDeliverySumDinar ?? null;
+
+  const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
+  const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
+
+  let text = "";
+  let tooltip = "";
+  let badgeStyle = "bg-[#FEF2F2] border border-[#F87171] text-[#991B1B]"; // افتراضي أحمر
+
+  if (showDelivery) {
+    text = formatDinarAsAlf(delivery);
+    tooltip = `وارد المندوب: ${text}`;
+    badgeStyle = "bg-[#FEF2F2] border border-[#F87171] text-[#991B1B]"; // وارد المندوب أحمر
+  } else if (showPreparerDelivery) {
+    text = formatDinarAsAlf(preparerDelivery);
+    tooltip = `وارد المجهز: ${text}`;
+    badgeStyle = "bg-[#F5F3FF] border border-[#A78BFA] text-[#5B21B6]"; // وارد المجهز بنفسجي
+  } else if (r.wardMismatchType === "deficit") {
+    text = "نقص";
+    tooltip = "نقص بالوارد";
+    badgeStyle = "bg-[#FEF2F2] border border-rose-500 text-rose-700";
+  } else if (r.wardMismatchType === "excess") {
+    text = "زيادة";
+    tooltip = "زيادة بالوارد";
+    badgeStyle = "bg-[#ECFDF5] border border-emerald-500 text-emerald-700";
+  } else if (r.noWardRecorded && r.orderStatus === "delivered") {
+    text = "بدون";
+    tooltip = "بدون وارد مسجل";
+    badgeStyle = "bg-slate-100 border border-slate-300 text-slate-700";
+  }
+
+  if (!text) return null;
+
+  return (
+    <div
+      className={`h-[24px] px-2 rounded-[7px] flex items-center justify-center select-none shrink-0 shadow-2xs font-mono font-black text-[11px] leading-none tracking-tight ${badgeStyle}`}
+      title={tooltip}
+    >
+      <span className="truncate max-w-full text-center">{text}</span>
+    </div>
+  );
+}
+
 export function WasliThemeBoard({
   rows,
   allRows,
@@ -762,33 +850,46 @@ export function WasliThemeBoard({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isDelivering) {
-                          setDeliveryOrder(r);
-                        } else if (!isDelivered) {
-                          setPickupOrder(r);
-                        } else {
-                          onOpenRow(r.id);
-                        }
-                      }}
-                      className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
-                      title={
-                        isDelivering
-                          ? "اضغط لتسجيل تسليم الطلب واستلام المبلغ"
-                          : !isDelivered
-                          ? "اضغط لتسجيل استلام الشحنة ودفع المبلغ"
-                          : "اضغط لعرض تفاصيل الطلب"
-                      }
-                    >
-                      <div className="w-[66px] h-[66px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] group-hover/price:shadow-[0_6px_16px_rgba(11,46,140,0.3)]">
-                        <span className="font-mono font-black text-[#FFC107] text-[30px] leading-none tracking-tight">
-                          {displayPriceValue}
-                        </span>
+                    {/* دائرة السعر التفاعلية وبجانبها الأيمن بادجات الصادر والوارد (الصادر فوق والوارد بالأسفل) */}
+                    <div className="flex items-center gap-1.5 shrink-0 relative">
+                      {/* حاوية الصادر والوارد: كلاهما على يمين دائرة السعر، الصادر فوق والوارد بالأسفل */}
+                      <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                        {/* الصادر فوق */}
+                        <MandoubCardSaderBadge r={r} />
+
+                        {/* الوارد بالأسفل */}
+                        <MandoubCardWardBadge r={r} />
                       </div>
-                    </button>
+
+                      {/* زر دائرة السعر */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isDelivering) {
+                            setDeliveryOrder(r);
+                          } else if (!isDelivered) {
+                            setPickupOrder(r);
+                          } else {
+                            onOpenRow(r.id);
+                          }
+                        }}
+                        className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
+                        title={
+                          isDelivering
+                            ? "اضغط لتسجيل تسليم الطلب واستلام المبلغ"
+                            : !isDelivered
+                            ? "اضغط لتسجيل استلام الشحنة ودفع المبلغ"
+                            : "اضغط لعرض تفاصيل الطلب"
+                        }
+                      >
+                        <div className="w-[66px] h-[66px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] group-hover/price:shadow-[0_6px_16px_rgba(11,46,140,0.3)]">
+                          <span className="font-mono font-black text-[#FFC107] text-[30px] leading-none tracking-tight">
+                            {displayPriceValue}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
                   </div>
 
                   {/* شريط التواصل والاتصال والخيارات السفلي */}
