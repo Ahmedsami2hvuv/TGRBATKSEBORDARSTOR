@@ -466,11 +466,12 @@ export function UnifiedOrderListTable({
                         <div className="flex flex-col items-center gap-1.5">
                           {!hideLocationAlert && !o.hasCustomerLocation ? (
                             <span
-                              className="inline-block shrink-0 rounded bg-rose-600 px-1 py-0.5 text-[9px] font-black leading-none text-white"
+                              className="relative flex h-2.5 w-2.5 shrink-0 my-0.5"
                               title="بدون لوكيشن للزبون"
                               aria-label="بدون لوكيشن"
                             >
-                              !
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600 shadow-[0_0_8px_#ef4444]" />
                             </span>
                           ) : null}
                           {o.hasMoneyDeletedBadge ? (

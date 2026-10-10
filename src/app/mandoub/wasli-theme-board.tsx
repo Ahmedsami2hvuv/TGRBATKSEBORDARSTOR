@@ -694,7 +694,16 @@ export function WasliThemeBoard({
                     )}
 
                     {/* كبسولة رقم الطلب */}
-                    <div className="shrink-0 h-[28px] bg-[#0B2E8C] rounded-[8px] px-2 py-0.5 shadow-xs flex items-center justify-center">
+                    <div className="shrink-0 h-[28px] bg-[#0B2E8C] rounded-[8px] px-2 py-0.5 shadow-xs flex items-center justify-center gap-1.5">
+                      {!r.hasCustomerLocation && (
+                        <span
+                          className="relative flex h-2 w-2 shrink-0"
+                          title="الزبون لا يمتلك موقع جغرافي (لوكيشن)"
+                        >
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_8px_#ef4444]" />
+                        </span>
+                      )}
                       <span className="font-mono font-black text-[#FFC107] text-[12px] leading-none tracking-wide">
                         #{r.shortId || r.id.slice(-4)}
                       </span>
@@ -764,8 +773,17 @@ export function WasliThemeBoard({
                           strokeWidth={2.2}
                         />
                       </div>
-                      <span className="font-mono font-black text-[12px] tracking-wide text-[#0B2E8C]">
+                      <span className="font-mono font-black text-[12px] tracking-wide text-[#0B2E8C] flex items-center gap-1.5">
                         {r.customerPhone || "اتصال"}
+                        {!r.hasCustomerLocation && (
+                          <span
+                            className="relative flex h-2 w-2 shrink-0 mr-0.5"
+                            title="الزبون لا يمتلك موقع جغرافي"
+                          >
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_8px_#ef4444]" />
+                          </span>
+                        )}
                       </span>
                     </button>
 
@@ -778,10 +796,19 @@ export function WasliThemeBoard({
                           e.stopPropagation();
                           setActionModal({ type: "location", row: r });
                         }}
-                        className="w-7 h-7 rounded-full bg-[#0B2E8C] flex items-center justify-center shadow-xs active:scale-90 transition-transform hover:bg-[#1E4DB7] cursor-pointer"
-                        title="فتح الموقع الجغرافي (الزبون / المحل)"
+                        className="relative w-7 h-7 rounded-full bg-[#0B2E8C] flex items-center justify-center shadow-xs active:scale-90 transition-transform hover:bg-[#1E4DB7] cursor-pointer"
+                        title={r.hasCustomerLocation ? "فتح الموقع الجغرافي (الزبون / المحل)" : "تنبيه: لا يوجد لوكيشن للزبون"}
                       >
                         <MapPin className="w-3.5 h-3.5 text-[#FFC107]" />
+                        {!r.hasCustomerLocation && (
+                          <span
+                            className="absolute -top-0.5 -right-0.5 flex h-2 w-2"
+                            title="لا يوجد لوكيشن للزبون"
+                          >
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_6px_#ef4444]" />
+                          </span>
+                        )}
                       </button>
 
                       {/* زر واتساب: يفتح خيارات مراسلة واتساب للزبون أو العميل */}
