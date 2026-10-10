@@ -196,6 +196,18 @@ export function AdminOrderMoneyEvents({
 
   const isDelivered = orderStatus === "delivered";
 
+  const formatAmtAlf = (dinar: number | null | undefined): string => {
+    if (!dinar || dinar <= 0) return "0";
+    const alf = dinar / 1000;
+    return Number.isInteger(alf) ? `${alf}` : alf.toFixed(1);
+  };
+
+  const pickupDisplayAmt = pickupSum > 0 ? pickupSum : (orderSubtotalDinar ?? 0);
+  const deliveryDisplayAmt = deliverySum > 0 ? deliverySum : (totalAmountDinar ?? 0);
+
+  const pickupDisplayAlf = formatAmtAlf(pickupDisplayAmt);
+  const deliveryDisplayAlf = formatAmtAlf(deliveryDisplayAmt);
+
   return (
     <div className="w-full max-w-4xl mx-auto my-0 select-none" dir="rtl">
       {/* التوست المنبثق */}
@@ -207,7 +219,19 @@ export function AdminOrderMoneyEvents({
               : "bg-rose-900 border-rose-400"
           }`}
         >
-          <span>{toastMsg.type === "success" ? "✅" : "⚠️"}</span>
+          <span>
+            {toastMsg.type === "success" ? (
+              <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            )}
+          </span>
           <span>{toastMsg.text}</span>
           <button
             onClick={() => setToastMsg(null)}
@@ -218,28 +242,31 @@ export function AdminOrderMoneyEvents({
         </div>
       )}
 
-      {/* كارت المعاملات المالية المتطابق 100% مع التصميم 3 والصورة 3 */}
-      <div className="relative rounded-[22px] border-[1.5px] border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
-        {/* هيدر الكارت المذهب */}
-        <div className="relative px-3.5 py-3 bg-gradient-to-b from-[#FDF6E3] to-[#FFFEFB] border-b border-[#C9A86A]/20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-[30px] h-[30px] rounded-[10px] gold-grad flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.35)] border border-[#9C7D46]/30">
-              <svg className="w-[16px] h-[16px] text-[#0A3D2E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <circle cx="9" cy="12" r="6" />
-                <circle cx="15" cy="12" r="6" />
+      {/* كارت المعاملات المالية بهوية وصلي الرسمية */}
+      <div className="relative rounded-[24px] border-[1.5px] border-[#D0DDFB] bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)] overflow-hidden">
+        {/* هيدر الكارت بهوية وصلي */}
+        <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFC107] text-base text-[#0B2E8C] shadow-xs">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="6" x2="12" y2="18" />
+                <path d="M15 9H10.5a2 2 0 0 0 0 4h3a2 2 0 0 1 0 4H9" />
               </svg>
-            </div>
-            <h3 className="text-[13.5px] font-black text-[#0A3D2E] leading-none tracking-wide">المعاملات المالية</h3>
+            </span>
+            <h3 className="text-[14px] font-extrabold text-[#0B2E8C]">المعاملات المالية</h3>
           </div>
-
-          <div className="w-[8px] h-[8px] rounded-full bg-[#C9A86A] shadow-[0_0_6px_#C9A86A] animate-pulse" />
+          <div className="flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-2.5 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#1E4DB7]" />
+            <span className="text-[10px] font-bold text-[#0B2E8C]">الإدارة</span>
+          </div>
         </div>
 
-        <div className="relative p-3.5 bg-[#FFFEF8] space-y-3.5">
-          {/* زري استلام وتسليم (أعطيت وأخذت) الفاخرين بالصور */}
+        <div className="relative p-4 space-y-4">
+          {/* زري استلام وتسليم بهوية وصلي مع عرض المبالغ المالية */}
           {orderId && (
-            <div className="flex items-center justify-center gap-4 py-1">
-              {/* زر استلام (صادر / أعطيت) */}
+            <div className="flex items-center justify-center gap-3 sm:gap-4 py-1">
+              {/* زر استلام (صادر / أعطيت للمحل) مع المبلغ */}
               <button
                 type="button"
                 onClick={() => {
@@ -247,17 +274,24 @@ export function AdminOrderMoneyEvents({
                   setPickupOpen(true);
                   setDeliveryOpen(false);
                 }}
-                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(10,61,46,0.2)] hover:shadow-[0_6px_20px_rgba(10,61,46,0.35)]"
+                className="group relative flex-1 max-w-[210px] h-[66px] sm:h-[72px] rounded-[18px] bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] border-2 border-[#FFC107] text-white flex items-center justify-between px-3.5 sm:px-4 py-1.5 shadow-[0_4px_16px_rgba(11,46,140,0.25)] hover:shadow-[0_6px_22px_rgba(11,46,140,0.35)] active:scale-95 transition-all cursor-pointer overflow-hidden"
                 title="استلام الطلب وتسجيل الصادر (أعطيت للمحل)"
               >
-                <img
-                  src="/images/order-luxury/btn-istilam.webp"
-                  alt="استلام (أعطيت)"
-                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
-                />
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-[11.5px] font-bold text-[#FFC107] tracking-tight">استلام (صادر)</span>
+                  <span className="text-[16px] sm:text-[18px] font-black text-white font-mono leading-tight my-0.5">
+                    {pickupDisplayAlf} ألف
+                  </span>
+                  <span className="text-[9.5px] font-medium text-white/75">تسجيل مدفوع المحل</span>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-[#FFC107] text-[#0B2E8C] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </div>
               </button>
 
-              {/* زر تسليم (وارد / أخذت) */}
+              {/* زر تسليم (وارد / أخذت من الزبون) مع المبلغ */}
               <button
                 type="button"
                 onClick={() => {
@@ -265,23 +299,30 @@ export function AdminOrderMoneyEvents({
                   setDeliveryOpen(true);
                   setPickupOpen(false);
                 }}
-                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(197,48,48,0.2)] hover:shadow-[0_6px_20px_rgba(197,48,48,0.35)]"
+                className="group relative flex-1 max-w-[210px] h-[66px] sm:h-[72px] rounded-[18px] bg-gradient-to-r from-[#FFA000] via-[#FFB300] to-[#FFC107] border-2 border-white text-[#0B2E8C] flex items-center justify-between px-3.5 sm:px-4 py-1.5 shadow-[0_4px_16px_rgba(255,193,7,0.3)] hover:shadow-[0_6px_22px_rgba(255,193,7,0.4)] active:scale-95 transition-all cursor-pointer overflow-hidden"
                 title="تسليم الطلب وتسجيل الوارد (أخذت من الزبون)"
               >
-                <img
-                  src="/images/order-luxury/btn-tasleem.webp"
-                  alt="تسليم (أخذت)"
-                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
-                />
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-[11.5px] font-bold text-[#0B2E8C] tracking-tight">تسليم (وارد)</span>
+                  <span className="text-[16px] sm:text-[18px] font-black text-[#0B2E8C] font-mono leading-tight my-0.5">
+                    {deliveryDisplayAlf} ألف
+                  </span>
+                  <span className="text-[9.5px] font-medium text-[#0B2E8C]/75">تسجيل مقبوض الزبون</span>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-[#0B2E8C] text-[#FFC107] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                </div>
               </button>
             </div>
           )}
 
-          {/* فاصل ذهبي ناعم */}
+          {/* فاصل هندسي ناعم بهوية وصلي */}
           <div className="flex items-center gap-2 py-0.5">
-            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#C9A86A]/40 to-transparent" />
-            <div className="w-[6px] h-[6px] rotate-45 bg-[#C9A86A]/60" />
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#C9A86A]/40 to-transparent" />
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#D0DDFB] to-transparent" />
+            <div className="w-2 h-2 rotate-45 bg-[#0B2E8C]" />
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#D0DDFB] to-transparent" />
           </div>
 
           {/* قائمة المعاملات */}
@@ -415,7 +456,7 @@ export function AdminOrderMoneyEvents({
   );
 }
 
-/* مكونات المربعات التفاعلية الفاخرة المطابقة لـ Mnt-Data-Photo3607594841302210502-Jpeg.html */
+/* مكونات المربعات التفاعلية بهوية وصلي الرسمية */
 function AmountSquareBtn({
   value,
   selected,
@@ -427,10 +468,12 @@ function AmountSquareBtn({
   onClick: () => void;
   color?: "emerald" | "orange";
 }) {
-  const isEmerald = color === "emerald";
-  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const isSader = color === "emerald";
+  const activeBg = isSader ? "#0B2E8C" : "#FFC107";
+  const inactiveBg = "#EEF3FF";
+  const activeBorder = isSader ? "#FFC107" : "#0B2E8C";
+  const inactiveBorder = "#D0DDFB";
+  const textColor = selected ? (isSader ? "#FFC107" : "#0B2E8C") : "#0B2E8C";
 
   return (
     <button
@@ -438,15 +481,15 @@ function AmountSquareBtn({
       onClick={onClick}
       className={`
         w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex items-center justify-center
+        rounded-[22px] border-2 flex items-center justify-center
         text-[48px] font-black leading-none tracking-tight
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_8px_24px_rgba(11,46,140,0.25)] scale-[1.02]" : "shadow-sm hover:shadow-md hover:border-[#0B2E8C]/40"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
-        borderColor: "#C9A86A",
+        borderColor: selected ? activeBorder : inactiveBorder,
         color: textColor,
       }}
     >
@@ -470,9 +513,12 @@ function ZeroSquareBtn({
   onClick: () => void;
   color?: "emerald" | "orange";
 }) {
-  const isEmerald = color === "emerald";
-  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#C9A86A" : "#0A3D2A";
+  const isSader = color === "emerald";
+  const activeBg = isSader ? "#0B2E8C" : "#FFC107";
+  const inactiveBg = "#EEF3FF";
+  const activeBorder = isSader ? "#FFC107" : "#0B2E8C";
+  const inactiveBorder = "#D0DDFB";
+  const textColor = selected ? (isSader ? "#FFC107" : "#0B2E8C") : "#0B2E8C";
 
   return (
     <button
@@ -480,25 +526,25 @@ function ZeroSquareBtn({
       onClick={onClick}
       className={`
         w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        rounded-[22px] border-2 flex flex-col items-center justify-center
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_8px_24px_rgba(11,46,140,0.25)] scale-[1.02]" : "shadow-sm hover:shadow-md hover:border-[#0B2E8C]/40"}
       `}
       style={{
-        backgroundColor: selected ? activeBg : "#E8E0D0",
-        borderColor: "#C9A86A",
+        backgroundColor: selected ? activeBg : inactiveBg,
+        borderColor: selected ? activeBorder : inactiveBorder,
         color: textColor,
       }}
     >
       <span
-        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}
-        style={{ fontSize: selected ? "48px" : "22px", fontWeight: "900", lineHeight: "1" }}
+        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[20px]"}`}
+        style={{ fontSize: selected ? "48px" : "20px", fontWeight: "900", lineHeight: "1" }}
       >
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-80">
           {label}
         </span>
       )}
@@ -533,28 +579,38 @@ function AdminPickupModal({
     selectedBox !== "zero";
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in" onClick={onClose}>
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-white border-2 border-[#0B2E8C] rounded-[28px] shadow-[0_20px_60px_rgba(11,46,140,0.3)] overflow-hidden w-full max-w-[420px] text-right animate-in zoom-in-95 duration-200 select-none"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[18px]">💸</span>
-            <h2 className="text-[18px] font-black text-[#0A3D2A]">تسجيل صادر</h2>
+        {/* رأس النافذة بهوية وصلي */}
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-[#D0DDFB]/70 bg-[#F8FAFF]">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-[10px] bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C]">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-[15px] font-black text-[#0B2E8C]">تسجيل استلام (صادر)</h2>
+              <p className="text-[10px] font-bold text-[#64748B]">تسجيل مدفوع المحل من الإدارة</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="w-8 h-8 rounded-full bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] hover:bg-white transition cursor-pointer"
           >
-            ×
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
-        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
-        <div className="p-6">
+        <div className="p-5">
           <form
             ref={formRef}
             action={pickupAction}
@@ -571,7 +627,7 @@ function AdminPickupModal({
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
 
             <div className="text-right">
-              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+              <span className="text-[13px] font-bold text-[#0B2E8C]">المبلغ (ألف دينار):</span>
             </div>
 
             {/* مربعات الاختيار السريع 120x120 */}
@@ -621,7 +677,7 @@ function AdminPickupModal({
                   else setSelectedBox(null);
                 }}
                 placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+                className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
               />
             </div>
 
@@ -629,7 +685,7 @@ function AdminPickupModal({
             {isMismatch ? (
               <div className="space-y-1.5 animate-in fade-in duration-200">
                 <div className="text-right">
-                  <span className="text-[13px] font-bold text-[#0A3D2A]">
+                  <span className="text-[13px] font-bold text-[#0B2E8C]">
                     سبب اختلاف الصادر <span className="text-rose-600">*</span>
                   </span>
                 </div>
@@ -637,7 +693,7 @@ function AdminPickupModal({
                   name="mismatchNote"
                   required
                   rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  className="w-full min-h-[78px] rounded-[16px] border border-[#D0DDFB] bg-white px-4 py-3 text-[13px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 resize-none font-medium"
                   placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
                 />
               </div>
@@ -645,22 +701,25 @@ function AdminPickupModal({
               <input type="hidden" name="mismatchNote" value="" />
             )}
 
-            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+            <div className="h-[1px] bg-[#D0DDFB]/60 my-4" />
 
             <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={pickupPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white bg-[#0B2E8C] hover:bg-[#082269] border border-[#D0DDFB] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                <span>💾</span>
+                <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
                 <span>{pickupPending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#EEF3FF] border border-[#D0DDFB] font-bold text-[14px] text-[#0B2E8C] hover:bg-white transition active:scale-[0.98] cursor-pointer"
               >
                 إلغاء
               </button>
@@ -699,28 +758,38 @@ function AdminDeliveryModal({
     selectedBox !== "zero";
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in" onClick={onClose}>
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-white border-2 border-[#0B2E8C] rounded-[28px] shadow-[0_20px_60px_rgba(11,46,140,0.3)] overflow-hidden w-full max-w-[420px] text-right animate-in zoom-in-95 duration-200 select-none"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[18px]">🫴</span>
-            <h2 className="text-[18px] font-black text-[#8B2E1A]">تسجيل وارد</h2>
+        {/* رأس النافذة بهوية وصلي */}
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-[#D0DDFB]/70 bg-[#F8FAFF]">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-[10px] bg-[#FFC107]/20 border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C]">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-[15px] font-black text-[#0B2E8C]">تسجيل تسليم (وارد)</h2>
+              <p className="text-[10px] font-bold text-[#64748B]">تسجيل مقبوض الزبون من الإدارة</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="w-8 h-8 rounded-full bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] hover:bg-white transition cursor-pointer"
           >
-            ×
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
-        <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
 
-        <div className="p-6">
+        <div className="p-5">
           <form
             ref={formRef}
             action={deliveryAction}
@@ -737,7 +806,7 @@ function AdminDeliveryModal({
             <input type="hidden" name="advanceStatus" value={advanceStatus} />
 
             <div className="text-right">
-              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+              <span className="text-[13px] font-bold text-[#0B2E8C]">المبلغ (ألف دينار):</span>
             </div>
 
             {/* مربعات الاختيار السريع 120x120 */}
@@ -787,7 +856,7 @@ function AdminDeliveryModal({
                   else setSelectedBox(null);
                 }}
                 placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+                className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
               />
             </div>
 
@@ -795,7 +864,7 @@ function AdminDeliveryModal({
             {isMismatch ? (
               <div className="space-y-1.5 animate-in fade-in duration-200">
                 <div className="text-right">
-                  <span className="text-[13px] font-bold text-[#0A3D2A]">
+                  <span className="text-[13px] font-bold text-[#0B2E8C]">
                     سبب اختلاف الوارد <span className="text-rose-600">*</span>
                   </span>
                 </div>
@@ -803,7 +872,7 @@ function AdminDeliveryModal({
                   name="mismatchNote"
                   required
                   rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+                  className="w-full min-h-[78px] rounded-[16px] border border-[#D0DDFB] bg-white px-4 py-3 text-[13px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 resize-none font-medium"
                   placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
                 />
               </div>
@@ -811,22 +880,23 @@ function AdminDeliveryModal({
               <input type="hidden" name="mismatchNote" value="" />
             )}
 
-            <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+            <div className="h-[1px] bg-[#D0DDFB]/60 my-4" />
 
             <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={deliveryPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
+                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0B2E8C] bg-[#FFC107] hover:bg-[#eab308] border border-[#D0DDFB] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                <span>💾</span>
+                <svg className="w-4 h-4 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 <span>{deliveryPending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+                className="w-[88px] h-[48px] rounded-[16px] bg-[#EEF3FF] border border-[#D0DDFB] font-bold text-[14px] text-[#0B2E8C] hover:bg-white transition active:scale-[0.98] cursor-pointer"
               >
                 إلغاء
               </button>

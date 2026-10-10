@@ -397,10 +397,12 @@ function AmountSquareBtn({
   onClick: () => void;
   color?: "emerald" | "orange";
 }) {
-  const isEmerald = color === "emerald";
-  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const inactiveBg = "#E8E0D0";
-  const textColor = selected ? "#C9A86A" : isEmerald ? "#0A3D2A" : "#8B2E1A";
+  const isSader = color === "emerald";
+  const activeBg = isSader ? "#0B2E8C" : "#FFC107";
+  const inactiveBg = "#EEF3FF";
+  const activeBorder = isSader ? "#FFC107" : "#0B2E8C";
+  const inactiveBorder = "#D0DDFB";
+  const textColor = selected ? (isSader ? "#FFC107" : "#0B2E8C") : "#0B2E8C";
 
   return (
     <button
@@ -408,15 +410,15 @@ function AmountSquareBtn({
       onClick={onClick}
       className={`
         w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex items-center justify-center
+        rounded-[22px] border-2 flex items-center justify-center
         text-[48px] font-black leading-none tracking-tight
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.15)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]"}
+        ${selected ? "shadow-[0_8px_24px_rgba(11,46,140,0.25)] scale-[1.02]" : "shadow-sm hover:shadow-md hover:border-[#0B2E8C]/40"}
       `}
       style={{
         backgroundColor: selected ? activeBg : inactiveBg,
-        borderColor: "#C9A86A",
+        borderColor: selected ? activeBorder : inactiveBorder,
         color: textColor,
       }}
     >
@@ -440,9 +442,12 @@ function ZeroSquareBtn({
   onClick: () => void;
   color?: "emerald" | "orange";
 }) {
-  const isEmerald = color === "emerald";
-  const activeBg = isEmerald ? "#0A3D2A" : "#8B2E1A";
-  const textColor = selected ? "#C9A86A" : "#0A3D2A";
+  const isSader = color === "emerald";
+  const activeBg = isSader ? "#0B2E8C" : "#FFC107";
+  const inactiveBg = "#EEF3FF";
+  const activeBorder = isSader ? "#FFC107" : "#0B2E8C";
+  const inactiveBorder = "#D0DDFB";
+  const textColor = selected ? (isSader ? "#FFC107" : "#0B2E8C") : "#0B2E8C";
 
   return (
     <button
@@ -450,25 +455,25 @@ function ZeroSquareBtn({
       onClick={onClick}
       className={`
         w-[120px] h-[120px] min-w-[120px] min-h-[120px]
-        rounded-[18px] border-[2.5px] flex flex-col items-center justify-center
+        rounded-[22px] border-2 flex flex-col items-center justify-center
         transition-all duration-200 active:scale-[0.97]
         select-none cursor-pointer
-        ${selected ? "shadow-[0_0_0_3px_#C9A86A44,0_8px_20px_rgba(0,0,0,0.12)] scale-[1.02]" : "shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.10)]"}
+        ${selected ? "shadow-[0_8px_24px_rgba(11,46,140,0.25)] scale-[1.02]" : "shadow-sm hover:shadow-md hover:border-[#0B2E8C]/40"}
       `}
       style={{
-        backgroundColor: selected ? activeBg : "#E8E0D0",
-        borderColor: "#C9A86A",
+        backgroundColor: selected ? activeBg : inactiveBg,
+        borderColor: selected ? activeBorder : inactiveBorder,
         color: textColor,
       }}
     >
       <span
-        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[22px]"}`}
-        style={{ fontSize: selected ? "48px" : "22px", fontWeight: "900", lineHeight: "1" }}
+        className={`font-black leading-none ${selected ? "text-[48px]" : "text-[20px]"}`}
+        style={{ fontSize: selected ? "48px" : "20px", fontWeight: "900", lineHeight: "1" }}
       >
         {selected ? activeLabel : label}
       </span>
       {selected && (
-        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-70" style={{ color: "#C9A86A" }}>
+        <span className="text-[11px] font-bold mt-1 tracking-wide opacity-80">
           {label}
         </span>
       )}
@@ -536,20 +541,20 @@ export function PickupMoneyForm(props: {
       <input type="hidden" name="advanceStatus" value={props.advanceToDelivering ? "delivering" : ""} />
 
       {props.error && (
-        <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
+        <div className="rounded-xl border border-rose-300 bg-rose-50 p-2.5 text-xs font-bold text-rose-800 text-center">
           {props.error}
         </div>
       )}
 
       {/* إسناد المندوب إذا كان الطلب غير مسند */}
       {canAssign && (
-        <div className="space-y-1.5 rounded-xl border border-[#C9A86A]/40 bg-[#F0EAD8]/40 p-3">
-          <span className="text-xs font-bold text-[#0A3D2A] block">
+        <div className="space-y-1.5 rounded-2xl border border-[#D0DDFB] bg-[#EEF3FF]/60 p-3">
+          <span className="text-xs font-bold text-[#0B2E8C] block">
             اختر مندوباً (اختياري) لإسناد الطلب:
           </span>
           <select
             name="assignToCourierId"
-            className="w-full rounded-xl border border-[#C9A86A] bg-white px-3 py-2 text-xs font-bold text-[#0A3D2A] focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+            className="w-full rounded-xl border border-[#D0DDFB] bg-white px-3 py-2 text-xs font-bold text-[#0B2E8C] focus:outline-none focus:ring-2 focus:ring-[#0B2E8C]/30"
           >
             <option value="">— دفع بدون إسناد مندوب —</option>
             {props.couriers?.map((c) => (
@@ -562,7 +567,7 @@ export function PickupMoneyForm(props: {
       )}
 
       <div className="text-right">
-        <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+        <span className="text-[13px] font-bold text-[#0B2E8C]">المبلغ (ألف دينار):</span>
       </div>
 
       {/* مربعات الاختيار السريع 120x120 */}
@@ -617,7 +622,7 @@ export function PickupMoneyForm(props: {
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
         />
       </div>
 
@@ -625,7 +630,7 @@ export function PickupMoneyForm(props: {
       {isMismatch ? (
         <div className="space-y-1.5 animate-in fade-in duration-200">
           <div className="text-right">
-            <span className="text-[13px] font-bold text-[#0A3D2A]">
+            <span className="text-[13px] font-bold text-[#0B2E8C]">
               سبب اختلاف الصادر <span className="text-rose-600">*</span>
             </span>
           </div>
@@ -633,7 +638,7 @@ export function PickupMoneyForm(props: {
             name="mismatchNote"
             required
             rows={2}
-            className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+            className="w-full min-h-[78px] rounded-[16px] border border-[#D0DDFB] bg-white px-4 py-3 text-[13px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 resize-none font-medium"
             placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
           />
         </div>
@@ -641,23 +646,26 @@ export function PickupMoneyForm(props: {
         <input type="hidden" name="mismatchNote" value="" />
       )}
 
-      <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+      <div className="h-[1px] bg-[#D0DDFB]/60 my-4" />
 
       {/* الأزرار السفلية */}
       <div className="flex gap-3">
         <button
           type="submit"
           disabled={props.pending}
-          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-          style={{ background: "linear-gradient(180deg, #E8D5A3 0%, #C9A86A 100%)" }}
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white bg-[#0B2E8C] hover:bg-[#082269] border border-[#D0DDFB] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
         >
-          <span>💾</span>
+          <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
           <span>{props.pending ? "جاري الحفظ..." : "تأكيد الصادر"}</span>
         </button>
         <button
           type="button"
           onClick={props.onClose}
-          className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+          className="w-[88px] h-[48px] rounded-[16px] bg-[#EEF3FF] border border-[#D0DDFB] font-bold text-[14px] text-[#0B2E8C] hover:bg-white transition active:scale-[0.98] cursor-pointer"
         >
           إلغاء
         </button>
@@ -722,13 +730,13 @@ export function DeliveryMoneyForm(props: {
       <input type="hidden" name="advanceStatus" value="delivered" />
 
       {props.error && (
-        <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
+        <div className="rounded-xl border border-rose-300 bg-rose-50 p-2.5 text-xs font-bold text-rose-800 text-center">
           {props.error}
         </div>
       )}
 
       <div className="text-right">
-        <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
+        <span className="text-[13px] font-bold text-[#0B2E8C]">المبلغ (ألف دينار):</span>
       </div>
 
       {/* مربعات الاختيار السريع 120x120 */}
@@ -783,7 +791,7 @@ export function DeliveryMoneyForm(props: {
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
         />
       </div>
 
@@ -791,7 +799,7 @@ export function DeliveryMoneyForm(props: {
       {isMismatch ? (
         <div className="space-y-1.5 animate-in fade-in duration-200">
           <div className="text-right">
-            <span className="text-[13px] font-bold text-[#0A3D2A]">
+            <span className="text-[13px] font-bold text-[#0B2E8C]">
               سبب اختلاف الوارد <span className="text-rose-600">*</span>
             </span>
           </div>
@@ -799,7 +807,7 @@ export function DeliveryMoneyForm(props: {
             name="mismatchNote"
             required
             rows={2}
-            className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#C9A86A]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/30 resize-none font-medium"
+            className="w-full min-h-[78px] rounded-[16px] border border-[#D0DDFB] bg-white px-4 py-3 text-[13px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 resize-none font-medium"
             placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
           />
         </div>
@@ -807,17 +815,18 @@ export function DeliveryMoneyForm(props: {
         <input type="hidden" name="mismatchNote" value="" />
       )}
 
-      <div className="h-[1px] bg-[#C9A86A]/20 my-4" />
+      <div className="h-[1px] bg-[#D0DDFB]/60 my-4" />
 
       {/* الأزرار السفلية */}
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
           disabled={props.pending}
-          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#C9A86A] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-          style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0B2E8C] bg-[#FFC107] hover:bg-[#eab308] border border-[#D0DDFB] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
         >
-          <span>💾</span>
+          <svg className="w-4 h-4 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
           <span>{props.pending ? "جاري الحفظ..." : "تأكيد الوارد"}</span>
         </button>
         <button
@@ -825,15 +834,18 @@ export function DeliveryMoneyForm(props: {
           name="advanceStatus"
           value="delivered"
           disabled={props.pending}
-          className="flex-1 h-[48px] rounded-[16px] font-black text-[14px] text-white border border-[#C9A86A] bg-red-800 hover:bg-red-900 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-md"
+          className="flex-1 h-[48px] rounded-[16px] font-black text-[14px] text-white border border-[#D0DDFB] bg-[#0B2E8C] hover:bg-[#082269] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-md"
         >
-          <span>✅</span>
+          <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
           <span>{props.pending ? "..." : "تسجيل + تم التسليم"}</span>
         </button>
         <button
           type="button"
           onClick={props.onClose}
-          className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#C9A86A]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+          className="w-[88px] h-[48px] rounded-[16px] bg-[#EEF3FF] border border-[#D0DDFB] font-bold text-[14px] text-[#0B2E8C] hover:bg-white transition active:scale-[0.98] cursor-pointer"
         >
           إلغاء
         </button>
