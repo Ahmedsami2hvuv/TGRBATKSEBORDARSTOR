@@ -94,11 +94,11 @@ export function ClientFeedbackModal({
     icon: string
   ) => {
     return (
-      <div className="rounded-[18px] bg-[#FFF8F0]/80 border border-[#C9A86A]/30 p-[12px] shadow-sm transition">
+      <div className="rounded-[18px] bg-[#EEF3FF]/80 border border-[#D0DDFB]/30 p-[12px] shadow-sm transition">
         <div className="flex items-center justify-between gap-2 mb-[8px]">
           <div className="flex items-center gap-1.5">
             <span className="text-base">{icon}</span>
-            <span className="text-[12.5px] font-black text-[#0A3D2E]">{label}</span>
+            <span className="text-[12.5px] font-black text-[#0B2E8C]">{label}</span>
           </div>
           <div className="flex items-center gap-1 direction-ltr" dir="ltr">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -125,7 +125,7 @@ export function ClientFeedbackModal({
         {rating > 0 && rating < 5 && (
           <div
             key={`reason-box-${rating}`}
-            className="mt-[10px] pt-[10px] border-t border-[#C9A86A]/30 animate-in slide-in-from-top-3 fade-in duration-300"
+            className="mt-[10px] pt-[10px] border-t border-[#D0DDFB]/30 animate-in slide-in-from-top-3 fade-in duration-300"
           >
             <div
               className="rounded-[16px] bg-gradient-to-b from-[#FFFDF5] to-[#FFF6E5] border-[2px] border-[#D97706] p-[10px] shadow-[0_6px_20px_rgba(217,119,6,0.22)] transition-all"
@@ -152,7 +152,7 @@ export function ClientFeedbackModal({
                 placeholder="اكتب ملاحظتك واقتراحك هنا لنقوم بتطويرها فوراً..."
                 rows={2}
                 autoFocus
-                className="w-full rounded-[10px] border-[1.5px] border-[#F59E0B]/70 bg-white p-[8px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0A3D2E] focus:ring-2 focus:ring-[#0A3D2E]/20 shadow-inner transition"
+                className="w-full rounded-[10px] border-[1.5px] border-[#F59E0B]/70 bg-white p-[8px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 shadow-inner transition"
               />
             </div>
           </div>
@@ -182,22 +182,22 @@ export function ClientFeedbackModal({
           }
         }
       `}</style>
-      <div className="relative w-full max-w-[440px] max-h-[92vh] flex flex-col rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FFFEFB] via-[#FFFDF7] to-[#FAF6EE] shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
+      <div className="relative w-full max-w-[440px] max-h-[92vh] flex flex-col rounded-[28px] border-[2px] border-[#D0DDFB] bg-gradient-to-b from-[#FFFFFF] via-[#FFFFFF] to-[#FFFFFF] shadow-[0_24px_64px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
         {/* زر الإغلاق */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-[14px] left-[14px] w-[30px] h-[30px] rounded-full bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#0A3D2E] flex items-center justify-center hover:bg-white active:scale-95 transition z-10"
+          className="absolute top-[14px] left-[14px] w-[30px] h-[30px] rounded-full bg-[#EEF3FF] border border-[#D0DDFB]/40 text-[#0B2E8C] flex items-center justify-center hover:bg-white active:scale-95 transition z-10"
         >
           <X className="w-[16px] h-[16px]" />
         </button>
 
         {/* رأس النافذة */}
-        <div className="p-[20px] pb-[12px] text-center shrink-0 border-b border-[#C9A86A]/20">
-          <div className="mx-auto w-[52px] h-[52px] rounded-full bg-gradient-to-tr from-[#0A3D2E] to-[#164E3D] border-[2px] border-[#F5D77F] flex items-center justify-center shadow-md mb-[8px]">
-            <Sparkles className="w-[26px] h-[26px] text-[#F5D77F]" />
+        <div className="p-[20px] pb-[12px] text-center shrink-0 border-b border-[#D0DDFB]/20">
+          <div className="mx-auto w-[52px] h-[52px] rounded-full bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center shadow-md mb-[8px]">
+            <Sparkles className="w-[26px] h-[26px] text-[#FFC107]" />
           </div>
-          <h2 className="text-[17px] font-black text-[#0A3D2E]">تقييم تجربة الاستخدام 👑</h2>
+          <h2 className="text-[17px] font-black text-[#0B2E8C]">تقييم تجربة الاستخدام </h2>
           <p className="text-[11.5px] font-bold text-[#64748B] mt-[2px]">
             رأيك يهمنا جداً لتطوير وتسهيل النظام للأفضل دائماً
           </p>
@@ -212,7 +212,7 @@ export function ClientFeedbackModal({
             setDesignRating,
             designReason,
             setDesignReason,
-            "🎨"
+            ""
           )}
 
           {/* 2. تقييم الأزرار */}
@@ -222,7 +222,7 @@ export function ClientFeedbackModal({
             setButtonsRating,
             buttonsReason,
             setButtonsReason,
-            "🔘"
+            ""
           )}
 
           {/* 3. تقييم الخانات */}
@@ -232,7 +232,7 @@ export function ClientFeedbackModal({
             setFieldsRating,
             fieldsReason,
             setFieldsReason,
-            "📝"
+            ""
           )}
 
           {/* 4. تقييم السهولة */}
@@ -242,14 +242,14 @@ export function ClientFeedbackModal({
             setEaseRating,
             easeReason,
             setEaseReason,
-            "⚡"
+            ""
           )}
 
           {/* خانة الاقتراحات العامة والأفكار */}
-          <div className="rounded-[18px] bg-white border border-[#C9A86A]/30 p-[12px] shadow-sm">
+          <div className="rounded-[18px] bg-white border border-[#D0DDFB]/30 p-[12px] shadow-sm">
             <div className="flex items-center gap-1.5 mb-[6px]">
-              <MessageSquare className="w-[15px] h-[15px] text-[#0A3D2E]" />
-              <span className="text-[12px] font-black text-[#0A3D2E]">
+              <MessageSquare className="w-[15px] h-[15px] text-[#0B2E8C]" />
+              <span className="text-[12px] font-black text-[#0B2E8C]">
                 أفكار أو اقتراحات وملاحظات عامة (اختياري)
               </span>
             </div>
@@ -258,21 +258,21 @@ export function ClientFeedbackModal({
               onChange={(e) => setGeneralFeedback(e.target.value)}
               placeholder="اكتب أي مقترح أو فكرة تود إضافتها في النظام..."
               rows={3}
-              className="w-full rounded-[12px] border border-[#C9A86A]/30 bg-[#FFF8F0] p-[10px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0A3D2E]"
+              className="w-full rounded-[12px] border border-[#D0DDFB]/30 bg-[#EEF3FF] p-[10px] text-[12px] font-bold text-[#1E293B] outline-none resize-none placeholder:text-[#94A3B8] focus:border-[#0B2E8C]"
             />
           </div>
         </div>
 
         {/* أزرار الإجراءات السفلية */}
-        <div className="p-[16px] pt-[12px] bg-[#FAF6EE] border-t border-[#C9A86A]/20 shrink-0 flex items-center gap-[10px]">
+        <div className="p-[16px] pt-[12px] bg-[#FFFFFF] border-t border-[#D0DDFB]/20 shrink-0 flex items-center gap-[10px]">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex-1 h-[46px] rounded-[14px] bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border border-[#C9A86A] text-[#F5D77F] font-black text-[14px] shadow-[0_4px_16px_rgba(10,61,46,0.3)] hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="flex-1 h-[46px] rounded-[14px] bg-gradient-to-r from-[#0B2E8C] via-[#082269] to-[#0B2E8C] border border-[#D0DDFB] text-[#FFC107] font-black text-[14px] shadow-[0_4px_16px_rgba(10,61,46,0.3)] hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
           >
             {isSubmitting ? (
-              <Loader2 className="w-[20px] h-[20px] animate-spin text-[#F5D77F]" />
+              <Loader2 className="w-[20px] h-[20px] animate-spin text-[#FFC107]" />
             ) : (
               <>
                 <span>إرسال التقييم</span>
@@ -283,7 +283,7 @@ export function ClientFeedbackModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-[46px] px-[16px] rounded-[14px] bg-[#FFF8F0] border border-[#C9A86A]/40 text-[#475569] font-bold text-[13px] hover:bg-white active:scale-95 transition"
+            className="h-[46px] px-[16px] rounded-[14px] bg-[#EEF3FF] border border-[#D0DDFB]/40 text-[#475569] font-bold text-[13px] hover:bg-white active:scale-95 transition"
           >
             تخطي
           </button>

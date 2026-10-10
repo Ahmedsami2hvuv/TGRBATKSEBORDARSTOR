@@ -37,13 +37,11 @@ function PausedOverlay({
   title,
   message,
   color = "rose",
-  icon = "🛑",
   params
 }: {
   title: string;
   message: string;
   color?: "rose" | "orange";
-  icon?: string;
   params: { e?: string; exp?: string; s?: string }
 }) {
   const colorClasses = {
@@ -57,18 +55,24 @@ function PausedOverlay({
       border: "border-orange-300",
       text: "text-orange-700",
       bg: "bg-orange-50",
-      btn: "bg-orange-500 hover:bg-orange-600 shadow-orange-200"
+      btn: "bg-[#0B2E8C] hover:bg-[#082269] shadow-blue-200"
     }
   }[color];
 
   return (
-    <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
-      <div className="kse-app-inner mx-auto max-w-md">
-        <div className={`kse-glass-dark rounded-3xl border-2 ${colorClasses.border} p-8 text-center shadow-2xl bg-white/80 backdrop-blur-md`}>
-          <div className="mb-4 text-5xl">{icon}</div>
+    <div className="flex min-h-screen flex-col bg-white px-4 py-16 text-slate-800" dir="rtl">
+      <div className="mx-auto max-w-md w-full">
+        <div className={`rounded-3xl border border-[#D0DDFB] p-8 text-center shadow-2xl bg-white`}>
+          <div className="mb-4 mx-auto w-16 h-16 rounded-full bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C]">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
           <h2 className={`text-2xl font-black ${colorClasses.text} mb-4`}>{title}</h2>
           <div className={`${colorClasses.bg} rounded-2xl p-6 mb-8 border border-slate-100`}>
-            <p className="text-xl font-bold text-slate-800 leading-relaxed">{message}</p>
+            <p className="text-lg font-bold text-slate-800 leading-relaxed">{message}</p>
           </div>
 
           <div className="space-y-4">
@@ -119,7 +123,6 @@ export default async function ClientOrderPage(props: Props) {
           title="توقف التوصيل حاليا"
           message={globalSettings.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً في النظام بالكامل."}
           color="rose"
-          icon="🛑"
           params={sp}
         />
       );
@@ -182,7 +185,6 @@ export default async function ClientOrderPage(props: Props) {
           title={shop.name}
           message={shop.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً."}
           color="orange"
-          icon="📢"
           params={sp}
         />
       );

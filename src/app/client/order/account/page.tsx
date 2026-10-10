@@ -37,7 +37,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
 
   if (!v.ok) {
     return (
-      <div className="min-h-screen bg-[#FDF8EE] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
+      <div className="min-h-screen bg-[#FFFFFF] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
         <div className="mx-auto max-w-md w-full">
           <div className="rounded-3xl border-2 border-rose-300 bg-white p-8 text-center shadow-md">
             <p className="text-lg font-black text-rose-700">تعذّر فتح سجل الديون</p>
@@ -55,9 +55,9 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-[#FDF8EE] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
+      <div className="min-h-screen bg-[#FFFFFF] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
         <div className="mx-auto max-w-md w-full text-center">
-          <div className="rounded-3xl border-2 border-[#C9A86A]/40 bg-white p-8 shadow-md">
+          <div className="rounded-3xl border border-[#D0DDFB]/40 bg-white p-8 shadow-md">
             <p className="text-lg font-black text-slate-800">الموظف غير موجود</p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
 
   if (employee.orderPortalToken !== v.token) {
     return (
-      <div className="min-h-screen bg-[#FDF8EE] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
+      <div className="min-h-screen bg-[#FFFFFF] flex flex-col px-4 py-16 text-slate-800" dir="rtl">
         <div className="mx-auto max-w-md w-full">
           <div className="rounded-3xl border-2 border-rose-300 bg-white p-8 text-center shadow-md">
             <p className="text-lg font-black text-rose-700">الرابط غير صالح</p>
@@ -137,23 +137,23 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
   const transactions = partnerDetails?.transactions ?? [];
 
   return (
-    <div className="min-h-screen bg-[#FDF8EE] px-3.5 sm:px-4 py-6 pb-24 text-slate-800" dir="rtl">
+    <div className="min-h-screen bg-[#FFFFFF] px-3.5 sm:px-4 py-6 pb-24 text-slate-800" dir="rtl">
       <div className="mx-auto max-w-lg space-y-4">
         
         {/* زر العودة العلوي */}
         <div className="flex items-center justify-between">
           <Link
             href={formHref}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#FFFEFB] border-2 border-[#C9A86A]/40 text-xs font-black text-[#0A3D2E] shadow-xs hover:bg-[#FFF8F0] active:scale-95 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#FFFFFF] border-2 border-[#D0DDFB]/40 text-xs font-black text-[#0B2E8C] shadow-xs hover:bg-[#EEF3FF] active:scale-95 transition"
           >
             <span>←</span> العودة لرفع الطلب
           </Link>
 
           <Link
             href={historyHref}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#FFFEFB] border-2 border-[#C9A86A]/40 text-xs font-black text-[#0A3D2E] shadow-xs hover:bg-[#FFF8F0] active:scale-95 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#FFFFFF] border-2 border-[#D0DDFB]/40 text-xs font-black text-[#0B2E8C] shadow-xs hover:bg-[#EEF3FF] active:scale-95 transition"
           >
-            <span>📜</span> سجل الطلبات
+             سجل الطلبات
           </Link>
         </div>
 
@@ -162,8 +162,8 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
             
             {/* 1. الكلي */}
-            <div className="rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-b from-[#FFF8F0] to-[#FFFEFB] p-2.5 sm:p-3 text-center shadow-xs">
-              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0A3D2E]">
+            <div className="rounded-2xl border-2 border-[#D0DDFB] bg-white p-2.5 sm:p-3 text-center shadow-xs">
+              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0B2E8C]">
                 {totalCount}
               </p>
               <p className="mt-1 text-[10px] sm:text-xs font-black text-slate-700">
@@ -172,8 +172,8 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             </div>
 
             {/* 2. طلبيات السنة */}
-            <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-[#FFFEFB] p-2.5 sm:p-3 text-center shadow-xs">
-              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0A3D2E]">
+            <div className="rounded-2xl border-2 border-[#D0DDFB]/40 bg-[#FFFFFF] p-2.5 sm:p-3 text-center shadow-xs">
+              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0B2E8C]">
                 {yearCount}
               </p>
               <p className="mt-1 text-[10px] sm:text-xs font-black text-slate-700">
@@ -182,8 +182,8 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             </div>
 
             {/* 3. طلبيات الشهر */}
-            <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-[#FFFEFB] p-2.5 sm:p-3 text-center shadow-xs">
-              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0A3D2E]">
+            <div className="rounded-2xl border-2 border-[#D0DDFB]/40 bg-[#FFFFFF] p-2.5 sm:p-3 text-center shadow-xs">
+              <p className="text-xl sm:text-2xl font-black tabular-nums text-[#0B2E8C]">
                 {monthCount}
               </p>
               <p className="mt-1 text-[10px] sm:text-xs font-black text-slate-700">
@@ -192,7 +192,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             </div>
 
             {/* 4. طلبيات اليوم */}
-            <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-[#FFFEFB] p-2.5 sm:p-3 text-center shadow-xs">
+            <div className="rounded-2xl border-2 border-[#D0DDFB]/40 bg-[#FFFFFF] p-2.5 sm:p-3 text-center shadow-xs">
               <p className="text-xl sm:text-2xl font-black tabular-nums text-emerald-700">
                 {todayCount}
               </p>
@@ -206,13 +206,13 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
 
         {/* 2. بلوك سجل الديون الفاخر الموضح للمبلغ المتبقي كما في دفتر الديون عند الإدارة */}
         <section aria-label="سجل الديون">
-          <div className="rounded-3xl border-2 border-[#C9A86A] bg-[#FFFEFB] p-5 sm:p-6 text-center shadow-md space-y-4">
+          <div className="rounded-3xl border-2 border-[#D0DDFB] bg-[#FFFFFF] p-5 sm:p-6 text-center shadow-md space-y-4">
             
-            <div className="flex items-center justify-between pb-3 border-b border-[#C9A86A]/20">
-              <span className="text-xs font-black text-[#0A3D2E] flex items-center gap-1.5">
-                <span>📒</span> دفتر الديون والحساب المالي
+            <div className="flex items-center justify-between pb-3 border-b border-[#D0DDFB]/20">
+              <span className="text-xs font-black text-[#0B2E8C] flex items-center gap-1.5">
+                 دفتر الديون والحساب المالي
               </span>
-              <span className="text-[10px] font-bold text-slate-500 bg-[#FFF8F0] px-2.5 py-1 rounded-full border border-[#C9A86A]/30">
+              <span className="text-[10px] font-bold text-slate-500 bg-[#EEF3FF] px-2.5 py-1 rounded-full border border-[#D0DDFB]/30">
                 محدث تلقائياً ✓
               </span>
             </div>
@@ -221,10 +221,10 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             <div
               className={`p-6 sm:p-7 rounded-2xl border-2 text-center transition-all shadow-xs ${
                 isOwedToClient
-                  ? "bg-gradient-to-b from-emerald-50 via-[#FFF8F0] to-[#FFFEFB] border-emerald-500 text-emerald-900 ring-2 ring-emerald-200/50"
+                  ? "bg-gradient-to-b from-emerald-50 via-[#EEF3FF] to-[#FFFFFF] border-emerald-500 text-emerald-900 ring-2 ring-emerald-200/50"
                   : isOwedByClient
-                    ? "bg-gradient-to-b from-rose-50 via-[#FFF8F0] to-[#FFFEFB] border-rose-400 text-rose-950 ring-2 ring-rose-200/50"
-                    : "bg-[#FFF8F0] border-[#C9A86A]/40 text-[#0A3D2E]"
+                    ? "bg-gradient-to-b from-rose-50 via-[#EEF3FF] to-[#FFFFFF] border-rose-400 text-rose-950 ring-2 ring-rose-200/50"
+                    : "bg-[#EEF3FF] border-[#D0DDFB]/40 text-[#0B2E8C]"
               }`}
             >
               <p className="text-xs sm:text-sm font-black mb-1 opacity-90">
@@ -253,11 +253,11 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
             {/* ملخص إجمالي أخذت وأعطيت */}
             {partnerDetails && (
               <div className="grid grid-cols-2 gap-2.5 text-xs font-black">
-                <div className="bg-[#FFF8F0] border border-[#C9A86A]/30 p-2.5 rounded-xl text-center">
+                <div className="bg-[#EEF3FF] border border-[#D0DDFB]/30 p-2.5 rounded-xl text-center">
                   <span className="text-[10px] text-slate-500 block mb-0.5">إجمالي قيمة الطلبات (أخذت)</span>
                   <span className="text-rose-700 font-mono text-sm">{formatDinarAsAlfWithUnit(partnerDetails.totalTook)}</span>
                 </div>
-                <div className="bg-[#FFF8F0] border border-[#C9A86A]/30 p-2.5 rounded-xl text-center">
+                <div className="bg-[#EEF3FF] border border-[#D0DDFB]/30 p-2.5 rounded-xl text-center">
                   <span className="text-[10px] text-slate-500 block mb-0.5">إجمالي المسدد والمستلم (أعطيت)</span>
                   <span className="text-emerald-700 font-mono text-sm">{formatDinarAsAlfWithUnit(partnerDetails.totalGave)}</span>
                 </div>
@@ -269,7 +269,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
         {/* 3. كشف المعاملات وتفاصيل الديون التاريخية */}
         <section aria-label="كشف المعاملات" className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs sm:text-sm font-black text-[#0A3D2E] flex items-center gap-1.5">
+            <h2 className="text-xs sm:text-sm font-black text-[#0B2E8C] flex items-center gap-1.5">
               <span>📄</span> كشف حركات دفتر الديون ({transactions.length})
             </h2>
             <span className="text-[10px] font-bold text-slate-500">
@@ -278,7 +278,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
           </div>
 
           {transactions.length === 0 ? (
-            <div className="rounded-3xl border-2 border-dashed border-[#C9A86A]/40 bg-[#FFFEFB] p-8 text-center text-xs font-bold text-slate-500">
+            <div className="rounded-3xl border-2 border-dashed border-[#D0DDFB]/40 bg-[#FFFFFF] p-8 text-center text-xs font-bold text-slate-500">
               لا توجد أي حركات أو معاملات مسجلة في سجل الديون حتى الآن.
             </div>
           ) : (
@@ -297,7 +297,7 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
                     return (
                       <div
                         key={tx.id}
-                        className={`rounded-2xl border p-3 sm:p-3.5 shadow-2xs transition-all bg-[#FFFEFB] ${
+                        className={`rounded-2xl border p-3 sm:p-3.5 shadow-2xs transition-all bg-[#FFFFFF] ${
                           isPendingExpense
                             ? "border-sky-400 ring-2 ring-sky-200 bg-sky-50/40"
                             : isSettledExpense
