@@ -254,7 +254,7 @@ export function WasliThemeBoard({
           {/* الشعار واسم وصلي (الشعار الرسمي) */}
           <div className="flex items-center gap-2.5">
             <img
-              src="/images/wasly-logo.png"
+              src="/images/wasly-logo.webp?v=wasliLogoV1"
               alt="شعار وصلي الرسمي"
               className="w-10 h-10 object-contain rounded-full bg-white p-0.5 shadow-sm border border-[#D0DDFB] shrink-0"
             />
