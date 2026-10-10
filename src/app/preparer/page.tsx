@@ -190,23 +190,29 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     <div className="mx-auto max-w-6xl px-2 py-2.5 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg" dir="rtl">
       <PortalAuthCookieSetter auth={baseAuth} />
       
-      {/* 1. الترويسة الملكية الفاخرة لواجهة المجهز */}
-      <header className="rounded-[22px] border-2 border-[#C9A86A] bg-[#FFFEFB] px-3 sm:px-4 py-3 shadow-[0_6px_22px_rgba(201,168,106,0.18)] mb-3.5 select-none">
+      {/* 1. الترويسة العلوية لواجهة المجهز بنمط وصلي */}
+      <header className="rounded-[22px] border border-[#D0DDFB] bg-white px-3 sm:px-4 py-3 shadow-sm mb-3.5 select-none">
         {/* السطر الأول: زر الإعدادات + اسم المجهز + زر التحديد السريع + البحث وتسعير المتجر */}
         <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           {/* اليمين: زر الإعدادات + اسم المجهز + زر تحديد سريع */}
           <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
             <Link prefetch={false}
               href={preparerPath("/preparer/settings", baseAuth)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FDF6E3] border-[1.5px] border-[#C9A86A] text-lg shadow-[0_2px_8px_rgba(201,168,106,0.15)] transition hover:bg-[#FAF0D7] hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
-              title="إعدادات الخلفية والمظهر"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEF3FF] border border-[#D0DDFB] text-[#0B2E8C] shadow-xs transition hover:bg-[#DCE7FC] hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
+              title="إعدادات المظهر"
             >
-              ⚙️
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
             </Link>
 
-            {/* كبسولة اسم المجهز الملكية الزمردية */}
-            <div className="bg-[#0A3D2E] border-[1.5px] border-[#C9A86A] rounded-xl px-3 py-2 text-white font-black text-sm flex items-center gap-1.5 shadow-[0_2px_8px_rgba(10,61,46,0.25)] shrink-0">
-              <span className="text-[#F5D77F] text-xs">👤</span>
+            {/* كبسولة اسم المجهز بنمط وصلي الكحلي والأصفر */}
+            <div className="bg-[#0B2E8C] border border-[#0B2E8C] rounded-xl px-3 py-2 text-white font-black text-sm flex items-center gap-2 shadow-xs shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC107" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
               <span className="truncate max-w-[120px] sm:max-w-none">{safePreparer.name || "المجهز"}</span>
             </div>
 
@@ -220,25 +226,35 @@ export default async function PreparerHomePage({ searchParams }: Props) {
             {canSubmitAny && canPriceStore && (
               <Link prefetch={false}
                 href={preparerPath("/preparer/store-pricing", baseAuth)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#C9A86A] bg-[#0A3D2E] text-[#F5D77F] text-lg shadow-[0_2px_8px_rgba(10,61,46,0.25)] transition hover:bg-[#104D3B] hover:scale-105 active:scale-95 cursor-pointer"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D0DDFB] bg-[#EEF3FF] text-[#0B2E8C] shadow-xs transition hover:bg-[#DCE7FC] hover:scale-105 active:scale-95 cursor-pointer"
                 title="تسعير المتجر"
               >
-                🏪
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                  <path d="M2 7h20" />
+                  <path d="M22 7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2" />
+                </svg>
               </Link>
             )}
           </div>
         </div>
 
-        {/* السطر الثاني: أزرار العمليات السريعة بتصميم ملكي متناسق في سطر واحد */}
-        <div className="flex items-center justify-between gap-1.5 w-full mt-2.5 pt-2.5 border-t border-[#C9A86A]/25">
+        {/* السطر الثاني: أزرار العمليات السريعة بتصميم وصلي متناسق بدون إيموجيات */}
+        <div className="flex items-center justify-between gap-1.5 w-full mt-2.5 pt-2.5 border-t border-[#D0DDFB]">
           {/* 1. زر استلام الراتب */}
           <Link prefetch={false}
             href={preparerPath("/preparer/salary", baseAuth)}
-            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.12)] transition hover:scale-105 active:scale-95 cursor-pointer px-1"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1.5 rounded-xl border border-[#D0DDFB] bg-white text-[#0B2E8C] shadow-xs transition hover:bg-[#EEF3FF] hover:scale-105 active:scale-95 cursor-pointer px-1"
             title="استلام الراتب"
           >
-            <span className="text-base sm:text-lg shrink-0">💸</span>
-            <span className="text-[10px] sm:text-[11px] font-black bg-[#F5E6BE] px-1 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono truncate">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B2E8C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <rect width="20" height="12" x="2" y="6" rx="2" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M6 12h.01M18 12h.01" />
+            </svg>
+            <span className="text-[10px] sm:text-[11px] font-black bg-[#EEF3FF] px-1.5 py-0.5 rounded-md text-[#0B2E8C] leading-none font-mono truncate">
               {withdrawableSalaryStr}
             </span>
           </Link>
@@ -246,20 +262,28 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           {/* 2. زر الديون */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/debts", baseAuth)}
-            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#E11D48]/50 bg-gradient-to-b from-[#FEF2F2] to-[#FEE2E2] text-[#991B1B] shadow-[0_2px_6px_rgba(225,29,72,0.12)] hover:bg-rose-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] text-[#E11D48] shadow-xs hover:bg-rose-100 transition hover:scale-105 active:scale-95 cursor-pointer"
             title="الديون"
           >
-            <span className="text-base sm:text-lg">💳</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <line x1="2" y1="10" x2="22" y2="10" />
+            </svg>
           </FullscreenWalletLauncher>
 
           {/* 3. زر تجهيز الطلبات */}
           {canSubmitAny && (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/preparation", baseAuth)}
-              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#7C3AED]/50 bg-gradient-to-b from-[#F5F3FF] to-[#EDE9FE] text-[#5B21B6] shadow-[0_2px_6px_rgba(124,58,237,0.12)] hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border border-[#DDD6FE] bg-[#F5F3FF] text-[#7C3AED] shadow-xs hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="تجهيز الطلبات"
             >
-              <span className="text-base sm:text-lg">📦</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m7.5 4.27 9 5.15" />
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5" />
+                <path d="M12 22V12" />
+              </svg>
             </FullscreenWalletLauncher>
           )}
 
@@ -267,29 +291,35 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           {canSubmitAny && (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/order/new", baseAuth)}
-              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border-[1.5px] border-[#059669]/50 bg-gradient-to-b from-[#ECFDF5] to-[#D1FAE5] text-[#065F46] shadow-[0_2px_6px_rgba(5,150,105,0.12)] hover:bg-emerald-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] text-[#059669] shadow-xs hover:bg-emerald-100 transition hover:scale-105 active:scale-95 cursor-pointer"
               title="طلب جديد"
             >
-              <span className="text-base sm:text-lg">➕</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
             </FullscreenWalletLauncher>
           )}
 
           {/* 5. زر محفظتي */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/wallet", baseAuth)}
-            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1 rounded-xl border-[1.5px] border-[#C9A86A] bg-gradient-to-b from-[#FFFDF7] to-[#FDF6E3] text-[#8B6A2A] shadow-[0_2px_6px_rgba(201,168,106,0.12)] hover:scale-105 active:scale-95 transition cursor-pointer px-1"
+            className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1.5 rounded-xl border border-[#D0DDFB] bg-white text-[#0B2E8C] shadow-xs hover:bg-[#EEF3FF] hover:scale-105 active:scale-95 transition cursor-pointer px-1"
             title="محفظتي"
           >
-            <span className="text-base sm:text-lg shrink-0">💰</span>
-            <span className="text-[10px] sm:text-[11px] font-black bg-[#F5E6BE] px-1 py-0.5 rounded-md text-[#6D4C1D] leading-none font-mono truncate">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC107" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+            </svg>
+            <span className="text-[10px] sm:text-[11px] font-black bg-[#EEF3FF] px-1.5 py-0.5 rounded-md text-[#0B2E8C] leading-none font-mono truncate">
               {walletRemainStr}
             </span>
           </FullscreenWalletLauncher>
         </div>
       </header>
 
-      {/* 2. قسم جدول الطلبات الملكي */}
-      <section className="rounded-[22px] border-2 border-[#C9A86A] bg-[#FFFEFB] shadow-[0_6px_22px_rgba(201,168,106,0.12)] overflow-hidden p-2 sm:p-3">
+      {/* 2. قسم جدول الطلبات بنمط وصلي */}
+      <section className="rounded-[22px] border border-[#D0DDFB] bg-white shadow-sm overflow-hidden p-2 sm:p-3">
         <PreparerOrdersSection
           allRows={safeTableRows}
           searchFields={safeSearchFields}

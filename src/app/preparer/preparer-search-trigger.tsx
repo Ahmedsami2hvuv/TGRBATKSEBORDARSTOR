@@ -18,7 +18,7 @@ export function PreparerSearchTrigger({
     <button
       type="button"
       onClick={() => window.dispatchEvent(new CustomEvent("preparer:open-search"))}
-      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100 hover:text-sky-900 dark:border-sky-400 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-900/50"
+      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D0DDFB] bg-[#EEF3FF] text-[#0B2E8C] shadow-xs transition hover:bg-[#DCE7FC] hover:scale-105 active:scale-95 cursor-pointer"
       aria-label="فتح البحث"
       title="بحث"
     >
