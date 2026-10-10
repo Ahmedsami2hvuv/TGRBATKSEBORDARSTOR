@@ -1916,56 +1916,43 @@ export function MandoubOrderTable({
 
       {pickupOrder &&
         createPortal(
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={() => setPickupOrder(null)}>
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in"
+            onClick={() => setPickupOrder(null)}
+          >
             <div
-              className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95 my-auto"
-              dir="rtl"
+              className="w-full max-w-[390px] my-auto animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 pt-5 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[18px]">💸</span>
-                  <h2 className="text-[18px] font-black text-[#0A3D2A]">تسجيل استلام - طلب #{pickupOrder.shortId}</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPickupOrder(null)}
-                  className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
-              <div className="p-6">
-                <PickupMoneyForm
-                  orderId={pickupOrder.id}
-                  auth={auth}
-                  nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
-                  expectedAlfHint={pickupOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar) : ""}
-                  remainingAlfHint={
-                    pickupOrder.orderSubtotalDinar != null
-                      ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0))
-                      : ""
-                  }
-                  advanceToDelivering={true}
-                  pickupRemainingDinar={
-                    pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
-                  }
-                  pickupSumDinar={pickupOrder.pickupSumDinar || 0}
-                  orderSubtotalDinar={pickupOrder.orderSubtotalDinar ?? null}
-                  formAction={(fd) => pickupAction(fd)}
-                  pending={pickupPending || localPending}
-                  error={pickupState.error}
-                  onClose={() => setPickupOrder(null)}
-                  noRedirect
-                  onInstantOptimistic={(amt, note) => {
-                    const currentId = pickupOrder.id;
-                    setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivering" }));
-                    setPickupOrder(null);
-                    toast.success("تم استلام الطلب وتسجيل الصادر بنجاح! ⚡");
-                  }}
-                />
-              </div>
+              <PickupMoneyForm
+                orderId={pickupOrder.id}
+                orderShortId={pickupOrder.shortId}
+                auth={auth}
+                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                expectedAlfHint={pickupOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar) : ""}
+                remainingAlfHint={
+                  pickupOrder.orderSubtotalDinar != null
+                    ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0))
+                    : ""
+                }
+                advanceToDelivering={true}
+                pickupRemainingDinar={
+                  pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
+                }
+                pickupSumDinar={pickupOrder.pickupSumDinar || 0}
+                orderSubtotalDinar={pickupOrder.orderSubtotalDinar ?? null}
+                formAction={(fd) => pickupAction(fd)}
+                pending={pickupPending || localPending}
+                error={pickupState.error}
+                onClose={() => setPickupOrder(null)}
+                noRedirect
+                onInstantOptimistic={(amt, note) => {
+                  const currentId = pickupOrder.id;
+                  setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivering" }));
+                  setPickupOrder(null);
+                  toast.success("تم استلام الطلب وتسجيل الصادر بنجاح! ⚡");
+                }}
+              />
             </div>
           </div>,
           document.body,
@@ -1973,57 +1960,44 @@ export function MandoubOrderTable({
 
       {deliveryOrder &&
         createPortal(
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={() => setDeliveryOrder(null)}>
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in"
+            onClick={() => setDeliveryOrder(null)}
+          >
             <div
-              className="bg-[#FDF8EE] border-[2px] border-[#C9A86A] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95 my-auto"
-              dir="rtl"
+              className="w-full max-w-[390px] my-auto animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 pt-5 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[18px]">🫴</span>
-                  <h2 className="text-[18px] font-black text-[#8B2E1A]">تسجيل تسليم - طلب #{deliveryOrder.shortId}</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDeliveryOrder(null)}
-                  className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#C9A86A]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="h-[1px] bg-[#C9A86A]/30 mx-6" />
-              <div className="p-6">
-                <DeliveryMoneyForm
-                  orderId={deliveryOrder.id}
-                  auth={auth}
-                  nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
-                  expectedAlfHint={deliveryOrder.totalAmountDinar != null ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar) : ""}
-                  remainingAlfHint={
-                    deliveryOrder.totalAmountDinar != null
-                      ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0))
-                      : ""
-                  }
-                  advanceToDelivered={true}
-                  deliveryRemainingDinar={
-                    deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
-                  }
-                  deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
-                  totalAmountDinar={deliveryOrder.totalAmountDinar ?? null}
-                  formAction={(fd) => deliveryAction(fd)}
-                  pending={deliveryPending || localPending}
-                  error={deliveryState.error}
-                  onClose={() => setDeliveryOrder(null)}
-                  missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
-                  noRedirect
-                  onInstantOptimistic={(amt, note, lat, lng) => {
-                    const currentId = deliveryOrder.id;
-                    setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivered" }));
-                    setDeliveryOrder(null);
-                    toast.success("تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉");
-                  }}
-                />
-              </div>
+              <DeliveryMoneyForm
+                orderId={deliveryOrder.id}
+                orderShortId={deliveryOrder.shortId}
+                auth={auth}
+                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                expectedAlfHint={deliveryOrder.totalAmountDinar != null ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar) : ""}
+                remainingAlfHint={
+                  deliveryOrder.totalAmountDinar != null
+                    ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0))
+                    : ""
+                }
+                advanceToDelivered={true}
+                deliveryRemainingDinar={
+                  deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
+                }
+                deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
+                totalAmountDinar={deliveryOrder.totalAmountDinar ?? null}
+                formAction={(fd) => deliveryAction(fd)}
+                pending={deliveryPending || localPending}
+                error={deliveryState.error}
+                onClose={() => setDeliveryOrder(null)}
+                missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
+                noRedirect
+                onInstantOptimistic={(amt, note, lat, lng) => {
+                  const currentId = deliveryOrder.id;
+                  setRowStatusOverrides((prev) => ({ ...prev, [currentId]: "delivered" }));
+                  setDeliveryOrder(null);
+                  toast.success("تم تسليم الطلب واحتساب أرباح التوصيل بنجاح! 🎉");
+                }}
+              />
             </div>
           </div>,
           document.body,

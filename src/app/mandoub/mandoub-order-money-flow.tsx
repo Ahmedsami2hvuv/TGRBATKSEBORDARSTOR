@@ -17,6 +17,7 @@ import {
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
+import { Banknote, Check, Package, X, Zap } from "lucide-react";
 
 const initialCash: MandoubCashState = {};
 
@@ -1106,6 +1107,17 @@ export function PickupMoneyForm({
   pickupRemainingDinar,
   pickupSumDinar,
   orderSubtotalDinar,
+export function PickupMoneyForm({
+  orderId,
+  orderShortId,
+  auth,
+  nextUrl,
+  expectedAlfHint,
+  remainingAlfHint,
+  advanceToDelivering,
+  pickupRemainingDinar,
+  pickupSumDinar,
+  orderSubtotalDinar,
   formAction,
   pending,
   error,
@@ -1114,6 +1126,7 @@ export function PickupMoneyForm({
   onInstantOptimistic,
 }: {
   orderId: string;
+  orderShortId?: string | number;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   expectedAlfHint: string;
@@ -1143,6 +1156,7 @@ export function PickupMoneyForm({
     setSelectedBox(null);
   }, [remainingAlfHint, expectedAlfHint, orderId]);
 
+  const effectiveValue = amount.trim() !== "" ? amount.trim() : (selectedBox === "zero" ? "0" : (targetValue || "0"));
   const isMismatch = amount.trim() !== "" && amount.trim() !== targetValue && amount.trim() !== "0" && selectedBox !== "zero";
 
   const triggerDirect = (val: string, customNote?: string, submitMode?: string) => {
@@ -1168,16 +1182,118 @@ export function PickupMoneyForm({
   };
 
   return (
-    <div className="space-y-4 select-none" dir="rtl">
+    <div
+      className="bg-white border-[2px] border-[#0B2E8C] rounded-[28px] shadow-[0_20px_60px_rgba(11,46,140,0.3)] p-[20px] relative overflow-hidden select-none text-right"
+      dir="rtl"
+    >
+      {/* تدرج إضاءة علوي أزرق ناعم */}
+      <div className="absolute top-0 inset-x-0 h-[84px] bg-gradient-to-b from-[#E8EEFF] to-transparent opacity-70 pointer-events-none" />
+
+      {/* رأس النافذة */}
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-[10px] bg-[#E8EEFF] border border-[#D0DDFB] flex items-center justify-center shrink-0">
+            <Banknote className="w-[18px] h-[18px] text-[#0B2E8C]" />
+          </div>
+          <h2 className="text-[#0B2E8C] font-black text-[15px] tracking-tight">
+            تسجيل دفع {orderShortId ? `- طلب #${orderShortId}` : ""}
+          </h2>
+          <div className="h-6 w-6 rounded-full bg-[#FFC107] flex items-center justify-center shadow-[0_2px_6px_rgba(255,193,7,0.4)] shrink-0">
+            <Zap className="w-3 h-3 text-[#0B2E8C] fill-[#0B2E8C]" />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-9 w-9 rounded-full bg-[#F0F4FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] hover:bg-[#E8EEFF] transition-colors cursor-pointer shrink-0"
+          title="إغلاق"
+        >
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+      </div>
+
+      <div className="mt-4 h-[1px] w-full bg-[#D0DDFB]/80" />
+
+      {error ? (
+        <div className="mt-3 rounded-xl border border-rose-400 bg-rose-50 p-2 text-xs font-bold text-rose-900 text-center">
+          {error}
+        </div>
+      ) : null}
+
+      <p className="mt-4 text-right text-[#0B2E8C] text-[13px] font-bold">
+        المبلغ (ألف دينار):
+      </p>
+
+      {/* خيارا الاختيار السريع لثيم وصلي */}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {/* خيار لم أدفع */}
+        <button
+          type="button"
+          onClick={() => {
+            setAmount("0");
+            setSelectedBox("zero");
+            if (pickupSubmitModeRef.current) {
+              pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
+            }
+            if (amountRef.current) {
+              amountRef.current.value = "0";
+            }
+            triggerDirect("0", undefined, "statusOnlyNoAmount");
+          }}
+          className={`relative h-[90px] rounded-[20px] flex flex-col items-center justify-center gap-1 transition-all border-[2px] cursor-pointer ${
+            selectedBox === "zero"
+              ? "bg-[#E8EEFF] border-[#0B2E8C] border-[3px] shadow-[0_4px_16px_rgba(11,46,140,0.15)] scale-[1.02]"
+              : "bg-[#F8FAFF] border-[#D0DDFB] hover:border-[#0B2E8C]/40"
+          }`}
+        >
+          {selectedBox === "zero" && (
+            <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#0B2E8C] flex items-center justify-center">
+              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          <span className={`font-bold text-[16px] ${selectedBox === "zero" ? "text-[#0B2E8C]" : "text-[#0B2E8C]/70"}`}>
+            لم أدفع
+          </span>
+          <span className="text-[11px] text-[#0B2E8C]/40 font-medium">بعد</span>
+        </button>
+
+        {/* خيار المبلغ السريع */}
+        <button
+          type="button"
+          onClick={() => {
+            setAmount(targetValue);
+            setSelectedBox("num");
+            if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
+            if (amountRef.current) amountRef.current.value = targetValue;
+            triggerDirect(targetValue);
+          }}
+          className={`relative h-[90px] rounded-[20px] flex items-center justify-center transition-all border-[2px] cursor-pointer ${
+            selectedBox === "num"
+              ? "bg-[#E8EEFF] border-[#0B2E8C] border-[3px] shadow-[0_4px_16px_rgba(11,46,140,0.15)] scale-[1.02]"
+              : "bg-[#F8FAFF] border-[#D0DDFB] hover:border-[#0B2E8C]/40"
+          }`}
+        >
+          {selectedBox === "num" && (
+            <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#0B2E8C] flex items-center justify-center">
+              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          <span className="text-[#0B2E8C] font-black text-[36px] leading-none">
+            {targetValue || "0"}
+          </span>
+        </button>
+      </div>
+
       <form
         ref={formRef}
         action={formAction}
-        className="space-y-4"
+        className="mt-4 space-y-4"
         onSubmit={(e) => {
           if (onInstantOptimistic) {
             e.preventDefault();
-            const val = amountRef.current?.value || amount || targetValue || "0";
-            triggerDirect(val, noteRef.current?.value || note);
+            const val = amount.trim() !== "" ? amount.trim() : (selectedBox === "zero" ? "0" : (targetValue || "0"));
+            triggerDirect(val, noteRef.current?.value || note, val === "0" ? "statusOnlyNoAmount" : "");
           } else {
             if (amountRef.current && !amountRef.current.value.trim() && selectedBox !== "zero") {
               amountRef.current.value = targetValue || "0";
@@ -1204,73 +1320,33 @@ export function PickupMoneyForm({
         />
         <input type="hidden" name="mismatchReason" value="" />
 
-        {error ? (
-          <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="text-right">
-          <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-        </div>
-
-        {/* مربعات الاختيار السريع 120x120 */}
-        <div className="flex gap-4 justify-center" dir="ltr">
-          <MandoubAmountSquareBtn
-            value={targetValue || "0"}
-            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "" && targetValue !== "0")}
-            onClick={() => {
-              setAmount(targetValue);
-              setSelectedBox("num");
-              if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
-              if (amountRef.current) amountRef.current.value = targetValue;
-              triggerDirect(targetValue);
-            }}
-            color="emerald"
-          />
-          <MandoubZeroSquareBtn
-            label="لم أدفع"
-            activeLabel="0"
-            selected={selectedBox === "zero" || amount === "0"}
-            onClick={() => {
-              setAmount("0");
-              setSelectedBox("zero");
-              if (pickupSubmitModeRef.current) {
-                pickupSubmitModeRef.current.value = "statusOnlyNoAmount";
-              }
-              if (amountRef.current) {
-                amountRef.current.value = "0";
-              }
-              triggerDirect("0", undefined, "statusOnlyNoAmount");
-            }}
-            color="emerald"
-          />
-        </div>
-
-        {/* حقل إدخال المبلغ */}
-        <div>
+        {/* خانة كتابة السعر: تبقى فارغة بدون أي كتابة مسبقة إلا إذا أراد المندوب الكتابة فيها */}
+        <div className="relative">
           <input
             ref={amountRef}
             name="amountAlf"
             inputMode="numeric"
             value={amount}
             onChange={(e) => {
-              const v = e.target.value;
+              const v = e.target.value.replace(/[^0-9]/g, "");
               setAmount(v);
               if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
+            className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all"
           />
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#4AA3FF] bg-[#F0F4FF] px-2 py-1 rounded-full border border-[#D0DDFB]">
+            ألف د.ع
+          </span>
         </div>
 
-        {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً */}
+        {/* حقل سبب اختلاف المبلغ إن كتب المندوب سعراً مختلفاً */}
         {isMismatch ? (
           <div className="space-y-1.5 animate-in fade-in duration-200">
             <div className="text-right">
-              <span className="text-[13px] font-bold text-[#0A3D2A]">
+              <span className="text-[12px] font-bold text-[#0B2E8C]">
                 سبب اختلاف الصادر <span className="text-rose-600">*</span>
               </span>
             </div>
@@ -1281,7 +1357,7 @@ export function PickupMoneyForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
+              className="w-full min-h-[70px] rounded-[16px] border-[1.5px] border-[#D0DDFB] bg-[#F8FAFF] px-3 py-2 text-[12px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#E8EEFF] resize-none font-medium"
               placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
@@ -1289,25 +1365,25 @@ export function PickupMoneyForm({
           <input type="hidden" name="mismatchNote" value="" />
         )}
 
-        <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
+        <div className="h-[1px] w-full bg-[#D0DDFB]/60 my-2" />
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 100%)" }}
-          >
-            <span>💾</span>
-            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الصادر ⚡"}</span>
-          </button>
+        {/* أزرار الإجراء */}
+        <div className="flex gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
+            className="flex-1 h-[48px] rounded-[20px] bg-[#F0F4FF] border border-[#D0DDFB] text-[#0B2E8C] font-bold text-[13px] hover:bg-[#E8EEFF] active:scale-[0.98] transition-all cursor-pointer"
             disabled={pending}
           >
             إلغاء
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="flex-[2] h-[48px] rounded-[20px] bg-gradient-to-br from-[#0B2E8C] to-[#1E4DB7] text-[#FFC107] font-black text-[14px] flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(11,46,140,0.3)] hover:shadow-[0_10px_24px_rgba(11,46,140,0.4)] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+          >
+            <Zap className="w-4 h-4 fill-[#FFC107] text-[#FFC107]" />
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الدفع"}</span>
           </button>
         </div>
       </form>
@@ -1317,6 +1393,7 @@ export function PickupMoneyForm({
 
 export function DeliveryMoneyForm({
   orderId,
+  orderShortId,
   auth,
   nextUrl,
   expectedAlfHint,
@@ -1335,6 +1412,7 @@ export function DeliveryMoneyForm({
   onInstantOptimistic,
 }: {
   orderId: string;
+  orderShortId?: string | number;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   expectedAlfHint: string;
@@ -1410,7 +1488,7 @@ export function DeliveryMoneyForm({
 
   function submitDeliveryAfterLocationChoice(latVal?: string, lngVal?: string) {
     const isSkip = pendingAfterLocationRef.current === "skip";
-    const amt = isSkip ? "0" : (amount || targetValue || "0");
+    const amt = isSkip ? "0" : (amount.trim() !== "" ? amount.trim() : (selectedBox === "zero" ? "0" : (targetValue || "0")));
     triggerDirect(amt, note, latVal, lngVal, isSkip ? "statusOnlyNoAmount" : "");
   }
 
@@ -1442,11 +1520,115 @@ export function DeliveryMoneyForm({
   }
 
   return (
-    <div className="space-y-4 select-none" dir="rtl">
+    <div
+      className="bg-white border-[2px] border-[#FFC107] rounded-[28px] shadow-[0_20px_60px_rgba(255,140,0,0.25)] p-[20px] relative overflow-hidden select-none text-right"
+      dir="rtl"
+    >
+      {/* تدرج إضاءة علوي دافئ (حار) */}
+      <div className="absolute top-0 inset-x-0 h-[84px] bg-gradient-to-b from-[#FFF8E1] to-transparent opacity-90 pointer-events-none" />
+
+      {/* رأس النافذة الحارة */}
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-[10px] bg-[#FFF8E1] border border-[#FFECB3] flex items-center justify-center shrink-0">
+            <Package className="w-[18px] h-[18px] text-[#FF8C00]" />
+          </div>
+          <h2 className="text-[#0B2E8C] font-black text-[15px] tracking-tight">
+            تسجيل استلام {orderShortId ? `- طلب #${orderShortId}` : ""}
+          </h2>
+          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF8C00] flex items-center justify-center shadow-[0_2px_6px_rgba(255,140,0,0.4)] shrink-0">
+            <Zap className="w-3 h-3 text-white fill-white" />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-9 w-9 rounded-full bg-[#FFF8E1] border border-[#FFE082] flex items-center justify-center text-[#BF5D00] hover:bg-[#FFECB3] transition-colors cursor-pointer shrink-0"
+          title="إغلاق"
+        >
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+      </div>
+
+      <div className="mt-4 h-[1px] w-full bg-[#FFE082]/80" />
+
+      {error ? (
+        <div className="mt-3 rounded-xl border border-rose-400 bg-rose-50 p-2 text-xs font-bold text-rose-900 text-center">
+          {error}
+        </div>
+      ) : null}
+
+      <p className="mt-4 text-right text-[#5D4037] text-[13px] font-bold">
+        المبلغ (ألف دينار):
+      </p>
+
+      {/* خيارا الاختيار السريع للنافذة الحارة */}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {/* زر لم أستلم */}
+        <button
+          type="button"
+          onClick={() => {
+            setAmount("0");
+            setSelectedBox("zero");
+            if (missingCustomerLocation && !locationPromptDoneRef.current) {
+              setGeoError("");
+              setLocationModalOpen(true);
+            } else {
+              triggerDirect("0", undefined, undefined, undefined, "statusOnlyNoAmount");
+            }
+          }}
+          className={`relative h-[90px] rounded-[20px] flex flex-col items-center justify-center gap-1 transition-all border-[2px] cursor-pointer ${
+            selectedBox === "zero"
+              ? "bg-[#FFECB3] border-[#FF8C00] border-[3px] shadow-[0_4px_16px_rgba(255,140,0,0.2)] scale-[1.02]"
+              : "bg-[#FFF8E1] border-[#FFE082] hover:border-[#FFC107]"
+          }`}
+        >
+          {selectedBox === "zero" && (
+            <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#FF8C00] flex items-center justify-center">
+              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          <span className={`font-bold text-[16px] ${selectedBox === "zero" ? "text-[#BF5D00]" : "text-[#8D6E63]"}`}>
+            لم أستلم
+          </span>
+          <span className="text-[11px] text-[#BF5D00]/60 font-medium">بعد</span>
+        </button>
+
+        {/* زر المبلغ السريع */}
+        <button
+          type="button"
+          onClick={() => {
+            setAmount(targetValue);
+            setSelectedBox("num");
+            if (missingCustomerLocation && !locationPromptDoneRef.current) {
+              setGeoError("");
+              setLocationModalOpen(true);
+            } else {
+              triggerDirect(targetValue);
+            }
+          }}
+          className={`relative h-[90px] rounded-[20px] flex items-center justify-center transition-all border-[2px] cursor-pointer ${
+            selectedBox === "num"
+              ? "bg-[#FFECB3] border-[#FF8C00] border-[3px] shadow-[0_4px_16px_rgba(255,140,0,0.2)] scale-[1.02]"
+              : "bg-[#FFF8E1] border-[#FFE082] hover:border-[#FFC107]"
+          }`}
+        >
+          {selectedBox === "num" && (
+            <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#FF8C00] flex items-center justify-center">
+              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          <span className="text-[#BF5D00] font-black text-[36px] leading-none">
+            {targetValue || "0"}
+          </span>
+        </button>
+      </div>
+
       <form
         ref={formRef}
         action={formAction}
-        className="space-y-4"
+        className="mt-4 space-y-4"
         onSubmit={(e) => {
           const sub = (e.nativeEvent as SubmitEvent)?.submitter as HTMLButtonElement | null;
           pendingAfterLocationRef.current =
@@ -1457,8 +1639,8 @@ export function DeliveryMoneyForm({
             setLocationModalOpen(true);
           } else if (onInstantOptimistic) {
             e.preventDefault();
-            const val = amountRef.current?.value || amount || targetValue || "0";
-            triggerDirect(val, noteRef.current?.value || note, latRef.current?.value, lngRef.current?.value);
+            const val = amount.trim() !== "" ? amount.trim() : (selectedBox === "zero" ? "0" : (targetValue || "0"));
+            triggerDirect(val, noteRef.current?.value || note, latRef.current?.value, lngRef.current?.value, val === "0" ? "statusOnlyNoAmount" : "");
           }
         }}
       >
@@ -1482,75 +1664,33 @@ export function DeliveryMoneyForm({
         <input ref={latRef} type="hidden" name="lat" value="" />
         <input ref={lngRef} type="hidden" name="lng" value="" />
 
-        {error && (
-          <div className="rounded-xl border border-rose-400 bg-rose-50 p-2.5 text-xs font-bold text-rose-900 text-center">
-            {error}
-          </div>
-        )}
-
-        <div className="text-right">
-          <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-        </div>
-
-        {/* مربعات الاختيار السريع 120x120 */}
-        <div className="flex gap-4 justify-center" dir="ltr">
-          <MandoubAmountSquareBtn
-            value={targetValue || "0"}
-            selected={selectedBox === "num" || (amount === targetValue && targetValue !== "" && targetValue !== "0")}
-            onClick={() => {
-              setAmount(targetValue);
-              setSelectedBox("num");
-              if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                setGeoError("");
-                setLocationModalOpen(true);
-              } else {
-                triggerDirect(targetValue);
-              }
-            }}
-            color="orange"
-          />
-          <MandoubZeroSquareBtn
-            label="لم استلم"
-            activeLabel="0"
-            selected={selectedBox === "zero" || amount === "0"}
-            onClick={() => {
-              setAmount("0");
-              setSelectedBox("zero");
-              if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                setGeoError("");
-                setLocationModalOpen(true);
-              } else {
-                triggerDirect("0", undefined, undefined, undefined, "statusOnlyNoAmount");
-              }
-            }}
-            color="orange"
-          />
-        </div>
-
-        {/* حقل إدخال المبلغ */}
-        <div>
+        {/* خانة كتابة السعر الحارة: فارغة تماماً بالبداية ولا يُكتب فيها إلا إذا كتب المندوب */}
+        <div className="relative">
           <input
             ref={amountRef}
             name="amountAlf"
             inputMode="numeric"
             value={amount}
             onChange={(e) => {
-              const v = e.target.value;
+              const v = e.target.value.replace(/[^0-9]/g, "");
               setAmount(v);
               if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
+            className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all"
           />
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#FF8C00] bg-[#FFF8E1] px-2 py-1 rounded-full border border-[#FFE082]">
+            ألف د.ع
+          </span>
         </div>
 
-        {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً */}
+        {/* حقل سبب اختلاف المبلغ إن كتب المندوب سعراً مختلفاً */}
         {isMismatch ? (
           <div className="space-y-1.5 animate-in fade-in duration-200">
             <div className="text-right">
-              <span className="text-[13px] font-bold text-[#0A3D2A]">
+              <span className="text-[12px] font-bold text-[#BF5D00]">
                 سبب اختلاف الوارد <span className="text-rose-600">*</span>
               </span>
             </div>
@@ -1561,7 +1701,7 @@ export function DeliveryMoneyForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
+              className="w-full min-h-[70px] rounded-[16px] border-[1.5px] border-[#FFE082] bg-[#FFF8E1] px-3 py-2 text-[12px] text-right text-[#5D4037] placeholder:text-[#BF5D00]/40 focus:outline-none focus:border-[#FF8C00] focus:ring-2 focus:ring-[#FFF8E1] resize-none font-medium"
               placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
             />
           </div>
@@ -1569,26 +1709,26 @@ export function DeliveryMoneyForm({
           <input type="hidden" name="mismatchNote" value="" />
         )}
 
-        <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
+        <div className="h-[1px] w-full bg-[#FFE082]/60 my-2" />
 
-        <div className="flex gap-3">
+        {/* أزرار الإجراء */}
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 h-[48px] rounded-[20px] bg-[#FFF8E1] border border-[#FFE082] text-[#5D4037] font-bold text-[13px] hover:bg-[#FFECB3] active:scale-[0.98] transition-all cursor-pointer"
+            disabled={pending}
+          >
+            إلغاء
+          </button>
           <button
             ref={mainSubmitRef}
             type="submit"
             disabled={pending}
-            className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
+            className="flex-[2] h-[48px] rounded-[20px] bg-gradient-to-br from-[#FFC107] to-[#FF8C00] text-[#0B2E8C] font-black text-[14px] flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(255,140,0,0.35)] hover:shadow-[0_10px_24px_rgba(255,140,0,0.45)] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
           >
-            <span>💾</span>
-            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الوارد ⚡"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
-            disabled={pending}
-          >
-            إلغاء
+            <Package className="w-4 h-4 text-[#0B2E8C]" />
+            <span>{pending ? "جارٍ الحفظ…" : "تأكيد الاستلام"}</span>
           </button>
         </div>
       </form>
