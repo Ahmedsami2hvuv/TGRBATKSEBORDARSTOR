@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Search,
   Settings,
-  SlidersHorizontal,
   Truck,
   Wallet,
   Zap,
@@ -361,13 +360,21 @@ export function WasliThemeBoard({
         </div>
 
         {/* شريط الأزرار التفاعلية السريعة:
-            - أزرار العمليات (تحديث، بحث، فلترة، تحديد، تحريك)
+            - أزرار العمليات (الإعدادات على اليمين، تحديث، بحث، تحديد، تحريك)
             - المحفظة في اليسار
-            - زر الإعدادات في أقصى اليسار
         */}
         <div className="mt-3 flex items-center justify-between gap-1.5 w-full">
-          {/* الجانب الأيمن: أدوات العمليات والتحريك */}
+          {/* الجانب الأيمن: زر الإعدادات وأدوات العمليات والتحريك */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* زر الإعدادات على اليمين */}
+            <Link
+              href={`/mandoub/settings?${baseQuery.toString()}`}
+              className="w-[38px] h-[38px] rounded-[12px] bg-white border border-[#D0DDFB] flex items-center justify-center shadow-xs active:scale-95 transition-transform shrink-0"
+              title="إعدادات التطبيق"
+            >
+              <Settings className="w-4 h-4 text-[#0B2E8C]" />
+            </Link>
+
             {/* زر التحديث */}
             <button
               type="button"
@@ -394,58 +401,25 @@ export function WasliThemeBoard({
               <Search className="w-4 h-4" />
             </button>
 
-            {/* زر الفلترة */}
-            <button
-              type="button"
-              onClick={() => {
-                const next =
-                  activeFilter === "all"
-                    ? "assigned"
-                    : activeFilter === "assigned"
-                    ? "delivering"
-                    : activeFilter === "delivering"
-                    ? "delivered"
-                    : "all";
-                setActiveFilter(next);
-                const label =
-                  next === "all"
-                    ? "عرض الكل"
-                    : next === "assigned"
-                    ? "بانتظار الاستلام"
-                    : next === "delivering"
-                    ? "مستلمة (في الطريق)"
-                    : "تم التسليم";
-                showToast(`فلترة: ${label}`);
-              }}
-              className={`w-[38px] h-[38px] rounded-[12px] flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer ${
-                activeFilter !== "all"
-                  ? "bg-[#0B2E8C] text-[#FFC107]"
-                  : "bg-white border border-[#D0DDFB] text-[#0B2E8C]"
-              }`}
-              title="تبديل فلتر الطلبات"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-
             {/* زر التحديد (أبيض مثل البلوكات التي بجانبه) */}
             <button
               type="button"
               onClick={() => {
-                if (showQuickSelect) {
-                  toggleAll();
-                } else {
+                if (!showQuickSelect) {
                   if (typeof setShowQuickSelect === "function") {
                     setShowQuickSelect(true);
                   }
-                  showToast(`تم فتح التحديد السريع (${rows.length} طلب)`);
+                  showToast(`تم تفعيل التحديد السريع (${rows.length} طلب)`);
+                } else {
+                  toggleAll();
                 }
               }}
               className={`w-[38px] h-[38px] rounded-[12px] flex items-center justify-center shadow-xs active:scale-95 transition-transform cursor-pointer ${
-                allSelected
+                showQuickSelect
                   ? "bg-[#0B2E8C] text-white border border-[#0B2E8C]"
                   : "bg-white border border-[#D0DDFB] text-[#0B2E8C]"
               }`}
-              title="تحديد الكل"
+              title={showQuickSelect ? "تحديد / إلغاء تحديد الكل" : "تفعيل نمط التحديد"}
             >
               <Check className="w-4 h-4" strokeWidth={2.5} />
             </button>
@@ -470,9 +444,8 @@ export function WasliThemeBoard({
             )}
           </div>
 
-          {/* الجانب الأيسر: بلوك المحفظة ثم زر الإعدادات في أقصى اليسار */}
+          {/* الجانب الأيسر: كبسولة المحفظة فقط */}
           <div className="flex items-center gap-1.5 ms-auto">
-            {/* كبسولة المحفظة على اليسار */}
             <Link
               href={`/mandoub/wallet?${baseQuery.toString()}`}
               className="h-[38px] px-2.5 sm:px-3 rounded-[12px] bg-white border border-[#D0DDFB] flex items-center gap-1.5 shadow-[0_2px_6px_rgba(11,46,140,0.06)] hover:border-[#0B2E8C]/30 active:scale-95 transition-transform"
@@ -485,15 +458,6 @@ export function WasliThemeBoard({
                 {cashInHandStr}
               </span>
               <span className="text-[10px] text-[#1E4DB7]/60 font-bold">د.ع</span>
-            </Link>
-
-            {/* زر الإعدادات في أقصى اليسار */}
-            <Link
-              href={`/mandoub/settings?${baseQuery.toString()}`}
-              className="w-[38px] h-[38px] rounded-[12px] bg-white border border-[#D0DDFB] flex items-center justify-center shadow-xs active:scale-95 transition-transform shrink-0"
-              title="إعدادات التطبيق"
-            >
-              <Settings className="w-4 h-4 text-[#0B2E8C]" />
             </Link>
           </div>
         </div>
@@ -652,7 +616,7 @@ export function WasliThemeBoard({
                   }}
                   className={`group bg-white border-[1.5px] rounded-[18px] p-[12px] shadow-[0_3px_10px_rgba(11,46,140,0.06)] transition-all duration-200 cursor-pointer relative overflow-hidden w-full box-border hover:border-[#1E4DB7]/50 hover:shadow-[0_4px_14px_rgba(11,46,140,0.1)] active:scale-[0.99] ${
                     isSelected
-                      ? "border-rose-500 ring-2 ring-rose-300"
+                      ? "border-[#0B2E8C] ring-2 ring-[#0B2E8C]/25 bg-[#F0F5FF]"
                       : "border-[#D0DDFB]"
                   }`}
                 >
@@ -661,10 +625,33 @@ export function WasliThemeBoard({
                     <Zap className="w-full h-full text-[#0B2E8C] fill-[#0B2E8C] -rotate-12" />
                   </div>
 
-                  {/* الجزء العلوي للبطاقة: شريط المسار الملون ورقم الطلب */}
+                  {/* الجزء العلوي للبطاقة: شريط المسار الملون ورقم الطلب وبلوك التحديد */}
                   <div className="flex items-center justify-between gap-2 relative z-10">
-                    {/* شريط المسار الملون حسب الحالة */}
-                    <div className="flex-1 min-w-0 flex justify-start">
+                    {/* شريط المسار وبلوك التحديد */}
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-start">
+                      {/* بلوك التحديد (صح) عند تفعيل نمط التحديد السريع */}
+                      {showQuickSelect && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleOne(r.id);
+                          }}
+                          className={`w-[26px] h-[26px] rounded-[8px] flex items-center justify-center shrink-0 cursor-pointer transition-all duration-150 shadow-2xs ${
+                            isSelected
+                              ? "bg-[#0B2E8C] text-[#FFC107] border-2 border-[#0B2E8C] ring-2 ring-[#FFC107]/50 scale-105"
+                              : "bg-white border-2 border-[#D0DDFB] text-transparent hover:border-[#0B2E8C]"
+                          }`}
+                          title={isSelected ? "إلغاء التحديد" : "تحديد هذا الطلب"}
+                        >
+                          <Check
+                            className={`w-3.5 h-3.5 stroke-[3] transition-opacity ${
+                              isSelected ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                        </div>
+                      )}
+
+                      {/* شريط المسار الملون حسب الحالة */}
                       <div
                         className={`inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-3 py-1.5 max-w-[85%] ${getRouteBadgeStyle(
                           r.orderStatus
