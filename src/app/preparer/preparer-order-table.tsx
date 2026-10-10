@@ -628,7 +628,7 @@ export function PreparerOrderTable({
   }, []);
 
   const prepQuickBtn =
-    "min-h-[38px] shrink-0 rounded-xl border-2 border-[#C9A86A] bg-[#0A3D2E] px-3.5 py-1.5 text-xs font-black text-white shadow-[0_2px_8px_rgba(10,61,46,0.3)] hover:bg-[#104D3B] active:scale-95 transition cursor-pointer";
+    "min-h-[38px] shrink-0 rounded-xl border border-[#0B2E8C] bg-[#0B2E8C] px-3.5 py-1.5 text-xs font-black text-white shadow-xs hover:bg-[#082269] active:scale-95 transition cursor-pointer";
 
   return (
     <div className="w-full">
@@ -640,16 +640,18 @@ export function PreparerOrderTable({
 
       {showBulkRow && showQuickSelect && (
         <div className="mb-3 px-2 sm:px-4 animate-in slide-in-from-top-2 duration-200" dir="rtl">
-          <div className="rounded-[18px] border-2 border-[#C9A86A] bg-[#FFFEFB] p-3 sm:p-3.5 shadow-[0_4px_16px_rgba(201,168,106,0.2)]">
-            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#C9A86A]/25">
-              <p className="text-xs font-black text-[#0A3D2E] flex items-center gap-1.5">
-                <span className="text-amber-500">⚡</span>
+          <div className="rounded-[18px] border border-[#D0DDFB] bg-white p-3 sm:p-3.5 shadow-sm">
+            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#D0DDFB]">
+              <p className="text-xs font-black text-[#0B2E8C] flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFC107" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
                 <span>تحديد سريع — للطلبات الجديدة وبانتظار المندوب</span>
               </p>
               <button
                 type="button"
                 onClick={() => setShowQuickSelect(false)}
-                className="w-6 h-6 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center cursor-pointer hover:bg-rose-100"
+                className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center cursor-pointer hover:bg-rose-50 hover:text-rose-600"
               >
                 ✕
               </button>
@@ -661,12 +663,12 @@ export function PreparerOrderTable({
               <button
                 type="button"
                 onClick={() => setSelectedIds(new Set())}
-                className="min-h-[38px] rounded-xl border-[1.5px] border-[#C9A86A]/60 bg-[#FDF6E3] px-3.5 py-1.5 text-xs font-bold text-[#8B6A2A] hover:bg-[#FAF0D7] active:scale-95 transition cursor-pointer"
+                className="min-h-[38px] rounded-xl border border-[#D0DDFB] bg-[#EEF3FF] px-3.5 py-1.5 text-xs font-bold text-[#0B2E8C] hover:bg-[#DCE7FC] active:scale-95 transition cursor-pointer"
               >
                 إفراغ التحديد
               </button>
               <span className="mr-auto text-xs font-bold text-slate-500">
-                المحدد: <strong className="text-[#0A3D2E] font-black">{selectedIds.size}</strong> من {pendingIds.length}
+                المحدد: <strong className="text-[#0B2E8C] font-black">{selectedIds.size}</strong> من {pendingIds.length}
               </span>
             </div>
           </div>
@@ -964,12 +966,12 @@ export function PreparerOrderTable({
             dir="rtl"
           >
             <div
-              className="relative w-full max-w-sm rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-5 shadow-2xl animate-in zoom-in-95 duration-200 text-[#0A3D2E]"
+              className="relative w-full max-w-sm rounded-[24px] border border-[#D0DDFB] bg-white p-5 shadow-2xl animate-in zoom-in-95 duration-200 text-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-[#C9A86A]/40 pb-3 mb-3">
+              <div className="flex items-center justify-between border-b border-[#D0DDFB] pb-3 mb-3">
                 <div>
-                  <h3 className="text-base font-black text-[#0A3D2E]">{actionModalState.title}</h3>
+                  <h3 className="text-base font-black text-[#0B2E8C]">{actionModalState.title}</h3>
                   {actionModalState.subtitle && (
                     <p className="text-xs font-bold text-slate-500 mt-0.5">{actionModalState.subtitle}</p>
                   )}
@@ -977,7 +979,7 @@ export function PreparerOrderTable({
                 <button
                   type="button"
                   onClick={() => setActionModalState((prev) => ({ ...prev, isOpen: false }))}
-                  className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 flex items-center justify-center font-bold text-sm"
+                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center font-bold text-sm"
                 >
                   ✕
                 </button>
@@ -985,7 +987,7 @@ export function PreparerOrderTable({
 
               {actionModalState.type === "door" && actionModalState.previewImageUrl ? (
                 <div className="space-y-3">
-                  <div className="rounded-2xl overflow-hidden border border-[#C9A86A]/50 bg-black max-h-[60vh] flex items-center justify-center">
+                  <div className="rounded-2xl overflow-hidden border border-[#D0DDFB] bg-black max-h-[60vh] flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={resolvePublicAssetSrc(actionModalState.previewImageUrl)!}
@@ -1014,7 +1016,7 @@ export function PreparerOrderTable({
                           }));
                         }
                       }}
-                      className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white border border-[#C9A86A]/40 shadow-sm hover:border-[#0A3D2E] hover:bg-[#FAF6EE] transition-all font-black text-sm"
+                      className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white border border-[#D0DDFB] shadow-xs hover:border-[#0B2E8C] hover:bg-[#EEF3FF] transition-all font-black text-sm text-[#0B2E8C]"
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="text-xl">{opt.icon}</span>
@@ -1030,16 +1032,16 @@ export function PreparerOrderTable({
           document.body
         )}
 
-      {/* نافذة إسناد المندوب */}
+      {/* نافذة إسناد المندوب بنمط وصلي */}
       {assignOrder &&
         createPortal(
           <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto sm:p-6" dir="rtl">
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-5 text-[#0A3D2E] shadow-2xl">
-              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/40 pb-3">
-                <h3 className="text-lg font-black text-[#0A3D2E]">إسناد طلب #{assignOrder.shortId}</h3>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[24px] border border-[#D0DDFB] bg-white p-5 text-slate-900 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between border-b border-[#D0DDFB] pb-3">
+                <h3 className="text-lg font-black text-[#0B2E8C]">إسناد طلب #{assignOrder.shortId}</h3>
                 <button
                   onClick={() => setAssignOrder(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-rose-100 hover:text-rose-700 font-bold"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 font-bold"
                 >
                   ✕
                 </button>
@@ -1065,9 +1067,9 @@ export function PreparerOrderTable({
                         name="courierId"
                         value={c.id}
                         disabled={bulkPending}
-                        className="w-full rounded-2xl border-2 border-[#C9A86A]/40 bg-white px-4 py-3.5 text-right text-base font-black text-[#0A3D2E] shadow-sm transition hover:border-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-[#F5D77F] active:scale-[0.98] disabled:opacity-60"
+                        className="w-full rounded-2xl border border-[#D0DDFB] bg-white px-4 py-3.5 text-right text-base font-black text-[#0B2E8C] shadow-xs transition hover:border-[#0B2E8C] hover:bg-[#EEF3FF] active:scale-[0.98] disabled:opacity-60"
                       >
-                        👤 {c.name}
+                        {c.name}
                       </button>
                     ))}
                   </div>
@@ -1078,17 +1080,17 @@ export function PreparerOrderTable({
           document.body
         )}
 
-      {/* نافذة تسجيل الدفع للعميل */}
+      {/* نافذة تسجيل الدفع للعميل بنمط وصلي */}
       {payOrder &&
         createPortal(
           <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto sm:p-6" dir="rtl">
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[28px] border-[2px] border-[#C9A86A] bg-gradient-to-b from-[#FAF6EE] via-[#F4EDE0] to-[#FAF6EE] p-5 text-[#0A3D2E] shadow-2xl">
-              <div className="mb-4 flex items-center justify-between border-b border-[#C9A86A]/40 pb-3">
-                <h3 className="text-lg font-black text-[#0A3D2E]">دفع للعميل (المحل) - طلب #{payOrder.shortId}</h3>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-[24px] border border-[#D0DDFB] bg-white p-5 text-slate-900 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between border-b border-[#D0DDFB] pb-3">
+                <h3 className="text-lg font-black text-[#0B2E8C]">دفع للعميل (المحل) - طلب #{payOrder.shortId}</h3>
                 <button
                   type="button"
                   onClick={() => setPayOrder(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-rose-100 hover:text-rose-700 font-bold"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 font-bold"
                 >
                   ✕
                 </button>
@@ -1100,7 +1102,7 @@ export function PreparerOrderTable({
                     orderId={payOrder.id}
                     auth={auth}
                     nextUrl={`/preparer?p=${preparerAuth.p}&exp=${preparerAuth.exp}&s=${preparerAuth.s}&tab=${tab}&q=${qSearch}`}
-                    forDarkModalSurface
+                    forDarkModalSurface={false}
                     expectedAlfHint={effectivePickupDinar != null ? dinarDecimalToAlfInputString(effectivePickupDinar) : ""}
                     remainingAlfHint={
                       effectivePickupDinar != null
@@ -1129,25 +1131,25 @@ export function PreparerOrderTable({
           document.body
         )}
 
-      {/* شريط الإسناد الجماعي العلوي عند التحديد */}
+      {/* شريط الإسناد الجماعي العلوي عند التحديد بنمط وصلي */}
       {showQuickSelect && selectedIds.size > 0 && (
         <form
           action={bulkAction}
-          className="fixed top-0 left-0 right-0 z-[160] border-b-2 border-[#C9A86A] bg-[#0A3D2E] text-white px-3 py-3 shadow-xl backdrop-blur-md sm:px-4"
+          className="fixed top-0 left-0 right-0 z-[160] border-b border-[#D0DDFB] bg-[#0B2E8C] text-white px-3 py-3 shadow-xl backdrop-blur-md sm:px-4"
           dir="rtl"
         >
           <input type="hidden" name="p" value={auth.p} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
           <input type="hidden" name="orderIds" value={Array.from(selectedIds).join(",")} />
           <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-black text-[#F5D77F]">إسناد ({selectedIds.size}) طلب لمندوب:</p>
+              <p className="text-sm font-black text-[#FFC107]">إسناد ({selectedIds.size}) طلب لمندوب:</p>
             </div>
             <div className="flex gap-2">
-              <select name="courierId" required className="rounded-xl border-2 border-[#C9A86A] bg-white text-slate-900 px-3 py-2 text-sm font-black">
+              <select name="courierId" required className="rounded-xl border border-[#D0DDFB] bg-white text-slate-900 px-3 py-2 text-sm font-black">
                 <option value="" disabled>— اختر مندوب —</option>
                 {couriers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <button type="submit" disabled={bulkPending} className="rounded-xl bg-[#C9A86A] px-5 py-2 text-sm font-black text-[#0A3D2E] shadow-sm hover:bg-[#F5D77F] transition">إسناد</button>
+              <button type="submit" disabled={bulkPending} className="rounded-xl bg-[#FFC107] px-5 py-2 text-sm font-black text-[#0B2E8C] shadow-sm hover:bg-[#FFE082] transition">إسناد</button>
             </div>
           </div>
         </form>
@@ -1158,7 +1160,7 @@ export function PreparerOrderTable({
         createPortal(
           <div className="fixed inset-0 z-[140] flex flex-col bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
             <div className="flex-1 overflow-y-auto p-3 sm:p-5 flex items-center justify-center">
-              <div className="w-full max-w-[480px] bg-[#FDF6E3] p-3 sm:p-4 rounded-[28px] border-2 border-[#C9A86A] shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-full max-w-[480px] bg-white p-3 sm:p-4 rounded-[28px] border border-[#D0DDFB] shadow-2xl animate-in zoom-in-95 duration-200">
                 <PreparerOrderDetailSection
                   order={{
                     ...activeOrderData as any,
