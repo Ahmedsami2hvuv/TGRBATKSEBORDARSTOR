@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useTheme } from "@/components/theme-provider";
-import { updateCourierSetting, updateCourierTheme } from "./actions";
+import { updateCourierSetting } from "./actions";
 import FontSizeCustomizer from "./font-size-customizer";
 import { MandoubPresenceToggle } from "../mandoub-presence-toggle";
 import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagnostics";
@@ -44,88 +43,20 @@ export default function CourierSettingsClient({
   availableForAssignment,
   telegramLink,
   userKey,
-  initialLuxuryEnabled = true,
 }: Props) {
-  const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
-  const [savingTheme, setSavingTheme] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState<string>(initialSettings.orderViewTheme || "default");
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
-  const [luxuryEnabled, setLuxuryEnabled] = useState(initialLuxuryEnabled !== false);
-  const [savingLuxury, setSavingLuxury] = useState(false);
-  const [wasliThemeActive, setWasliThemeActive] = useState(false);
-
-  useEffect(() => {
-    try {
-      setWasliThemeActive(localStorage.getItem("mandoub_wasli_theme_active") === "true");
-    } catch {}
-  }, []);
-
-  const toggleWasliTheme = () => {
-    const next = !wasliThemeActive;
-    setWasliThemeActive(next);
-    try {
-      localStorage.setItem("mandoub_wasli_theme_active", next ? "true" : "false");
-    } catch {}
-  };
-
-  async function handleToggleLuxury() {
-    const nextVal = !luxuryEnabled;
-    setLuxuryEnabled(nextVal);
-    setSavingLuxury(true);
-    try {
-      const getRes = await fetch("/api/order-cards-designer-config?scope=mandoub", { cache: "no-store" });
-      const currentCfg = getRes.ok ? await getRes.json() : {};
-      const updatedCfg = {
-        ...currentCfg,
-        enabledPortals: {
-          ...(currentCfg.enabledPortals || { admin: true, mandoub: true, preparer: false }),
-          mandoub: nextVal,
-        },
-      };
-      const res = await fetch("/api/order-cards-designer-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config: updatedCfg, scope: "mandoub" }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to save");
-      }
-    } catch (e) {
-      console.error("Failed to toggle luxury style:", e);
-      setLuxuryEnabled(!nextVal);
-      alert("حدث خطأ أثناء حفظ الإعداد، يرجى المحاولة ثانية.");
-    } finally {
-      setSavingLuxury(false);
-    }
-  }
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("c", auth.c);
   if (auth.exp) baseQuery.set("exp", auth.exp);
   baseQuery.set("s", auth.s);
 
-  async function handleThemeChange(newTheme: string) {
-    if (newTheme === currentTheme) return;
-    setCurrentTheme(newTheme);
-    setSavingTheme(true);
-    try {
-      const res = await updateCourierTheme(auth, newTheme);
-      if (!res.ok) {
-        alert(res.error || "حدث خطأ أثناء تغيير الثيم");
-        setCurrentTheme(currentTheme);
-      }
-    } catch (e) {
-      console.error("Failed to change theme:", e);
-      setCurrentTheme(currentTheme);
-    } finally {
-      setSavingTheme(false);
-    }
-  }
+type ToggleableSettingKey = Parameters<typeof updateCourierSetting>[1];
 
   async function handleToggle(
-    key: keyof CourierSettings,
+    key: ToggleableSettingKey,
     currentValue: boolean
   ) {
     const newValue = !currentValue;
@@ -224,18 +155,6 @@ export default function CourierSettingsClient({
       title: "نظام خطوات الاستلام والتوصيل التوجيهي",
       desc: "مخصص للمندوبين الجدد لمنع الخلط بين موقع المحل (الاستلام) وموقع الزبون (التسليم) وإبراز العناوين واللوكيشن خطوة بخطوة",
     },
-    {
-      key: "useFullBlockView" as const,
-      icon: "📦",
-      title: "عرض الطلبات على شكل بلوك كامل بدلاً من جدول أفقي",
-      desc: "عرض جميع تفاصيل الطلبية بداخل بطاقة/بلوك واحد متكامل ومباشر دون الحاجة للسحب أفقياً لليسار (متزامن عبر جميع أجهزتك)",
-    },
-    {
-      key: "framelessShopRegionHeader" as const,
-      icon: "✨",
-      title: "إزالة البلوك الملون المحيط باسم المحل والمنطقة وتكبير الخط",
-      desc: "عند تفعيل وضع البلوك الكامل، يتم إزالة البلوك واللون المحيط بأسماء المحلات والمناطق وتكبير حجم الخط ليستغل كامل المساحة بوضوح عالي (متزامن عبر جميع أجهزتك)",
-    },
   ];
 
   return (
@@ -258,186 +177,6 @@ export default function CourierSettingsClient({
           </div>
         </header>
 
-        {/* قسم الستايل الملكي لكروت الطلبات */}
-        <section className="mb-6 border-2 border-[#C9A86A] bg-gradient-to-br from-[#06281D] via-[#0A3D2E] to-[#06281D] rounded-2xl p-4 sm:p-5 shadow-xl text-white">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl sm:text-3xl">👑</span>
-              <div>
-                <h2 className="text-sm sm:text-base font-black text-[#F5D77F] flex items-center gap-2">
-                  <span>الستايل الملكي لكروت الطلبات</span>
-                  {luxuryEnabled ? (
-                    <span className="text-[10px] bg-emerald-400 text-black font-black px-2 py-0.5 rounded-md">مُفعّل الآن ✅</span>
-                  ) : (
-                    <span className="text-[10px] bg-rose-600 text-white font-black px-2 py-0.5 rounded-md">معطّل (كلاسيكي) ⛔</span>
-                  )}
-                </h2>
-                <p className="text-xs text-emerald-200 mt-1 font-bold">
-                  {luxuryEnabled
-                    ? "تظهر كروت الطلبات بالستايل الملكي الجديد والأزرار المخصصة والتزامن الفوري"
-                    : "تظهر كروت الطلبات بالستايل الكلاسيكي الافتراضي القديم"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {savingLuxury && <span className="text-[11px] font-bold text-amber-300 animate-pulse">جارٍ الحفظ...</span>}
-              <button
-                type="button"
-                onClick={handleToggleLuxury}
-                disabled={savingLuxury}
-                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                  luxuryEnabled ? "bg-emerald-500" : "bg-slate-700"
-                }`}
-                title="تشغيل أو إطفاء الستايل الملكي"
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                    luxuryEnabled ? "-translate-x-8" : "-translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* قسم ستايل وصلي الحصري للطلبات */}
-        <section className="mb-6 border-2 border-[#FFC107] bg-gradient-to-br from-[#0B2E8C] via-[#1E4DB7] to-[#0A1F4D] rounded-2xl p-4 sm:p-5 shadow-xl text-white">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#FFC107] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(255,193,7,0.4)] mt-0.5">
-                <span className="text-2xl text-[#0B2E8C] font-black">⚡</span>
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2 flex-wrap">
-                  <span>ستايل وصلي للطلبات (Wasli Theme)</span>
-                  {wasliThemeActive ? (
-                    <span className="text-xs bg-[#FFC107] text-[#0B2E8C] font-black px-2.5 py-0.5 rounded-full shadow-xs">
-                      مُفعّل الآن ✓
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-white/20 text-white font-bold px-2.5 py-0.5 rounded-full">
-                      غير مفعّل
-                    </span>
-                  )}
-                </h2>
-                <p className="text-xs text-white/80 mt-1 font-medium leading-relaxed">
-                  تصميم وصلي الأصلي المتكامل: أزرق كحلي وأصفر ذهبي، شريط الإحصائيات التمريري، الدوائر السعرية الكبيرة، كروت التواصل والتتبع السريع.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-              <button
-                type="button"
-                onClick={toggleWasliTheme}
-                className={`px-4 py-2 rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer ${
-                  wasliThemeActive
-                    ? "bg-[#FFC107] text-[#0B2E8C] hover:bg-[#FFE082]"
-                    : "bg-white text-[#0B2E8C] hover:bg-slate-100"
-                }`}
-                title="تفعيل أو إلغاء ثيم وصلي"
-              >
-                <span>⚡</span>
-                <span>{wasliThemeActive ? "إلغاء ثيم وصلي" : "تفعيل ثيم وصلي"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleWasliTheme}
-                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                  wasliThemeActive ? "bg-[#FFC107]" : "bg-white/20"
-                }`}
-                title="مفتاح التبديل"
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-xs ${
-                    wasliThemeActive ? "-translate-x-8" : "-translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* قسم ثيمات عرض الطلبية */}
-        <section className="kse-glass-dark mb-6 border border-sky-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🎨</span>
-              <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">ثيمات طريقة عرض الطلبية</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">اختر الثيم المفضل لديك لعرض بطاقات تفاصيل الطلب (متزامن عبر جميع أجهزتك)</p>
-              </div>
-            </div>
-            {savingTheme && <span className="text-xs font-bold text-sky-600 animate-pulse">جارٍ الحفظ...</span>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* الوضع الافتراضي */}
-            <button
-              type="button"
-              onClick={() => handleThemeChange("default")}
-              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
-                (currentTheme === "default" || !currentTheme)
-                  ? "border-sky-500 bg-sky-50/80 dark:bg-sky-950/40 ring-2 ring-sky-300 dark:ring-sky-800"
-                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-black text-sm text-slate-900 dark:text-white">الوضع الافتراضي</span>
-                {(currentTheme === "default" || !currentTheme) && (
-                  <span className="text-xs font-black bg-sky-600 text-white px-2 py-0.5 rounded-md">مُفعّل</span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">التصميم الحقيقي الحالي للبطاقات والأزرار</p>
-            </button>
-
-            {/* ثيم 11 */}
-            <button
-              type="button"
-              onClick={() => handleThemeChange("theme11")}
-              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
-                currentTheme === "theme11"
-                  ? "border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 ring-2 ring-blue-400 dark:ring-blue-800"
-                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-black text-sm text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
-                  ✨ ثيم 11 (العصري الفاخر)
-                </span>
-                {currentTheme === "theme11" && (
-                  <span className="text-xs font-black bg-blue-600 text-white px-2 py-0.5 rounded-md">مُفعّل</span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">تصميم كبسولي فخم مع أزرار كبسولية ورأس أزرق عصري</p>
-            </button>
-
-            {/* ثيم وصلي الحصري */}
-            <button
-              type="button"
-              onClick={toggleWasliTheme}
-              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
-                wasliThemeActive
-                  ? "border-[#0B2E8C] bg-gradient-to-br from-[#E8EEFF] to-[#FFF8E1] ring-2 ring-[#FFC107] shadow-md"
-                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#0B2E8C]/40"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-black text-sm text-[#0B2E8C] flex items-center gap-1.5">
-                  ⚡ ثيم وصلي (Wasli Theme)
-                </span>
-                {wasliThemeActive ? (
-                  <span className="text-xs font-black bg-[#0B2E8C] text-[#FFC107] px-2 py-0.5 rounded-md">مُفعّل</span>
-                ) : (
-                  <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">تفعيل</span>
-                )}
-              </div>
-              <p className="text-xs text-[#1E4DB7]/80">تصميم وصلي الأصلي بالأزرق الكحلي والأصفر الذهبي مع الدوائر السعرية الكبيرة وكروت الإحصائيات</p>
-            </button>
-          </div>
-        </section>
 
         {/* قسم الحالة والتنبيهات */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
@@ -512,40 +251,6 @@ export default function CourierSettingsClient({
           </div>
         </section>
 
-        {/* Theme Settings Box */}
-        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xl">🎨</span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">مظهر التطبيق</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">اختر وضع الليل والنهار أو الوضع التلقائي</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 bg-slate-100/80 dark:bg-slate-900/60 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
-            {[
-              { id: "light", label: "نهاري", icon: "☀️" },
-              { id: "dark", label: "ليلي", icon: "🌙" },
-              { id: "auto", label: "تلقائي", icon: "⏳" },
-            ].map((opt) => {
-              const active = theme === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setTheme(opt.id as any)}
-                  className={`flex flex-col items-center justify-center py-2.5 rounded-lg text-xs font-bold transition-all ${
-                    active
-                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-[#00f3ff] shadow-sm scale-[1.02]"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <span className="text-lg mb-1">{opt.icon}</span>
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
 
 
         {/* إعدادات حجم الخط والأزرار */}

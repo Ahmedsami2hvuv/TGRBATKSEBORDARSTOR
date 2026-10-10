@@ -456,7 +456,7 @@ export const DEFAULT_DESIGNER_CONFIG: OrderCardDesignerConfig = {
   enabledPortals: {
     admin: true,
     mandoub: true,
-    preparer: false,
+    preparer: true,
   },
   floatingActionBtn: {
     imageUrl: "",

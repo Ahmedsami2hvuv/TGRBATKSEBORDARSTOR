@@ -56,36 +56,22 @@ export function MandoubOrdersSection({
     sumEarningsDinar?: number;
   };
 }) {
-  const [isWasliTheme, setIsWasliTheme] = useState(false);
+  const [isWasliTheme, setIsWasliTheme] = useState(true);
 
   useEffect(() => {
+    setIsWasliTheme(true);
     try {
-      const saved = localStorage.getItem("mandoub_wasli_theme_active");
-      if (saved === "true") {
-        setIsWasliTheme(true);
-      }
+      localStorage.setItem("mandoub_wasli_theme_active", "true");
     } catch {}
+    document.body.classList.add("wasli-theme-active");
   }, []);
 
   const handleToggleWasliTheme = () => {
-    setIsWasliTheme((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("mandoub_wasli_theme_active", next ? "true" : "false");
-      } catch {}
-      return next;
-    });
+    setIsWasliTheme(true);
   };
 
   useEffect(() => {
-    if (isWasliTheme) {
-      document.body.classList.add("wasli-theme-active");
-    } else {
-      document.body.classList.remove("wasli-theme-active");
-    }
-    return () => {
-      document.body.classList.remove("wasli-theme-active");
-    };
+    document.body.classList.add("wasli-theme-active");
   }, [isWasliTheme]);
 
   const [query, setQuery] = useState("");
