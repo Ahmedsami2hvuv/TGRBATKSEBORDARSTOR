@@ -248,8 +248,8 @@ export function FloatingOrderActionButton({
     : "/images/order-luxury/btn-delivery-floating.png";
 
   const btnTitle = isPickup
-    ? "استلام الطلب وتسجيل الصادر (اضغط مطولاً للخصائص والإعدادات) 💸"
-    : "تسليم الطلب للزبون وتسجيل الوارد (اضغط مطولاً للخصائص والإعدادات) 📦";
+    ? "استلام الطلب وتسجيل الصادر (اضغط مطولاً للخصائص والإعدادات)"
+    : "تسليم الطلب للزبون وتسجيل الوارد (اضغط مطولاً للخصائص والإعدادات)";
 
   const glowColor = isPickup
     ? "rgba(11, 46, 140, 0.45)"
@@ -361,7 +361,10 @@ export function FloatingOrderActionButton({
             <div className="flex items-center justify-between border-b border-[#38BDF8]/30 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#38BDF8] to-[#0284C7] flex items-center justify-center shadow-md text-white">
-                  <span className="text-base">⚙️</span>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-[#0369A1]">إعدادات الزر العائم</h4>
@@ -383,7 +386,6 @@ export function FloatingOrderActionButton({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-black text-[#0369A1] flex items-center gap-1.5">
-                    <span>🔍</span>
                     <span>حجم الزر العائم:</span>
                   </label>
                   <span className="text-xs font-mono font-black text-[#0369A1] bg-[#F0F9FF] px-2 py-0.5 rounded-md border border-[#38BDF8]/40">
@@ -443,7 +445,6 @@ export function FloatingOrderActionButton({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-black text-[#0369A1] flex items-center gap-1.5">
-                    <span>👁️</span>
                     <span>معدل الشفافية:</span>
                   </label>
                   <span className="text-xs font-mono font-black text-[#0369A1] bg-[#F0F9FF] px-2 py-0.5 rounded-md border border-[#38BDF8]/40">
@@ -508,7 +509,6 @@ export function FloatingOrderActionButton({
                     onClick={resetPosition}
                     className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0369A1] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
                   >
-                    <span>📍</span>
                     <span>الرجوع لمكانه الأصلي</span>
                   </button>
 
@@ -518,7 +518,6 @@ export function FloatingOrderActionButton({
                     onClick={resetSize}
                     className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0369A1] border border-slate-300 text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
                   >
-                    <span>🔄</span>
                     <span>الرجوع لحجمه الأصلي</span>
                   </button>
                 </div>
@@ -529,7 +528,6 @@ export function FloatingOrderActionButton({
                   onClick={resetAll}
                   className="w-full py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-[11px] font-black flex items-center justify-center gap-1 active:scale-95 transition cursor-pointer"
                 >
-                  <span>✨</span>
                   <span>إعادة ضبط كافة الإعدادات للافتراضي</span>
                 </button>
               </div>

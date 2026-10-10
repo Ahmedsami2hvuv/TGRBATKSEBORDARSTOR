@@ -276,7 +276,12 @@ export function WasliThemeBoard({
           {/* اسم المندوب في الهيدر */}
           <div className="flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-full bg-[#0B2E8C] text-white text-[12px] font-black flex items-center gap-1.5 shadow-xs border border-[#FFC107]/30">
-              <span className="text-[#FFC107]">👤</span>
+              <span className="text-[#FFC107]">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
               <span className="truncate max-w-[120px]">{courierName || "المندوب"}</span>
             </div>
           </div>
@@ -901,10 +906,10 @@ export function WasliThemeBoard({
                 </div>
                 <div>
                   <h3 className="font-black text-[14px] text-[#0B2E8C]">
-                    {actionModal.type === "call" && "خيارات الاتصال الهاتفي 📞"}
-                    {actionModal.type === "whatsapp" && "مراسلة عبر واتساب 💬"}
-                    {actionModal.type === "location" && "الموقع الجغرافي (اللوكيشن) 📍"}
-                    {actionModal.type === "doorPhoto" && "صور الأبواب 🚪"}
+                    {actionModal.type === "call" && "خيارات الاتصال الهاتفي"}
+                    {actionModal.type === "whatsapp" && "مراسلة عبر واتساب"}
+                    {actionModal.type === "location" && "الموقع الجغرافي (اللوكيشن)"}
+                    {actionModal.type === "doorPhoto" && "صور الأبواب"}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-bold">
                     الطلب #{actionModal.row.shortId || actionModal.row.id.slice(-4)} • {actionModal.row.shopName}
@@ -953,7 +958,7 @@ export function WasliThemeBoard({
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-amber-800">اتصال 📞</span>
+                    <span className="text-xs font-bold text-amber-800">اتصال</span>
                   </a>
 
                   {/* اتصال بالزبون (ثانياً بالأسفل) */}
@@ -974,7 +979,7 @@ export function WasliThemeBoard({
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-[#1E4DB7]">اتصال 📞</span>
+                    <span className="text-xs font-bold text-[#1E4DB7]">اتصال</span>
                   </a>
 
                   {/* اتصال بالزبون الثاني إن وجد */}
@@ -994,7 +999,7 @@ export function WasliThemeBoard({
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-[#1E4DB7]">اتصال 📞</span>
+                      <span className="text-xs font-bold text-[#1E4DB7]">اتصال</span>
                     </a>
                   )}
                 </>
@@ -1216,7 +1221,7 @@ export function WasliThemeBoard({
                       </div>
                     </div>
                     <span className="text-xs font-bold text-amber-800">
-                      {actionModal.row.shopDoorPhotoUrl ? "عرض 🖼️" : "لا يوجد"}
+                      {actionModal.row.shopDoorPhotoUrl ? "عرض الصورة" : "لا يوجد"}
                     </span>
                   </button>
 
@@ -1252,7 +1257,7 @@ export function WasliThemeBoard({
                       </div>
                     </div>
                     <span className="text-xs font-bold text-[#1E4DB7]">
-                      {actionModal.row.customerDoorPhotoUrl ? "عرض 🖼️" : "لا يوجد"}
+                      {actionModal.row.customerDoorPhotoUrl ? "عرض الصورة" : "لا يوجد"}
                     </span>
                   </button>
                 </>

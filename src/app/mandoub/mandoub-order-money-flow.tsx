@@ -184,7 +184,7 @@ export function MandoubOrderMoneyFlow({
         detail: { orderId, status: "delivered" },
       }),
     );
-    setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح! 🎉", type: "success" });
+    setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح!", type: "success" });
     closePanels();
     void triggerBackgroundMoneyRecord({
       type: "delivery",
@@ -227,7 +227,7 @@ export function MandoubOrderMoneyFlow({
         detail: { orderId, status: "delivering" },
       }),
     );
-    setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح! ⚡", type: "success" });
+    setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح!", type: "success" });
     closePanels();
     void triggerBackgroundMoneyRecord({
       type: "pickup",
@@ -248,7 +248,7 @@ export function MandoubOrderMoneyFlow({
       setToastMsg({ text: pickupState.error, type: "error" });
       setLocalEvents(moneyEvents); // تراجع في حال الخطأ
     } else if (pickupState.success || pickupState.ok) {
-      setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح! ⚡", type: "success" });
+      setToastMsg({ text: "تم استلام الطلب وتسجيل الصادر بنجاح!", type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
@@ -260,7 +260,7 @@ export function MandoubOrderMoneyFlow({
       setToastMsg({ text: deliveryState.error, type: "error" });
       setLocalEvents(moneyEvents); // تراجع في حال الخطأ
     } else if (deliveryState.success || deliveryState.ok) {
-      setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح! 🎉", type: "success" });
+      setToastMsg({ text: "تم تسليم الطلب واحتساب الأرباح بنجاح!", type: "success" });
       closePanels();
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
@@ -342,7 +342,19 @@ export function MandoubOrderMoneyFlow({
               : "bg-rose-900 border-rose-400"
           }`}
         >
-          <span>{toastMsg.type === "success" ? "✅" : "⚠️"}</span>
+          <span>
+            {toastMsg.type === "success" ? (
+              <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            )}
+          </span>
           <span>{toastMsg.text}</span>
           <button
             onClick={() => setToastMsg(null)}

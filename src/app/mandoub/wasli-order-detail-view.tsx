@@ -117,21 +117,21 @@ export function WasliOrderDetailView({
         fd.append("shopDoorPhoto", compressed);
         fd.append("target", "shop");
         await uploadShopDoorPhotoFromView(order.id, {}, fd);
-        showToast("✓ تم حفظ صورة المحل بنجاح");
+        showToast("تم حفظ صورة المحل بنجاح");
       } else if (type === "customer") {
         setCustDoorPhoto(objectUrl);
         const fd = new FormData();
         fd.append("customerDoorPhoto", compressed);
         fd.append("target", "first");
         await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
-        showToast("✓ تم حفظ صورة باب الزبون بنجاح");
+        showToast("تم حفظ صورة باب الزبون بنجاح");
       } else {
         setOrderGoodsPhoto(objectUrl);
-        showToast("✓ تم تحديث صورة الطلب");
+        showToast("تم تحديث صورة الطلب");
       }
     } catch (err) {
       console.error(err);
-      showToast("⚠️ فشل رفع الصورة، يرجى المحاولة ثانية");
+      showToast("فشل رفع الصورة، يرجى المحاولة ثانية");
     }
   };
 
@@ -142,12 +142,12 @@ export function WasliOrderDetailView({
       const res = await updateOrderLandmarkAction(order.id, landmarkVal);
       if (res.ok) {
         setIsEditingLandmark(false);
-        showToast("✓ تم حفظ النقطة الدالة بنجاح");
+        showToast("تم حفظ النقطة الدالة بنجاح");
       } else {
-        showToast("⚠️ فشل حفظ النقطة الدالة");
+        showToast("فشل حفظ النقطة الدالة");
       }
     } catch {
-      showToast("⚠️ حدث خطأ أثناء الحفظ");
+      showToast("حدث خطأ أثناء الحفظ");
     } finally {
       setLandmarkSaving(false);
     }
@@ -236,7 +236,10 @@ export function WasliOrderDetailView({
               <span className="text-[11px] font-extrabold text-[#DC2626]">الآن</span>
             </div>
             <div className="flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-3 py-1.5">
-              <span className="text-xs">🕒</span>
+              <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               <span className="text-[11px] font-bold text-[#0B2E8C]">
                 {formatBaghdadDateTime(order.createdAt)}
               </span>
@@ -282,7 +285,10 @@ export function WasliOrderDetailView({
               className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D0DDFB] bg-white px-3 py-1.5 text-[11px] font-bold text-[#0B2E8C] transition hover:bg-[#F8FAFF] active:scale-[0.97] cursor-pointer shadow-xs"
             >
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF]">
-                ✏️
+                <svg className="w-3 h-3 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
               </span>
               تعديل الطلب
             </button>
@@ -291,7 +297,13 @@ export function WasliOrderDetailView({
           {/* تنبيه كلشي واصل إن وجد */}
           {order.prepaidAll && (
             <div className="rounded-[20px] border-2 border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] p-4 text-white shadow-lg flex items-center gap-3">
-              <span className="text-3xl">📦</span>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-[#FDE047]">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+              </div>
               <div>
                 <p className="text-sm font-black text-[#FDE047]">الطلب واصل - استلم أجور التوصيل فقط!</p>
                 <p className="text-xs font-bold text-sky-100 mt-0.5">لا تقبض سعر البضاعة من العميل، فقط أجور التوصيل.</p>
@@ -302,7 +314,13 @@ export function WasliOrderDetailView({
           {/* تنبيه ديون الزبون إن وجدت */}
           {customerDebt !== null && customerDebt > 0 && (
             <div className="rounded-[20px] border-2 border-[#FFC107] bg-[#0B2E8C] p-3.5 text-white shadow-lg flex items-center gap-3">
-              <span className="text-2xl">⚠️</span>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FFC107]/20 text-[#FFC107]">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
               <div>
                 <p className="text-xs font-black text-[#FFC107]">تنبيه مالي للزبون:</p>
                 <p className="text-xs font-bold text-slate-100 mt-0.5">
@@ -319,8 +337,11 @@ export function WasliOrderDetailView({
             {/* الترويسة */}
             <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFC107] text-base shadow-xs">
-                  🏬
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] shadow-xs">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
                 </span>
                 <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">المحل (المرسل)</h2>
               </div>
@@ -338,8 +359,11 @@ export function WasliOrderDetailView({
 
                   {shopOwner && (
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEFF] text-xs shrink-0">
-                        👤
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C] shrink-0">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
                       </span>
                       <span className="text-[13px] font-bold text-[#1E4DB7] truncate">
                         {shopOwner}
@@ -349,8 +373,11 @@ export function WasliOrderDetailView({
 
                   {shopRegion && (
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEFF] text-xs shrink-0">
-                        📍
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C] shrink-0">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
                       </span>
                       <span className="text-[12px] font-medium text-[#5B6FA8] truncate">
                         {shopRegion}
@@ -364,8 +391,10 @@ export function WasliOrderDetailView({
                         href={telHref(shopPhone)}
                         className="flex items-center gap-2 rounded-full border border-[#D0DDFB] bg-white px-3 py-1.5 shadow-xs transition hover:border-[#0B2E8C]"
                       >
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-xs">
-                          📞
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                          </svg>
                         </span>
                         <span className="text-[12px] font-bold text-[#0B2E8C] font-mono [direction:ltr]">
                           {shopPhone}
@@ -388,8 +417,11 @@ export function WasliOrderDetailView({
                       <img src={shopPhoto} alt="صورة المحل" className="h-full w-full object-cover transition hover:scale-105" />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#E8EEFF]">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-xl">
-                          📷
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-[#0B2E8C]">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                          </svg>
                         </span>
                         <span className="text-[10px] font-bold text-[#7A90C0]">صورة المحل</span>
                       </div>
@@ -402,14 +434,23 @@ export function WasliOrderDetailView({
                       onClick={() => shopGalleryInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#D0DDFB] bg-white py-1.5 text-[11px] font-bold text-[#0B2E8C] transition active:scale-95 shadow-xs"
                     >
-                      <span>🖼️</span> المعرض
+                      <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>المعرض</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => shopCameraInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#0B2E8C] py-1.5 text-[11px] font-bold text-[#FFC107] transition active:scale-95 shadow-xs"
                     >
-                      <span>📸</span> كاميرا
+                      <svg className="w-3.5 h-3.5 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>كاميرا</span>
                     </button>
                   </div>
 
@@ -438,10 +479,13 @@ export function WasliOrderDetailView({
                   onClick={() => openUrlFromUserGesture(shopLocation)}
                   className="mt-4 flex h-[48px] w-full items-center justify-center gap-2 rounded-[16px] bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-[14px] font-extrabold text-white shadow-[0_6px_16px_rgba(11,46,140,0.25)] transition hover:brightness-110 active:scale-[0.98] cursor-pointer"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] text-sm">
-                    📍
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
                   </span>
-                  موقع المحل
+                  <span>موقع المحل</span>
                 </button>
               )}
 
@@ -452,7 +496,10 @@ export function WasliOrderDetailView({
                     href={telHref(shopPhone)}
                     className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-[0_4px_12px_rgba(11,46,140,0.18)] transition hover:bg-[#1E4DB7] active:scale-[0.98]"
                   >
-                    <span>📞</span> اتصال بالعميل
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <span>اتصال بالعميل</span>
                   </a>
                   <button
                     type="button"
@@ -462,7 +509,10 @@ export function WasliOrderDetailView({
                     }}
                     className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-[0_4px_12px_rgba(11,46,140,0.18)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer"
                   >
-                    <span>💬</span> واتس العميل
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <span>واتس العميل</span>
                   </button>
                 </div>
               )}
@@ -475,7 +525,11 @@ export function WasliOrderDetailView({
           <section className="relative overflow-visible rounded-[24px] border-[1.5px] border-[#FFD54F]/60 bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)]">
             {/* الشارة الدائرية العائمة (تسليم) */}
             <div className="absolute -left-2 -top-3 z-10 flex h-[56px] w-[56px] flex-col items-center justify-center rounded-full border-[3px] border-white bg-[#FFC107] shadow-[0_6px_16px_rgba(255,193,7,0.4)]">
-              <span className="text-base leading-none">📦</span>
+              <svg className="w-5 h-5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
               <span className="mt-0.5 text-[11px] font-extrabold leading-none text-[#0B2E8C]">تسليم</span>
             </div>
 
@@ -483,7 +537,10 @@ export function WasliOrderDetailView({
             <div className="flex items-center justify-between bg-[#FFFBEB] px-4 py-3 border-b border-[#FFE082]/40 rounded-t-[23px]">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0B2E8C] text-base text-[#FFC107] shadow-xs">
-                  👤
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                 </span>
                 <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">الزبون (المستلم)</h2>
               </div>
@@ -504,8 +561,12 @@ export function WasliOrderDetailView({
 
                   {customerRegion && (
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-[#E8EEFF] px-2.5 py-1 text-[11px] font-bold text-[#0B2E8C] truncate">
-                        📍 {customerRegion}
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-2.5 py-1 text-[11px] font-bold text-[#0B2E8C] truncate">
+                        <svg className="w-3 h-3 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span>{customerRegion}</span>
                       </span>
                     </div>
                   )}
@@ -516,8 +577,10 @@ export function WasliOrderDetailView({
                         href={telHref(customerPhone)}
                         className="flex items-center gap-1.5 rounded-full border border-[#D0DDFB] bg-white px-2.5 py-1 shadow-xs transition hover:border-[#0B2E8C]"
                       >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFC107] text-[10px]">
-                          📞
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                          </svg>
                         </span>
                         <span className="text-[12px] font-bold text-[#0B2E8C] font-mono [direction:ltr]">
                           {customerPhone}
@@ -530,8 +593,11 @@ export function WasliOrderDetailView({
                   <div className="mt-1 rounded-[14px] border border-[#D0DDFB] bg-[#F8FAFF] p-2.5 shadow-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[10px]">
-                          📍
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C]">
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
                         </span>
                         <span className="text-[10px] font-bold text-[#7A90C0]">ن داله</span>
                       </div>
@@ -583,8 +649,12 @@ export function WasliOrderDetailView({
                       <img src={custDoorPhoto} alt="صورة الزبون" className="h-full w-full object-cover transition hover:scale-105" />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#FFF8E1]">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-xl">
-                          🚪
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-[#C6A95A]">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 21h18" />
+                            <path d="M6 21V3h12v18" />
+                            <circle cx="15" cy="12" r="1" />
+                          </svg>
                         </span>
                         <span className="text-[10px] font-bold text-[#C6A95A]">صورة الباب</span>
                       </div>
@@ -597,14 +667,23 @@ export function WasliOrderDetailView({
                       onClick={() => custGalleryInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#D0DDFB] bg-white py-1.5 text-[11px] font-bold text-[#0B2E8C] transition active:scale-95 shadow-xs"
                     >
-                      <span>🖼️</span> المعرض
+                      <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>المعرض</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => custCameraInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#0B2E8C] py-1.5 text-[11px] font-bold text-[#FFC107] transition active:scale-95 shadow-xs"
                     >
-                      <span>📸</span> كاميرا
+                      <svg className="w-3.5 h-3.5 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>كاميرا</span>
                     </button>
                   </div>
 
@@ -632,14 +711,17 @@ export function WasliOrderDetailView({
                   type="button"
                   onClick={() => {
                     if (customerLocation) openUrlFromUserGesture(customerLocation);
-                    else showToast("⚠️ لا يوجد لوكيشن مسجل لهذا الزبون");
+                    else showToast("لا يوجد لوكيشن مسجل لهذا الزبون");
                   }}
                   className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] text-xs">
-                    📍
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
                   </span>
-                  فتح لوكيشن الزبون
+                  <span>فتح لوكيشن الزبون</span>
                 </button>
 
                 <button
@@ -647,7 +729,10 @@ export function WasliOrderDetailView({
                   onClick={handleNotifyCustomer}
                   className="flex h-[46px] w-[114px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer"
                 >
-                  <span>💬</span> تبليغ زبون
+                  <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  </svg>
+                  <span>تبليغ زبون</span>
                 </button>
               </div>
 
@@ -658,7 +743,10 @@ export function WasliOrderDetailView({
                     href={telHref(customerPhone)}
                     className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-xs transition hover:bg-[#1E4DB7] active:scale-[0.98]"
                   >
-                    <span>📞</span> اتصال
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <span>اتصال</span>
                   </a>
                   <button
                     type="button"
@@ -668,7 +756,10 @@ export function WasliOrderDetailView({
                     }}
                     className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-xs transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer"
                   >
-                    <span>💬</span> واتساب
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <span>واتساب</span>
                   </button>
                 </div>
               )}
@@ -676,8 +767,12 @@ export function WasliOrderDetailView({
               {/* بلوك الاستدلال الذكي */}
               {smartHintLine && smartHintLine !== "—" && (
                 <div className="mt-3 flex gap-3 rounded-[18px] bg-[#0B2E8C] p-3 shadow-[0_6px_16px_rgba(11,46,140,0.25)] text-white">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFC107] text-base text-[#0B2E8C] shadow-xs">
-                    💡
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] shadow-xs">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18h6" />
+                      <path d="M10 22h4" />
+                      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" />
+                    </svg>
                   </span>
                   <div className="flex flex-col gap-1 min-w-0">
                     <span className="text-[12px] font-extrabold text-white">الاستدلال الذكي</span>
@@ -697,7 +792,10 @@ export function WasliOrderDetailView({
             <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0B2E8C] text-sm text-[#FFC107] shadow-xs">
-                  📋
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  </svg>
                 </span>
                 <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">تفاصيل الطلبية والمبلغ</h2>
               </div>
@@ -707,8 +805,11 @@ export function WasliOrderDetailView({
               <div className="flex gap-3">
                 <div className="flex flex-1 flex-col gap-3 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8EEFF] text-xs">
-                      🏷️
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C]">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                      </svg>
                     </span>
                     <span className="text-[16px] font-extrabold text-[#0B2E8C]">
                       {order.orderType || "طلبية عادية"}
@@ -717,8 +818,11 @@ export function WasliOrderDetailView({
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 rounded-full border border-[#D0DDFB] bg-white px-3 py-1.5 w-fit shadow-xs">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[10px]">
-                        💵
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C]">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23" />
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
                       </span>
                       <span className="text-[11px] font-bold text-[#0B2E8C]">
                         سعر الطلب <span className="font-extrabold">{formatDinarAsAlf(orderSubtotal)} ألف</span>
@@ -726,8 +830,13 @@ export function WasliOrderDetailView({
                     </div>
 
                     <div className="flex items-center gap-2 rounded-full border border-[#D0DDFB] bg-white px-3 py-1.5 w-fit shadow-xs">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[10px]">
-                        🛵
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C]">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="1" y="3" width="15" height="13" />
+                          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                          <circle cx="5.5" cy="18.5" r="2.5" />
+                          <circle cx="18.5" cy="18.5" r="2.5" />
+                        </svg>
                       </span>
                       <span className="text-[11px] font-bold text-[#0B2E8C]">
                         التوصيل <span className="font-extrabold">{formatDinarAsAlf(deliveryPrice)} ألف</span>
@@ -758,8 +867,12 @@ export function WasliOrderDetailView({
                       <img src={orderGoodsPhoto} alt="صورة الطلب" className="h-full w-full object-cover transition hover:scale-105" />
                     ) : (
                       <>
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm text-xl">
-                          📦
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm text-[#0B2E8C]">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                            <line x1="12" y1="22.08" x2="12" y2="12" />
+                          </svg>
                         </span>
                         <span className="text-[11px] font-bold text-[#7A90C0]">صورة الطلب</span>
                       </>
@@ -772,14 +885,23 @@ export function WasliOrderDetailView({
                       onClick={() => goodsGalleryInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#D0DDFB] bg-white py-1.5 text-[11px] font-bold text-[#0B2E8C] transition active:scale-95 shadow-xs"
                     >
-                      <span>🖼️</span> المعرض
+                      <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>المعرض</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => goodsCameraInputRef.current?.click()}
                       className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#0B2E8C] py-1.5 text-[11px] font-bold text-[#FFC107] transition active:scale-95 shadow-xs"
                     >
-                      <span>📸</span> كاميرا
+                      <svg className="w-3.5 h-3.5 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>كاميرا</span>
                     </button>
                   </div>
 
@@ -804,7 +926,16 @@ export function WasliOrderDetailView({
               {/* ملاحظات الطلب إن وجدت */}
               {order.summary && (
                 <div className="mt-3 rounded-[16px] border border-[#D0DDFB] bg-[#F8FAFF] p-3">
-                  <p className="text-[11px] font-black text-[#1E4DB7] mb-1">📜 ملاحظات وقائمة المواد:</p>
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-[#1E4DB7] mb-1">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    <span>ملاحظات وقائمة المواد:</span>
+                  </div>
                   <p className="text-xs font-bold text-[#0B2E8C] leading-relaxed whitespace-pre-wrap">
                     {normalizeOrderSummaryText(order.summary)}
                   </p>
@@ -820,7 +951,11 @@ export function WasliOrderDetailView({
             <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFC107] text-base text-[#0B2E8C] shadow-xs">
-                  💰
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="6" x2="12" y2="18" />
+                    <path d="M15 9H10.5a2 2 0 0 0 0 4h3a2 2 0 0 1 0 4H9" />
+                  </svg>
                 </span>
                 <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">المعاملات المالية</h2>
               </div>
