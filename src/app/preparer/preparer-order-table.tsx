@@ -873,21 +873,10 @@ export function PreparerOrderTable({
                         </div>
                       </div>
 
-                      {/* 3. الشريط السفلي: زر التعديل، وقت الطلب، عداد الوقت، والأهم زر الإسناد */}
-                      <div className="mt-2.5 h-[46px] rounded-[18px] bg-gradient-to-r from-[#E8EEFF] via-white to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2 relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        {/* قسم اليمين: زر التعديل + عداد وقت رفع الطلب + وقت الطلب */}
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {/* زر التعديل */}
-                          <Link
-                            href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-[30px] px-2.5 rounded-[10px] bg-[#0B2E8C] hover:bg-[#1E4DB7] text-[#FFC107] font-black text-[11px] flex items-center gap-1 shadow-xs active:scale-95 transition-transform shrink-0"
-                            title="تعديل الطلب"
-                          >
-                            <Pencil className="w-3 h-3 text-[#FFC107]" />
-                            <span>تعديل</span>
-                          </Link>
-
+                      {/* 3. الشريط السفلي: وقت الطلب، عداد الوقت، وزر الإسناد */}
+                      <div className="mt-2.5 h-[44px] rounded-[18px] bg-gradient-to-r from-[#E8EEFF] via-white to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2.5 relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        {/* قسم اليمين: عداد وقت رفع الطلب + وقت الطلب */}
+                        <div className="flex items-center gap-2 min-w-0">
                           {/* عداد وقت رفع الطلب التصاعدي */}
                           <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                             <OrderCountUpTimer createdAt={o.createdAt} orderStatus={o.orderStatus} variant="normal" />
@@ -895,7 +884,7 @@ export function PreparerOrderTable({
 
                           {/* وقت الطلبية */}
                           <div
-                            className="h-[24px] px-2 rounded-full border border-[#D0DDFB] bg-white text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs"
+                            className="h-[24px] px-2.5 rounded-full border border-[#D0DDFB] bg-white text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs"
                             title="وقت الطلب"
                           >
                             <Clock className="w-3 h-3 text-[#1E4DB7]" />
@@ -903,8 +892,8 @@ export function PreparerOrderTable({
                           </div>
                         </div>
 
-                        {/* قسم اليسار: زر الإسناد لمندوب + زر الطلب العكسي + أزرار التواصل */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        {/* قسم اليسار: زر الإسناد لمندوب + زر الطلب العكسي */}
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {/* زر الإسناد للمندوب */}
                           {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
                             <button
@@ -925,7 +914,7 @@ export function PreparerOrderTable({
                                   setAssignOrder(o);
                                 }
                               }}
-                              className={`h-[30px] px-2.5 rounded-[10px] font-black text-[11px] flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer ${
+                              className={`h-[30px] px-3 rounded-[10px] font-black text-[11px] flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer ${
                                 hasAssignedCourier
                                   ? "bg-slate-900 border border-[#FFC107] text-[#FFC107]"
                                   : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border border-blue-400"
@@ -933,12 +922,12 @@ export function PreparerOrderTable({
                               title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر لتعديل الإسناد)` : "إسناد الطلب لمندوب"}
                             >
                               {hasAssignedCourier ? (
-                                <UserCheck className="w-3 h-3 text-[#FFC107]" />
+                                <UserCheck className="w-3.5 h-3.5 text-[#FFC107]" />
                               ) : (
-                                <User className="w-3 h-3 text-white" />
+                                <User className="w-3.5 h-3.5 text-white" />
                               )}
-                              <span className="truncate max-w-[80px] sm:max-w-[110px]">
-                                {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
+                              <span className="truncate max-w-[85px] sm:max-w-[120px]">
+                                {hasAssignedCourier ? o.assignedCourierName : "إسناد لمندوب"}
                               </span>
                             </button>
                           )}
@@ -953,32 +942,6 @@ export function PreparerOrderTable({
                               size="sm"
                             />
                           )}
-
-                          {/* زر الاتصال */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenActionModal(o, "call");
-                            }}
-                            className="w-7 h-7 rounded-full bg-[#FFC107] flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer shrink-0"
-                            title="اتصال هاتفي"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-[#0B2E8C]" fill="#0B2E8C" />
-                          </button>
-
-                          {/* زر الواتساب */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenActionModal(o, "chat");
-                            }}
-                            className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer shrink-0"
-                            title="مراسلة واتساب"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5 text-white" fill="white" />
-                          </button>
                         </div>
                       </div>
                     </div>
