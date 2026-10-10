@@ -22,27 +22,46 @@ import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-butt
 import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
 import { OrderCountUpTimer } from "@/components/order-count-up-timer";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { WasliThemeBoard } from "@/app/mandoub/wasli-theme-board";
+import {
+  Truck,
+  Phone,
+  Clock,
+  MapPin,
+  Pencil,
+  X,
+  RotateCcw,
+  User,
+  UserCheck,
+  ArrowDown,
+  ArrowUp,
+  MessageCircle,
+  Camera,
+  Check,
+} from "lucide-react";
 
-function getHeaderBannerWebp(orderStatus?: string) {
-  switch (orderStatus) {
-    case "delivering":
-      return "/images/order-luxury/header-received.webp";
-    case "delivered":
-      return "/images/order-luxury/header-delivered.webp";
-    case "cancelled":
-      return "/images/order-luxury/header-rejected.webp";
-    case "assigned":
+// تلوين شريط المسار حسب حالة الطلب مثل حساب المندوب
+const getRouteBadgeStyle = (status: string) => {
+  switch (status) {
+    case "new":
     case "pending":
+      return "bg-gradient-to-l from-sky-500 to-sky-400 text-white shadow-[0_2px_8px_rgba(14,165,233,0.25)]";
+    case "assigned":
+      return "bg-gradient-to-l from-rose-600 to-red-500 text-white shadow-[0_2px_8px_rgba(225,29,72,0.25)]";
+    case "delivering":
+      return "bg-gradient-to-l from-[#FFC107] to-amber-400 text-[#0B2E8C] font-black shadow-[0_2px_8px_rgba(245,158,11,0.25)]";
+    case "delivered":
+      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
+    case "cancelled":
+      return "bg-gradient-to-l from-slate-600 to-slate-500 text-white shadow-[0_2px_8px_rgba(100,116,139,0.2)]";
     default:
-      return "/images/order-luxury/header-assigned.webp";
+      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
   }
-}
+};
 
 function PreparerSaderSideBadge({ o }: { o: any }) {
-  const pickup = o.pickupSumDinar ?? null; // صادر المندوب
-  const preparerPickup = o.preparerPickupSumDinar ?? null; // صادر المجهز
-  const adminPickup = o.adminPickupSumDinar ?? null; // صادر الإدارة
+  const pickup = o.pickupSumDinar ?? null;
+  const preparerPickup = o.preparerPickupSumDinar ?? null;
+  const adminPickup = o.adminPickupSumDinar ?? null;
 
   const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
   const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
@@ -50,12 +69,10 @@ function PreparerSaderSideBadge({ o }: { o: any }) {
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
 
   if (showPreparerPickup) {
     text = formatDinarAsAlf(preparerPickup);
     tooltip = `صادر المجهز: ${text}`;
-    isPreparer = true;
   } else if (showPickup) {
     text = formatDinarAsAlf(pickup);
     tooltip = `صادر المندوب: ${text}`;
@@ -74,13 +91,10 @@ function PreparerSaderSideBadge({ o }: { o: any }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
-      style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-sader.webp" : "/images/order-luxury/badge-sader.webp"}')`,
-      }}
+      className="h-[26px] px-2 rounded-[8px] bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C]">
         {text}
       </span>
     </div>
@@ -88,20 +102,18 @@ function PreparerSaderSideBadge({ o }: { o: any }) {
 }
 
 function PreparerWardSideBadge({ o }: { o: any }) {
-  const delivery = o.deliverySumDinar ?? null; // وارد المندوب
-  const preparerDelivery = o.preparerDeliverySumDinar ?? null; // وارد المجهز
+  const delivery = o.deliverySumDinar ?? null;
+  const preparerDelivery = o.preparerDeliverySumDinar ?? null;
 
   const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
   const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
 
   if (showPreparerDelivery) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
-    isPreparer = true;
   } else if (showDelivery) {
     text = formatDinarAsAlf(delivery);
     tooltip = `وارد المندوب: ${text}`;
@@ -120,13 +132,10 @@ function PreparerWardSideBadge({ o }: { o: any }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
-      style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-ward.webp" : "/images/order-luxury/badge-ward.webp"}')`,
-      }}
+      className="h-[26px] px-2 rounded-[8px] bg-[#FFF8E1] border border-[#FFC107]/60 text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C]">
         {text}
       </span>
     </div>
@@ -301,7 +310,7 @@ export function PreparerOrderTable({
     isOpen: boolean;
     title: string;
     subtitle?: string;
-    type: "call" | "chat" | "location" | "door";
+    type: "call" | "chat" | "location" | "door" | "customer";
     options: any[];
     previewImageUrl?: string | null;
   }>({
@@ -660,563 +669,318 @@ export function PreparerOrderTable({
         </div>
       )}
 
-      {/* عرض الطلبات الرسمي بثيم وصلي الفاخر المعتمد للمجهز */}
-      <WasliThemeBoard
-        rows={rows}
-        allRows={rows}
-        auth={{ c: auth.p, exp: auth.exp, s: auth.s }}
-        tab={tab}
-        courierName="المجهز"
-        cashInHandStr="0"
-        onOpenRow={(id) => {
-          setActiveOrderId(id);
-          const p = new URLSearchParams(window.location.search);
-          p.set("activeOrderId", id);
-          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
-        }}
-        setPickupOrder={(o) => {
-          setPayOrder(o);
-        }}
-        setDeliveryOrder={() => {}}
-        showQuickSelect={showQuickSelect}
-        setShowQuickSelect={setShowQuickSelect}
-        selectedIds={selectedIds}
-        toggleOne={toggleOne}
-        toggleAll={toggleAll}
-        allSelected={allSelected}
-        qSearch={qSearch}
-        onSearchChange={() => {}}
-        showSearch={false}
-        setShowSearch={() => {}}
-      />
+      {/* عرض كروت المجهز الرسمية بثيم وصلي الكامل مع زر الإسناد وبدون هيدر المندوب */}
+      <div className="space-y-6 pb-12">
+        {groupedByDate.map((group) => {
+          const dateDayNumber = group.items[0]?.createdAt
+            ? new Date(group.items[0].createdAt).getDate()
+            : 1;
 
-      {false && (
-        <div className="space-y-6 pb-12">
-          {groupedByDate.map((group) => {
-            const dateDayNumber = group.items[0]?.createdAt
-              ? new Date(group.items[0].createdAt).getDate()
-              : 17;
-
-            return (
-              <div key={group.dateKey} className="space-y-3.5">
-                {/* شريط الفاصل الزمني البارز بين الأيام بالزخرفة الدمشقية الأرابيسك */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] border-y border-[#C9A86A] px-4 py-2.5 text-[#FFF8F0] shadow-md flex items-center justify-between">
-                  {/* زخرفة دمشقية يمنى */}
-                  <div className="flex items-center gap-2 opacity-90">
-                    <span className="text-[#F5D77F] text-base">❧</span>
-                    <span className="text-[#C9A86A] text-sm">⚜️</span>
-                  </div>
-
-                  {/* تاريخ اليوم بالمنتصف */}
-                  <div className="text-center font-black text-sm sm:text-base tracking-wide text-white drop-shadow-sm">
-                    {group.dateLabel} <span className="text-[#F5D77F] font-semibold text-xs sm:text-sm">({group.items.length} طلب)</span>
-                  </div>
-
-                  {/* أيقونة التقويم المذهبة في اليسار */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-b from-[#E67E22] to-[#D35400] text-white flex flex-col items-center justify-center border border-[#FFF0D0] shadow-xs leading-none">
-                      <span className="text-[8px] font-bold opacity-90">📅</span>
-                      <span className="text-xs sm:text-sm font-black">{dateDayNumber}</span>
-                    </div>
-                    <span className="text-[#F5D77F] text-base">☙</span>
-                  </div>
+          return (
+            <div key={group.dateKey} className="space-y-3.5">
+              {/* شريط الفاصل الزمني الأنيق بين الأيام بثيم وصلي */}
+              <div className="relative overflow-hidden rounded-[16px] bg-gradient-to-r from-[#0B2E8C] via-[#1E4DB7] to-[#0B2E8C] px-4 py-2.5 text-white shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-xs bg-white/10 px-2 py-0.5 rounded-md">
+                    {group.items.length} طلب
+                  </span>
                 </div>
 
-                {/* شبكة الكروت الملكية للمجهز */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto w-full">
-                  {group.items.map((o) => {
-                    const isPending = o.orderStatus === "pending";
-                    const isAssigned = o.orderStatus === "assigned";
-                    const isDelivering = o.orderStatus === "delivering";
-                    const isDelivered = o.orderStatus === "delivered";
-                    const isCancelled = o.orderStatus === "cancelled";
+                <div className="text-center font-black text-sm tracking-wide text-white">
+                  {group.dateLabel}
+                </div>
 
-                    const selected = selectedIds.has(o.id);
-
-                    const displayTotal = o.hasDebt && o.priceWithDebtLabel
-                      ? o.priceWithDebtLabel
-                      : (o.totalAmountDinar != null ? `${o.totalAmountDinar} ألف` : (o.priceStr || "—"));
-
-                    const numericPrice = displayTotal
-                      .replace(/ألف|دينار|الف/g, "")
-                      .replace(/,/g, ".")
-                      .replace(/[^\d.]/g, "")
-                      .replace(/\.$/, "")
-                      .trim() || displayTotal;
-
-                    const displayGoodsType = o.orderType && o.orderType !== "عام" && o.orderType !== "—"
-                      ? o.orderType
-                      : o.summary && o.summary.trim()
-                      ? o.summary
-                      : o.orderType || "—";
-
-                    const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
-
-                    const headerTextStr = isDoubleRouteOrder
-                      ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
-                      : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
-
-                    const hasAssignedCourier = Boolean(
-                      (o.assignedCourierName && o.assignedCourierName !== "—" && o.assignedCourierName.trim() !== "") ||
-                      o.assignedCourierId
-                    );
-
-                    const isAllPaid = Boolean(
-                      o.prepaidAll ||
-                      displayTotal === "كل شي واصل" ||
-                      displayTotal === "واصل" ||
-                      displayTotal?.includes("واصل") ||
-                      o.priceStr === "كل شي واصل" ||
-                      o.priceStr === "واصل" ||
-                      o.priceStr?.includes("واصل")
-                    );
-                    const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
-                    const hasGps = Boolean(o.hasCourierUploadedLocation || o.customerLocationUrl || o.hasCustomerLocation);
-                    const isPrepOrder = Boolean(o.isPreparationOrder || (o as any).preparerShoppingJson || (o.orderType && o.orderType.includes("تجهيز")));
-
-                    const showPay = o.orderSubtotalDinar != null && !o.pickupComplete && !isPrepOrder;
-
-                    const headerWebpBg = getHeaderBannerWebp(o.orderStatus);
-
-                    if (viewMode === "normal") {
-                      const preparerPickupDinar = o.preparerPickupSumDinar ?? null;
-                      const hasPaidSomething = (preparerPickupDinar != null && Number.isFinite(preparerPickupDinar) && preparerPickupDinar > 0) || Boolean(o.pickupComplete);
-
-                      let normalCardStyle = "border-2 border-slate-300 bg-white/95 dark:bg-slate-900/95";
-
-                      if (isPending) {
-                        // الجديد: أزرق فاتح
-                        normalCardStyle = "border-2 border-sky-400/90 bg-gradient-to-l from-sky-100 via-sky-50 to-blue-100/90 dark:from-sky-950/70 dark:via-sky-900/50 dark:to-blue-950/70 shadow-[0_3px_10px_rgba(56,189,248,0.2)]";
-                      } else if (isAssigned) {
-                        // المسند لمندوب: أحمر
-                        normalCardStyle = "border-2 border-rose-400/90 bg-gradient-to-l from-rose-100 via-rose-50 to-red-100/90 dark:from-rose-950/70 dark:via-rose-900/50 dark:to-red-950/70 shadow-[0_3px_10px_rgba(244,63,94,0.2)]";
-                      } else if (isDelivering) {
-                        // المستلم من قبل المندوب: أصفر
-                        normalCardStyle = "border-2 border-amber-400/90 bg-gradient-to-l from-amber-100 via-amber-50 to-yellow-100/90 dark:from-amber-950/70 dark:via-amber-900/50 dark:to-yellow-950/70 shadow-[0_3px_10px_rgba(245,158,11,0.25)]";
-                      } else if (isDelivered) {
-                        normalCardStyle = "border-2 border-emerald-400 bg-gradient-to-l from-emerald-100 via-emerald-50 to-teal-100 dark:from-emerald-950/70 dark:via-emerald-900/50 dark:to-teal-950/70 shadow-sm";
-                      } else if (isCancelled) {
-                        normalCardStyle = "border-2 border-slate-300 bg-slate-100/90 dark:bg-slate-900/90 opacity-80 shadow-sm";
-                      }
-
-                      // سعر الطلب يكون أصفر إن لم يدفع المجهز شيء بالطلب وإن دفع بها شيء يتحول لأخضر، وزر الدفع هو نفسه زر السعر
-                      const payBtnStyle = hasPaidSomething
-                        ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 text-white border-2 border-emerald-300 shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
-                        : "bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 text-slate-950 border-2 border-amber-500 shadow-[0_2px_8px_rgba(245,158,11,0.4)]";
-
-                      return (
-                        <div
-                          key={o.id}
-                          onClick={() => {
-                            if (showQuickSelect) {
-                              toggleOne(o.id);
-                            } else {
-                              setActiveOrderId(o.id);
-                              const p = new URLSearchParams(window.location.search);
-                              p.set("activeOrderId", o.id);
-                              window.history.pushState({ orderId: o.id }, "", `?${p.toString()}`);
-                            }
-                          }}
-                          className={`group relative rounded-2xl p-3 sm:p-3.5 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between w-full shadow-sm hover:shadow-md ${normalCardStyle} ${
-                            selected ? "ring-2 ring-[#0A3D2E]" : ""
-                          }`}
-                        >
-                          {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
-                          <PreparerCardMoneyBadges o={o} icons={icons} />
-
-                          {/* زخرفة إسلامية ناعمة في الزوايا بنمط ملكي إسلامي */}
-                          <div className="absolute top-1 left-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">❧</div>
-                          <div className="absolute top-1 right-2 text-[#C9A86A]/40 text-[10px] pointer-events-none select-none">☙</div>
-
-                          {/* 1. السطر العلوي: اسم المحل واسم المنطقة باليمين + زر السعر باليسار فقط السعر */}
-                          <div className="flex items-center justify-between gap-2 w-full">
-                            {/* اليمين: التحديد السريع + اسم المحل واسم المنطقة */}
-                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                              {showQuickSelect && (
-                                <input
-                                  type="checkbox"
-                                  checked={selected}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={() => toggleOne(o.id)}
-                                  className="size-4.5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer shrink-0"
-                                />
-                              )}
-
-                              <div className="flex items-center gap-1.5 min-w-0 truncate">
-                                <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                                  {o.shopName || "المحل"}
-                                </span>
-                                <span className="text-[11px] text-[#C9A86A] font-black shrink-0">⟵</span>
-                                <span className="font-bold text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 truncate">
-                                  {o.regionLine || "المنطقة"}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* اليسار: زر سعر الطلب فقط بدون أي كلمة (يفتح نافذة الدفع) */}
-                            <div className="shrink-0 flex items-center">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPayOrder(o);
-                                }}
-                                className={`min-w-[58px] px-3.5 py-1.5 rounded-xl font-black font-mono transition-transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer select-none text-base sm:text-lg leading-none ${payBtnStyle}`}
-                                title="سعر الطلب (انقر لتسجيل دفع للعميل) ⚡"
-                              >
-                                <span>{isAllPaid ? "واصل" : (numericPrice || "—")}</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 2. السطر السفلي: نوع الطلب + وقت الطلب + (زر التعديل بجانب زر الإسناد) + رقم الطلب أسفل اليسار */}
-                          <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-black/5 dark:border-white/5 w-full mt-2">
-                            {/* اليمين: نوع الطلب، وقت الطلب، وبجانبهما زر التعديل وزر الإسناد */}
-                            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
-                              {/* نوع الطلب */}
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/75 dark:bg-slate-900/60 border border-[#C9A86A]/40 text-slate-900 dark:text-[#F5D77F] font-black text-[11px] sm:text-xs shadow-2xs truncate max-w-[120px]">
-                                <span>📦</span>
-                                <span className="truncate">{displayGoodsType}</span>
-                              </span>
-
-                              {/* وقت الطلب */}
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/75 dark:bg-slate-900/60 border border-[#8B0000]/25 text-[#8B0000] dark:text-rose-300 font-black text-[11px] sm:text-xs shadow-2xs shrink-0">
-                                <span>⏱️</span>
-                                <span>{o.orderNoteTime || o.timeLine || "فوري"}</span>
-                              </span>
-
-                              {/* عداد وقت رفع الطلب التصاعدي (يظهر فقط إذا كان جديد أو مسند) */}
-                              <OrderCountUpTimer
-                                createdAt={o.createdAt}
-                                orderStatus={o.orderStatus}
-                                variant="normal"
-                              />
-
-                              {/* مجموعة: زر التعديل بجانب زر الإسناد */}
-                              <div className="inline-flex items-center gap-1 shrink-0">
-                                {/* زر التعديل */}
-                                <Link
-                                  href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="h-7.5 px-2.5 rounded-lg bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border border-[#C9A86A] text-[#F5D77F] font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
-                                  title="تعديل الطلب ✏️"
-                                >
-                                  <span>✏️</span>
-                                  <span>تعديل</span>
-                                </Link>
-
-                                {/* زر الإسناد */}
-                                {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                       if (couriers.length === 1 && !hasAssignedCourier) {
-                                         const fd = new FormData();
-                                         fd.append("p", auth.p);
-                                         fd.append("exp", auth.exp);
-                                         fd.append("s", auth.s);
-                                         fd.append("orderIds", o.id);
-                                         fd.append("courierId", couriers[0].id);
-                                         startTransition(() => {
-                                           bulkAction(fd);
-                                         });
-                                       } else {
-                                         setAssignOrder(o);
-                                       }
-                                    }}
-                                    className={`h-7.5 px-2.5 rounded-lg font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all select-none border shadow-2xs cursor-pointer hover:scale-105 active:scale-95 ${
-                                      hasAssignedCourier
-                                        ? "bg-slate-900 text-[#F5D77F] border-[#C9A86A]"
-                                        : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border-blue-400"
-                                    }`}
-                                    title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر للتعديل)` : "إسناد الطلب لمندوب 👤"}
-                                  >
-                                    <span>👤</span>
-                                    <span className="truncate max-w-[85px] sm:max-w-[110px]">
-                                      {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
-                                    </span>
-                                  </button>
-                                )}
-
-                                {/* زر الطلب العكسي إذا كان عكسي */}
-                                {isReverse && (
-                                  <LuxuryReverseOrderButton
-                                    orderId={o.id}
-                                    orderNumber={o.shortId}
-                                    customerPhone={o.customerPhone || o.phoneLine}
-                                    role="preparer"
-                                    size="sm"
-                                  />
-                                )}
-                              </div>
-                            </div>
-
-                            {/* اليسار: رقم الطلب بشكل صغير أسفل اليسار */}
-                            <div className="shrink-0 flex items-center">
-                              <div
-                                className="text-[11px] sm:text-xs font-mono font-black text-slate-700 dark:text-[#F5D77F] bg-white/90 dark:bg-black/60 px-2 py-0.5 rounded-md border border-[#C9A86A]/60 shadow-2xs select-none"
-                                title={`رقم الطلب: #${o.shortId}`}
-                              >
-                                #{o.shortId}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={o.id}
-                        onClick={() => {
-                          if (showQuickSelect) {
-                            toggleOne(o.id);
-                          } else {
-                            setActiveOrderId(o.id);
-                            const p = new URLSearchParams(window.location.search);
-                            p.set("activeOrderId", o.id);
-                            window.history.pushState({ orderId: o.id }, "", `?${p.toString()}`);
-                          }
-                        }}
-                        className={`group relative rounded-[22px] px-5 sm:px-6 pt-4 pb-3.5 sm:pt-4.5 sm:pb-4 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full max-w-[460px] sm:max-w-[480px] mx-auto md:max-w-none ${
-                          selected ? "ring-2 ring-[#0A3D2E]" : ""
-                        }`}
-                        style={{
-                          backgroundImage: "url('/images/order-luxury/order-card-frame.webp')",
-                          minHeight: "248px",
-                        }}
-                      >
-                        {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
-                        <PreparerCardMoneyBadges o={o} icons={icons} />
-
-                        {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل */}
-                        <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0">
-                          {/* اليمين: بلوك اسم المحل */}
-                          <div className="relative flex-1 min-w-0 max-w-[68%] sm:max-w-[74%]">
-                            <div
-                              className="w-full h-11 sm:h-12.5 rounded-full flex items-center justify-center px-3 sm:px-6 mr-0.5 sm:mr-1 mt-0.5 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
-                              style={{
-                                backgroundImage: `url('${headerWebpBg}')`,
-                              }}
-                            >
-                              <span
-                                className="font-black text-xs sm:text-sm leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
-                                style={{
-                                  color: "#FFFFFF",
-                                  textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                                }}
-                                title={headerTextStr}
-                              >
-                                {headerTextStr}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* اليسار: كبسولة رقم الطلب + مربع الاختيار */}
-                          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-0.5 sm:ml-1">
-                            {showQuickSelect && (
-                              <input
-                                type="checkbox"
-                                checked={selected}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={() => toggleOne(o.id)}
-                                className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
-                              />
-                            )}
-
-                            <div className="relative shrink-0">
-                              <div
-                                className="min-w-[78px] sm:min-w-[94px] h-10.5 sm:h-12 px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
-                                style={{
-                                  backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
-                                  color: "#F5D77F",
-                                  textShadow: "0 1px 3px rgba(0,0,0,0.85)",
-                                }}
-                              >
-                                <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pt-0.5">
-                                  {o.shortId}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع الصادر والوارد */}
-                        <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 my-auto py-1 px-1 sm:px-2 w-full min-h-[76px] sm:min-h-[84px]">
-                          {/* النص الأيمن: نوع البضاعة */}
-                          <div className="flex items-center justify-start flex-1 min-w-0 max-w-[28%] sm:max-w-[30%]">
-                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3.5 py-1 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/95 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                              <span className="text-[11.5px] sm:text-xs md:text-sm font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
-                                {displayGoodsType}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* حاوية السعر المركزية 50% */}
-                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-                            {/* بلوك الصادر */}
-                            <div className="absolute right-full mr-1 sm:mr-1.5 pointer-events-auto shrink-0">
-                              <PreparerSaderSideBadge o={o} />
-                            </div>
-
-                            {/* دائرة السعر المركزية */}
-                            <div
-                              className="w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto shadow-sm"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/price-circle.webp')",
-                              }}
-                            >
-                              {isAllPaid ? (
-                                <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
-                                  <span
-                                    className="text-[13px] sm:text-[15px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                    style={{ color: "#F5D77F" }}
-                                  >
-                                    كلشي
-                                  </span>
-                                  <span
-                                    className="text-[12px] sm:text-[14px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                    style={{ color: "#F5D77F" }}
-                                  >
-                                    واصل
-                                  </span>
-                                </div>
-                              ) : (
-                                <span
-                                  className={`${
-                                    numericPrice.length >= 5
-                                      ? "text-[18px] sm:text-[21px]"
-                                      : numericPrice.length >= 4
-                                      ? "text-[22px] sm:text-[26px]"
-                                      : numericPrice.length === 3
-                                      ? "text-[27px] sm:text-[32px]"
-                                      : "text-[34px] sm:text-[40px]"
-                                  } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
-                                  style={{
-                                    color: "#F5D77F",
-                                  }}
-                                >
-                                  {numericPrice || "—"}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* بلوك الوارد */}
-                            <div className="absolute left-full ml-1 sm:ml-1.5 pointer-events-auto shrink-0">
-                              <PreparerWardSideBadge o={o} />
-                            </div>
-                          </div>
-
-                          {/* النص الأيسر: وقت الطلب + عداد رفع الطلب */}
-                          <div className="flex flex-col items-end justify-center flex-1 min-w-0 max-w-[32%] sm:max-w-[34%] gap-1">
-                            <div className="inline-flex items-center justify-center px-2.5 sm:px-3.5 py-1 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                              <span className="text-[11px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
-                                {o.orderNoteTime || o.timeLine || "فوري"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 3. القسم السفلي: زر التعديل باليمين + أزرار المجهز (دفع للعميل والإسناد) باليسار */}
-                        <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 pt-0.5 pb-0.5 w-full shrink-0">
-                          {/* الجهة اليمنى: زر تعديل الطلب للمجهز الملكي */}
-                          {/* الجهة اليمنى: زر تعديل الطلب للمجهز وبجانبه إلى اليسار عداد الوقت */}
-                          <div className="flex items-center gap-1.5 sm:gap-2 mr-0.5 shrink-0">
-                            <Link
-                              href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-10 sm:h-11 px-4 sm:px-5.5 rounded-full bg-gradient-to-r from-[#0F4D3A] via-[#164E3D] to-[#0F4D3A] border-2 border-[#C9A86A] text-[#F5D77F] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_3px_10px_rgba(10,61,46,0.35),inset_0_1px_0_rgba(245,215,127,0.3)] hover:scale-105 active:scale-95 transition-all select-none cursor-pointer"
-                              title="تعديل الطلب ✏️"
-                            >
-                              <span className="text-sm">✏️</span>
-                              <span>تعديل</span>
-                            </Link>
-                            <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center">
-                              <OrderCountUpTimer
-                                createdAt={o.createdAt}
-                                orderStatus={o.orderStatus}
-                                variant="luxury"
-                              />
-                            </div>
-                          </div>
-
-                          {/* الجهة اليسرى: أزرار المجهز (دفع للعميل وإسناد لمندوب مع اسم المندوب المسند) */}
-                          <div className="flex items-center gap-1 sm:gap-1.5 ml-0.5 shrink-0">
-                            {/* زر تسجيل دفع للعميل ⚡ */}
-                            {showPay && !isCancelled && !isDelivered && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPayOrder(o);
-                                }}
-                                className="relative w-11.5 h-11.5 sm:w-13 sm:h-13 rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition bg-gradient-to-b from-[#104D3B] via-[#0A3D2E] to-[#06281D] border-2 border-[#C9A86A] text-[#F5D77F] shadow-[0_3px_12px_rgba(10,61,46,0.4),inset_0_1px_0_rgba(245,215,127,0.4)] cursor-pointer shrink-0 p-1 select-none text-center"
-                                title="تسجيل دفع للعميل (المحل) ⚡"
-                              >
-                                <span className="text-[9.5px] sm:text-[11px] font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] text-[#F5D77F]">
-                                  دفع للعميل
-                                </span>
-                              </button>
-                            )}
-
-                            {/* زر إسناد لمندوب 👤 (يظهر اسم المندوب المسند في المنتصف إذا كان مسنداً) */}
-                            {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (couriers.length === 1 && !hasAssignedCourier) {
-                                    const fd = new FormData();
-                                    fd.append("p", auth.p);
-                                    fd.append("exp", auth.exp);
-                                    fd.append("s", auth.s);
-                                    fd.append("orderIds", o.id);
-                                    fd.append("courierId", couriers[0].id);
-                                    startTransition(() => {
-                                      bulkAction(fd);
-                                    });
-                                  } else {
-                                    setAssignOrder(o);
-                                  }
-                                }}
-                                className="relative w-11.5 h-11.5 sm:w-13 sm:h-13 rounded-full text-xs sm:text-sm font-black flex flex-col items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-md overflow-hidden p-1 text-center"
-                                style={{
-                                  backgroundImage: hasAssignedCourier
-                                    ? "url('/images/order-luxury/btn-assign-empty.webp')"
-                                    : "url('/images/order-luxury/btn-assign.webp')",
-                                }}
-                                title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر لتعديل الإسناد)` : "إسناد الطلب لمندوب 👤"}
-                              >
-                                {hasAssignedCourier ? (
-                                  <span className="text-[9.5px] sm:text-[11px] font-black text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] truncate max-w-full px-0.5 block leading-tight">
-                                    {o.assignedCourierName}
-                                  </span>
-                                ) : null}
-                              </button>
-                            )}
-
-                            {/* زر/شارة طلب عكسي 🔄 يظهر فقط للطلبات العكسية */}
-                            {isReverse && (
-                              <LuxuryReverseOrderButton
-                                orderId={o.id}
-                                orderNumber={o.shortId}
-                                customerPhone={o.customerPhone || o.phoneLine}
-                                role="preparer"
-                                size="md"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-[10px] bg-[#FFC107] text-[#0B2E8C] flex flex-col items-center justify-center font-mono font-black text-xs shadow-xs leading-none">
+                    <span className="text-[8px] font-bold">يوم</span>
+                    <span>{dateDayNumber}</span>
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {/* شبكة كروت المجهز بثيم وصلي */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 max-w-4xl mx-auto w-full">
+                {group.items.map((o) => {
+                  const isPending = o.orderStatus === "pending" || o.orderStatus === "new";
+                  const isAssigned = o.orderStatus === "assigned";
+                  const isDelivering = o.orderStatus === "delivering";
+                  const isDelivered = o.orderStatus === "delivered";
+                  const isCancelled = o.orderStatus === "cancelled";
+                  const selected = selectedIds.has(o.id);
+
+                  const displayTotal = o.hasDebt && o.priceWithDebtLabel
+                    ? o.priceWithDebtLabel
+                    : (o.totalAmountDinar != null ? `${o.totalAmountDinar} ألف` : (o.priceStr || "—"));
+
+                  const numericPrice = displayTotal
+                    .replace(/ألف|دينار|الف/g, "")
+                    .replace(/,/g, ".")
+                    .replace(/[^\d.]/g, "")
+                    .replace(/\.$/, "")
+                    .trim() || displayTotal;
+
+                  const isAllPaid = Boolean(
+                    o.prepaidAll ||
+                    displayTotal === "كل شي واصل" ||
+                    displayTotal === "واصل" ||
+                    displayTotal?.includes("واصل") ||
+                    o.priceStr === "كل شي واصل" ||
+                    o.priceStr === "واصل" ||
+                    o.priceStr?.includes("واصل")
+                  );
+
+                  const displayGoodsType = o.orderType && o.orderType !== "عام" && o.orderType !== "—"
+                    ? o.orderType
+                    : o.summary && o.summary.trim()
+                    ? o.summary
+                    : o.orderType || "طلب توصيل";
+
+                  const hasAssignedCourier = Boolean(
+                    (o.assignedCourierName && o.assignedCourierName !== "—" && o.assignedCourierName.trim() !== "") ||
+                    o.assignedCourierId
+                  );
+
+                  const isReverse = Boolean(isReversePickupOrderType(o.orderType) || o.orderType?.includes("عكسي") || o.orderType?.includes("راجع"));
+
+                  const preparerPickupDinar = o.preparerPickupSumDinar ?? null;
+                  const hasPaidSomething = (preparerPickupDinar != null && Number.isFinite(preparerPickupDinar) && preparerPickupDinar > 0) || Boolean(o.pickupComplete);
+
+                  return (
+                    <div
+                      key={o.id}
+                      onClick={() => {
+                        if (showQuickSelect) {
+                          toggleOne(o.id);
+                        } else {
+                          setActiveOrderId(o.id);
+                          const p = new URLSearchParams(window.location.search);
+                          p.set("activeOrderId", o.id);
+                          window.history.pushState({ orderId: o.id }, "", `?${p.toString()}`);
+                        }
+                      }}
+                      className={`group bg-white border-[1.5px] rounded-[18px] p-[12px] shadow-[0_3px_10px_rgba(11,46,140,0.06)] transition-all duration-200 cursor-pointer relative overflow-hidden w-full box-border hover:border-[#1E4DB7]/50 hover:shadow-[0_4px_14px_rgba(11,46,140,0.1)] active:scale-[0.99] ${
+                        selected
+                          ? "border-[#0B2E8C] ring-2 ring-[#0B2E8C]/25 bg-[#F0F5FF]"
+                          : "border-[#D0DDFB]"
+                      }`}
+                    >
+                      {/* البادجات المالية العائمة أعلى الكرت إن وجدت */}
+                      <PreparerCardMoneyBadges o={o} icons={icons} />
+
+                      {/* 1. السطر العلوي للبطاقة: شريط المسار الملون + كبسولة رقم الطلب */}
+                      <div className="flex items-center justify-between gap-2 relative z-10">
+                        {/* شريط المسار الملون وبلوك التحديد */}
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-start">
+                          {showQuickSelect && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleOne(o.id);
+                              }}
+                              className={`w-[26px] h-[26px] rounded-[8px] flex items-center justify-center shrink-0 cursor-pointer transition-all duration-150 shadow-2xs ${
+                                selected
+                                  ? "bg-[#0B2E8C] text-[#FFC107] border-2 border-[#0B2E8C] ring-2 ring-[#FFC107]/50 scale-105"
+                                  : "bg-white border-2 border-[#D0DDFB] text-transparent hover:border-[#0B2E8C]"
+                              }`}
+                              title={selected ? "إلغاء التحديد" : "تحديد هذا الطلب"}
+                            >
+                              <Check
+                                className={`w-3.5 h-3.5 stroke-[3] transition-opacity ${
+                                  selected ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                            </div>
+                          )}
+
+                          {/* شريط المسار الملون حسب الحالة */}
+                          <div
+                            className={`flex-1 w-full min-w-0 flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-sm transition-all ${getRouteBadgeStyle(
+                              o.orderStatus
+                            )}`}
+                          >
+                            <Truck
+                              className={`w-4 h-4 shrink-0 ${
+                                isDelivering ? "text-[#0B2E8C]" : "text-[#FFC107]"
+                              }`}
+                              strokeWidth={2.5}
+                            />
+                            <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
+                              <span className="font-black shrink-0">{o.shopName || "المحل"}</span>
+                              <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
+                              <span className="font-black truncate">{o.regionLine || "الوجهة"}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* كبسولة رقم الطلب */}
+                        <div className="shrink-0 h-[28px] bg-[#0B2E8C] rounded-[8px] px-2.5 py-0.5 shadow-xs flex items-center justify-center">
+                          <span className="font-mono font-black text-[#FFC107] text-[12px] leading-none tracking-wide">
+                            #{o.shortId}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 2. الجزء الأوسط: نوع البضاعة وبادجات الصادر والوارد ودائرة السعر التفاعلية */}
+                      <div className="mt-2.5 flex items-center justify-between gap-2.5 relative z-10 min-h-[66px]">
+                        <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
+                          {/* نوع البضاعة */}
+                          <div className="bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] text-[11px] font-bold rounded-[14px] px-3 py-1 max-w-[200px] truncate leading-tight">
+                            {displayGoodsType}
+                          </div>
+
+                          {/* بادجات الصادر والوارد للمجهز */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <PreparerSaderSideBadge o={o} />
+                            <PreparerWardSideBadge o={o} />
+                          </div>
+                        </div>
+
+                        {/* دائرة السعر التفاعلية للمجهز (تفتح نافذة الدفع للعميل) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPayOrder(o);
+                          }}
+                          className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
+                          title="سعر الطلب - اضغط لتسجيل دفع للعميل"
+                        >
+                          <div
+                            className={`w-[66px] h-[66px] rounded-full flex flex-col items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] border-[3px] transition-colors ${
+                              hasPaidSomething
+                                ? "bg-emerald-700 border-emerald-400 text-white"
+                                : "bg-[#0B2E8C] border-[#FFC107] text-[#FFC107]"
+                            }`}
+                          >
+                            {isAllPaid ? (
+                              <span className="font-black text-xs leading-none">واصل</span>
+                            ) : (
+                              <span className="font-mono font-black text-[26px] leading-none tracking-tight">
+                                {numericPrice || "—"}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* 3. الشريط السفلي: زر التعديل، وقت الطلب، عداد الوقت، والأهم زر الإسناد */}
+                      <div className="mt-2.5 h-[46px] rounded-[18px] bg-gradient-to-r from-[#E8EEFF] via-white to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2 relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        {/* قسم اليمين: زر التعديل + عداد وقت رفع الطلب + وقت الطلب */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {/* زر التعديل */}
+                          <Link
+                            href={`/preparer/order/${o.id}/edit?p=${auth.p}&exp=${auth.exp}&s=${auth.s}&tab=${tab}&q=${qSearch}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-[30px] px-2.5 rounded-[10px] bg-[#0B2E8C] hover:bg-[#1E4DB7] text-[#FFC107] font-black text-[11px] flex items-center gap-1 shadow-xs active:scale-95 transition-transform shrink-0"
+                            title="تعديل الطلب"
+                          >
+                            <Pencil className="w-3 h-3 text-[#FFC107]" />
+                            <span>تعديل</span>
+                          </Link>
+
+                          {/* عداد وقت رفع الطلب التصاعدي */}
+                          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                            <OrderCountUpTimer createdAt={o.createdAt} orderStatus={o.orderStatus} variant="normal" />
+                          </div>
+
+                          {/* وقت الطلبية */}
+                          <div
+                            className="h-[24px] px-2 rounded-full border border-[#D0DDFB] bg-white text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs"
+                            title="وقت الطلب"
+                          >
+                            <Clock className="w-3 h-3 text-[#1E4DB7]" />
+                            <span>{o.orderNoteTime || o.timeLine || "فوري"}</span>
+                          </div>
+                        </div>
+
+                        {/* قسم اليسار: زر الإسناد لمندوب + زر الطلب العكسي + أزرار التواصل */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* زر الإسناد للمندوب */}
+                          {!isCancelled && isAssignableBeforeCourierReceipt(o.orderStatus) && couriers.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (couriers.length === 1 && !hasAssignedCourier) {
+                                  const fd = new FormData();
+                                  fd.append("p", auth.p);
+                                  fd.append("exp", auth.exp);
+                                  fd.append("s", auth.s);
+                                  fd.append("orderIds", o.id);
+                                  fd.append("courierId", couriers[0].id);
+                                  startTransition(() => {
+                                    bulkAction(fd);
+                                  });
+                                } else {
+                                  setAssignOrder(o);
+                                }
+                              }}
+                              className={`h-[30px] px-2.5 rounded-[10px] font-black text-[11px] flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer ${
+                                hasAssignedCourier
+                                  ? "bg-slate-900 border border-[#FFC107] text-[#FFC107]"
+                                  : "bg-gradient-to-r from-blue-700 to-indigo-700 text-white border border-blue-400"
+                              }`}
+                              title={hasAssignedCourier ? `المسند: ${o.assignedCourierName} (انقر لتعديل الإسناد)` : "إسناد الطلب لمندوب"}
+                            >
+                              {hasAssignedCourier ? (
+                                <UserCheck className="w-3 h-3 text-[#FFC107]" />
+                              ) : (
+                                <User className="w-3 h-3 text-white" />
+                              )}
+                              <span className="truncate max-w-[80px] sm:max-w-[110px]">
+                                {hasAssignedCourier ? o.assignedCourierName : "إسناد"}
+                              </span>
+                            </button>
+                          )}
+
+                          {/* زر الطلب العكسي */}
+                          {isReverse && (
+                            <LuxuryReverseOrderButton
+                              orderId={o.id}
+                              orderNumber={o.shortId}
+                              customerPhone={o.customerPhone || ""}
+                              role="preparer"
+                              size="sm"
+                            />
+                          )}
+
+                          {/* زر الاتصال */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "call");
+                            }}
+                            className="w-7 h-7 rounded-full bg-[#FFC107] flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer shrink-0"
+                            title="اتصال هاتفي"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#0B2E8C]" fill="#0B2E8C" />
+                          </button>
+
+                          {/* زر الواتساب */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenActionModal(o, "chat");
+                            }}
+                            className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer shrink-0"
+                            title="مراسلة واتساب"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-white" fill="white" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+
 
       {/* نافذة خيارات الإجراء السريع (Action Modal) للاتصال أو الواتساب أو اللوكيشن أو صورة الباب */}
       {actionModalState.isOpen &&
@@ -1375,7 +1139,7 @@ export function PreparerOrderTable({
                       effectivePickupDinar != null ? effectivePickupDinar - (payOrder.pickupSumDinar || 0) : null
                     }
                     pickupSumDinar={payOrder.pickupSumDinar || 0}
-                    orderSubtotalDinar={effectivePickupDinar}
+                    orderSubtotalDinar={effectivePickupDinar ?? null}
                     formAction={payAction}
                     pending={payPending}
                     error={payState.error}
