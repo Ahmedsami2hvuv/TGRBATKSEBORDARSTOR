@@ -147,17 +147,6 @@ export function MandoubOrdersSection({
               baseQueryString={baseQuery.toString()}
             />
 
-            {/* زر تفعيل ثيم وصلي الحصري */}
-            <button
-              type="button"
-              onClick={handleToggleWasliTheme}
-              className="flex h-9 sm:h-10 shrink-0 items-center gap-1.5 px-3 rounded-xl border-2 border-[#FFC107] bg-[#0B2E8C] text-[#FFC107] hover:bg-[#1E4DB7] text-xs sm:text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer animate-in fade-in"
-              title="تفعيل ستايل وصلي المخصص للطلبات"
-            >
-              <DynamicIcon iconKey="ui_flash" config={icons} className="w-4 h-4 text-[#FFC107]" fallback="⚡" />
-              <span>تفعيل ثيم وصلي</span>
-            </button>
-
             {allRows.length > 0 && (
               <button
                 type="button"

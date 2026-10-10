@@ -173,17 +173,6 @@ export function WasliThemeBoard({
 
           {/* أزرار الإجراءات في الهيدر */}
           <div className="flex items-center gap-1.5">
-            {/* زر تبديل الثيم للعودة للمظهر الافتراضي */}
-            <button
-              type="button"
-              onClick={onToggleWasliTheme}
-              className="px-2.5 py-1.5 rounded-full bg-[#0B2E8C] text-[#FFC107] border border-[#FFC107]/40 text-[11px] font-black flex items-center gap-1 shadow-sm hover:bg-[#1E4DB7] active:scale-95 transition-all cursor-pointer"
-              title="اضغط لإلغاء ثيم وصلي والعودة للمظهر الافتراضي"
-            >
-              <Zap className="w-3.5 h-3.5 fill-[#FFC107]" />
-              <span>إلغاء ثيم وصلي</span>
-            </button>
-
             {/* زر الإشعارات */}
             <button
               type="button"

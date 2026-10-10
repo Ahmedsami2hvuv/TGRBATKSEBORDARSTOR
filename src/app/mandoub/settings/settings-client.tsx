@@ -301,6 +301,65 @@ export default function CourierSettingsClient({
           </div>
         </section>
 
+        {/* قسم ستايل وصلي الحصري للطلبات */}
+        <section className="mb-6 border-2 border-[#FFC107] bg-gradient-to-br from-[#0B2E8C] via-[#1E4DB7] to-[#0A1F4D] rounded-2xl p-4 sm:p-5 shadow-xl text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#FFC107] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(255,193,7,0.4)] mt-0.5">
+                <span className="text-2xl text-[#0B2E8C] font-black">⚡</span>
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2 flex-wrap">
+                  <span>ستايل وصلي للطلبات (Wasli Theme)</span>
+                  {wasliThemeActive ? (
+                    <span className="text-xs bg-[#FFC107] text-[#0B2E8C] font-black px-2.5 py-0.5 rounded-full shadow-xs">
+                      مُفعّل الآن ✓
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-white/20 text-white font-bold px-2.5 py-0.5 rounded-full">
+                      غير مفعّل
+                    </span>
+                  )}
+                </h2>
+                <p className="text-xs text-white/80 mt-1 font-medium leading-relaxed">
+                  تصميم وصلي الأصلي المتكامل: أزرق كحلي وأصفر ذهبي، شريط الإحصائيات التمريري، الدوائر السعرية الكبيرة، كروت التواصل والتتبع السريع.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+              <button
+                type="button"
+                onClick={toggleWasliTheme}
+                className={`px-4 py-2 rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer ${
+                  wasliThemeActive
+                    ? "bg-[#FFC107] text-[#0B2E8C] hover:bg-[#FFE082]"
+                    : "bg-white text-[#0B2E8C] hover:bg-slate-100"
+                }`}
+                title="تفعيل أو إلغاء ثيم وصلي"
+              >
+                <span>⚡</span>
+                <span>{wasliThemeActive ? "إلغاء ثيم وصلي" : "تفعيل ثيم وصلي"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleWasliTheme}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                  wasliThemeActive ? "bg-[#FFC107]" : "bg-white/20"
+                }`}
+                title="مفتاح التبديل"
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-xs ${
+                    wasliThemeActive ? "-translate-x-8" : "-translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* قسم ثيمات عرض الطلبية */}
         <section className="kse-glass-dark mb-6 border border-sky-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
