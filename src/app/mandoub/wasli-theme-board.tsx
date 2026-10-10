@@ -716,26 +716,25 @@ export function WasliThemeBoard({
                       </div>
                     </div>
 
-                    {/* دائرة سعر الطلب الكبيرة: هي نفسها زر الاستلام والتسليم المباشر */}
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (isAssigned) {
-                          setPickupOrder(r);
-                        } else if (isDelivering) {
+                        if (isDelivering) {
                           setDeliveryOrder(r);
+                        } else if (!isDelivered) {
+                          setPickupOrder(r);
                         } else {
                           onOpenRow(r.id);
                         }
                       }}
                       className="shrink-0 relative flex items-center justify-center group/price cursor-pointer active:scale-95 transition-transform"
                       title={
-                        isAssigned
-                          ? "اضغط لتأكيد استلام الطلب"
-                          : isDelivering
-                          ? "اضغط لتأكيد تسليم الطلب"
-                          : "اضغط لفتح الطلب"
+                        isDelivering
+                          ? "اضغط لتسجيل تسليم الطلب واستلام المبلغ"
+                          : !isDelivered
+                          ? "اضغط لتسجيل استلام الشحنة ودفع المبلغ"
+                          : "اضغط لعرض تفاصيل الطلب"
                       }
                     >
                       <div className="w-[66px] h-[66px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] group-hover/price:shadow-[0_6px_16px_rgba(11,46,140,0.3)]">

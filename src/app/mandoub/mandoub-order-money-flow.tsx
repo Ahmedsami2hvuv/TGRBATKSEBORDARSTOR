@@ -535,6 +535,7 @@ export function MandoubOrderMoneyFlow({
       {pickupOpen && orderId && (
         <MandoubPickupModal
           orderId={orderId}
+          orderNumber={orderNumber}
           auth={auth}
           nextUrl={nextUrl}
           advanceStatus={pickupAdvanceToDelivering || orderStatus === "assigned" || orderStatus === "pending" ? "delivering" : ""}
@@ -550,6 +551,7 @@ export function MandoubOrderMoneyFlow({
       {deliveryOpen && orderId && (
         <MandoubDeliveryModal
           orderId={orderId}
+          orderNumber={orderNumber}
           auth={auth}
           nextUrl={nextUrl}
           advanceStatus={deliveryAdvanceToDelivered || orderStatus === "delivering" || orderStatus === "assigned" ? "delivered" : ""}
@@ -567,6 +569,7 @@ export function MandoubOrderMoneyFlow({
 
 function MandoubPickupModal({
   orderId,
+  orderNumber,
   auth,
   nextUrl,
   advanceStatus,
@@ -577,6 +580,7 @@ function MandoubPickupModal({
   onInstantOptimistic,
 }: {
   orderId: string;
+  orderNumber?: number;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   advanceStatus: string;
@@ -588,6 +592,7 @@ function MandoubPickupModal({
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
+  const [note, setNote] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const isMismatch =
     amountAlf.trim() !== "" &&
@@ -596,138 +601,183 @@ function MandoubPickupModal({
     selectedBox !== "zero";
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in"
+      onClick={onClose}
+    >
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#38BDF8] rounded-[28px] shadow-[0_12px_40px_rgba(10,61,42,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-white border-[2px] border-[#0B2E8C] rounded-[28px] shadow-[0_20px_60px_rgba(11,46,140,0.3)] p-[20px] relative overflow-hidden w-full max-w-[390px] text-right select-none my-auto animate-in zoom-in-95 duration-200"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+        {/* تدرج إضاءة علوي أزرق ناعم */}
+        <div className="absolute top-0 inset-x-0 h-[84px] bg-gradient-to-b from-[#E8EEFF] to-transparent opacity-70 pointer-events-none" />
+
+        {/* رأس النافذة */}
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[18px]">💸</span>
-            <h2 className="text-[18px] font-black text-[#0A3D2A]">تسجيل صادر</h2>
+            <div className="h-8 w-8 rounded-[10px] bg-[#E8EEFF] border border-[#D0DDFB] flex items-center justify-center shrink-0">
+              <Banknote className="w-[18px] h-[18px] text-[#0B2E8C]" />
+            </div>
+            <h2 className="text-[#0B2E8C] font-black text-[15px] tracking-tight">
+              تسجيل دفع {orderNumber ? `- طلب #${orderNumber}` : ""}
+            </h2>
+            <div className="h-6 w-6 rounded-full bg-[#FFC107] flex items-center justify-center shadow-[0_2px_6px_rgba(255,193,7,0.4)] shrink-0">
+              <Zap className="w-3 h-3 text-[#0B2E8C] fill-[#0B2E8C]" />
+            </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#38BDF8]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="h-9 w-9 rounded-full bg-[#F0F4FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] hover:bg-[#E8EEFF] transition-colors cursor-pointer shrink-0"
+            title="إغلاق"
           >
-            ×
+            <X className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
-        <div className="h-[1px] bg-[#38BDF8]/30 mx-6" />
 
-        <div className="p-6">
-          <form
-            ref={formRef}
-            action={pickupAction}
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const amtInput = formRef.current?.querySelector('input[name="amountAlf"]') as HTMLInputElement;
-              const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
-              const val = (amtInput?.value || amountAlf || defaultAlf || "0").trim();
-              const note = noteInput?.value || "";
-              onInstantOptimistic?.(val, note);
+        <div className="mt-4 h-[1px] w-full bg-[#D0DDFB]/80" />
+
+        <p className="mt-4 text-right text-[#0B2E8C] text-[13px] font-bold">
+          المبلغ (ألف دينار):
+        </p>
+
+        {/* خيارا الاختيار السريع لثيم وصلي */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {/* خيار لم أدفع */}
+          <button
+            type="button"
+            onClick={() => {
+              setAmountAlf("0");
+              setSelectedBox("zero");
+              onInstantOptimistic?.("0", undefined, "statusOnlyNoAmount");
             }}
+            className={`relative h-[90px] rounded-[20px] flex flex-col items-center justify-center gap-1 transition-all border-[2px] cursor-pointer ${
+              selectedBox === "zero"
+                ? "bg-[#E8EEFF] border-[#0B2E8C] border-[3px] shadow-[0_4px_16px_rgba(11,46,140,0.15)] scale-[1.02]"
+                : "bg-[#F8FAFF] border-[#D0DDFB] hover:border-[#0B2E8C]/40"
+            }`}
           >
-            <input type="hidden" name="c" value={auth.c} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-            <input type="hidden" name="orderId" value={orderId} />
-            <input type="hidden" name="next" value={nextUrl} />
-            <input type="hidden" name="advanceStatus" value={advanceStatus} />
-            <input type="hidden" name="mandoubMoneySubmitMode" value="" />
-
-            <div className="text-right">
-              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-            </div>
-
-            {/* مربعات الاختيار السريع 120x120 */}
-            <div className="flex gap-4 justify-center" dir="ltr">
-              <MandoubAmountSquareBtn
-                value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
-                onClick={() => {
-                  setAmountAlf(defaultAlf);
-                  setSelectedBox("num");
-                  onInstantOptimistic?.(defaultAlf);
-                }}
-                color="emerald"
-              />
-              <MandoubZeroSquareBtn
-                label="لم أدفع"
-                activeLabel="0"
-                selected={selectedBox === "zero" || amountAlf === "0"}
-                onClick={() => {
-                  setAmountAlf("0");
-                  setSelectedBox("zero");
-                  onInstantOptimistic?.("0", undefined, "statusOnlyNoAmount");
-                }}
-                color="emerald"
-              />
-            </div>
-
-            {/* حقل إدخال المبلغ */}
-            <div>
-              <input
-                name="amountAlf"
-                inputMode="numeric"
-                value={amountAlf}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
-                  else if (v === "0") setSelectedBox("zero");
-                  else setSelectedBox(null);
-                }}
-                placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#0A3D2A] placeholder:text-[#0A3D2A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
-              />
-            </div>
-
-            {/* حقل سبب اختلاف المبلغ: يظهر فقط لو المستخدم كتب سعراً مختلفاً */}
-            {isMismatch ? (
-              <div className="space-y-1.5 animate-in fade-in duration-200">
-                <div className="text-right">
-                  <span className="text-[13px] font-bold text-[#0A3D2A]">
-                    سبب اختلاف الصادر <span className="text-rose-600">*</span>
-                  </span>
-                </div>
-                <textarea
-                  name="mismatchNote"
-                  required
-                  rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
-                  placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
-                />
+            {selectedBox === "zero" && (
+              <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#0B2E8C] flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
               </div>
-            ) : (
-              <input type="hidden" name="mismatchNote" value="" />
             )}
+            <span className={`font-bold text-[16px] ${selectedBox === "zero" ? "text-[#0B2E8C]" : "text-[#0B2E8C]/70"}`}>
+              لم أدفع
+            </span>
+            <span className="text-[11px] text-[#0B2E8C]/40 font-medium">بعد</span>
+          </button>
 
-            <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={pickupPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-[#0A3D2A] border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 100%)" }}
-              >
-                <span>💾</span>
-                <span>تأكيد الصادر ⚡</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
-              >
-                إلغاء
-              </button>
-            </div>
-          </form>
+          {/* خيار المبلغ السريع */}
+          <button
+            type="button"
+            onClick={() => {
+              setAmountAlf(defaultAlf);
+              setSelectedBox("num");
+              onInstantOptimistic?.(defaultAlf);
+            }}
+            className={`relative h-[90px] rounded-[20px] flex items-center justify-center transition-all border-[2px] cursor-pointer ${
+              selectedBox === "num"
+                ? "bg-[#E8EEFF] border-[#0B2E8C] border-[3px] shadow-[0_4px_16px_rgba(11,46,140,0.15)] scale-[1.02]"
+                : "bg-[#F8FAFF] border-[#D0DDFB] hover:border-[#0B2E8C]/40"
+            }`}
+          >
+            {selectedBox === "num" && (
+              <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#0B2E8C] flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              </div>
+            )}
+            <span className="text-[#0B2E8C] font-black text-[36px] leading-none">
+              {defaultAlf || "0"}
+            </span>
+          </button>
         </div>
+
+        <form
+          ref={formRef}
+          action={pickupAction}
+          className="mt-4 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const val = amountAlf.trim() !== "" ? amountAlf.trim() : (selectedBox === "zero" ? "0" : (defaultAlf || "0"));
+            onInstantOptimistic?.(val, note, val === "0" ? "statusOnlyNoAmount" : "");
+          }}
+        >
+          <input type="hidden" name="c" value={auth.c} />
+          <input type="hidden" name="exp" value={auth.exp} />
+          <input type="hidden" name="s" value={auth.s} />
+          <input type="hidden" name="orderId" value={orderId} />
+          <input type="hidden" name="next" value={nextUrl} />
+          <input type="hidden" name="advanceStatus" value={advanceStatus} />
+          <input type="hidden" name="mandoubMoneySubmitMode" value="" />
+
+          {/* خانة كتابة السعر: تبقى فارغة بدون أي كتابة مسبقة إلا إذا أراد المندوب */}
+          <div className="relative">
+            <input
+              name="amountAlf"
+              inputMode="numeric"
+              value={amountAlf}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, "");
+                setAmountAlf(v);
+                if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
+                else if (v === "0") setSelectedBox("zero");
+                else setSelectedBox(null);
+              }}
+              placeholder={defaultAlf || "0"}
+              className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all"
+            />
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#4AA3FF] bg-[#F0F4FF] px-2 py-1 rounded-full border border-[#D0DDFB]">
+              ألف د.ع
+            </span>
+          </div>
+
+          {/* حقل سبب اختلاف المبلغ إن وجد */}
+          {isMismatch ? (
+            <div className="space-y-1.5 animate-in fade-in duration-200">
+              <div className="text-right">
+                <span className="text-[12px] font-bold text-[#0B2E8C]">
+                  سبب اختلاف الصادر <span className="text-rose-600">*</span>
+                </span>
+              </div>
+              <textarea
+                name="mismatchNote"
+                required
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                className="w-full min-h-[70px] rounded-[16px] border-[1.5px] border-[#D0DDFB] bg-[#F8FAFF] px-3 py-2 text-[12px] text-right text-[#0B2E8C] placeholder:text-[#0B2E8C]/40 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#E8EEFF] resize-none font-medium"
+                placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+              />
+            </div>
+          ) : (
+            <input type="hidden" name="mismatchNote" value="" />
+          )}
+
+          <div className="h-[1px] w-full bg-[#D0DDFB]/60 my-2" />
+
+          {/* أزرار الإجراء */}
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-[48px] rounded-[20px] bg-[#F0F4FF] border border-[#D0DDFB] text-[#0B2E8C] font-bold text-[13px] hover:bg-[#E8EEFF] active:scale-[0.98] transition-all cursor-pointer"
+              disabled={pickupPending}
+            >
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={pickupPending}
+              className="flex-[2] h-[48px] rounded-[20px] bg-gradient-to-br from-[#0B2E8C] to-[#1E4DB7] text-[#FFC107] font-black text-[14px] flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(11,46,140,0.3)] hover:shadow-[0_10px_24px_rgba(11,46,140,0.4)] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+            >
+              <Zap className="w-4 h-4 fill-[#FFC107] text-[#FFC107]" />
+              <span>{pickupPending ? "جارٍ الحفظ…" : "تأكيد الدفع"}</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -735,6 +785,7 @@ function MandoubPickupModal({
 
 function MandoubDeliveryModal({
   orderId,
+  orderNumber,
   auth,
   nextUrl,
   advanceStatus,
@@ -746,6 +797,7 @@ function MandoubDeliveryModal({
   onInstantOptimistic,
 }: {
   orderId: string;
+  orderNumber?: number;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   advanceStatus: string;
@@ -758,6 +810,7 @@ function MandoubDeliveryModal({
 }) {
   const [amountAlf, setAmountAlf] = useState("");
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
+  const [note, setNote] = useState("");
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [geoError, setGeoError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -773,9 +826,8 @@ function MandoubDeliveryModal({
 
   function submitAfterLocation(latVal?: string, lngVal?: string) {
     setLocationModalOpen(false);
-    const amt = amountAlf || defaultAlf || "0";
-    const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
-    onInstantOptimistic?.(amt, noteInput?.value || "", latVal, lngVal, amt === "0" ? "statusOnlyNoAmount" : "");
+    const amt = amountAlf.trim() !== "" ? amountAlf.trim() : (selectedBox === "zero" ? "0" : (defaultAlf || "0"));
+    onInstantOptimistic?.(amt, note, latVal, lngVal, amt === "0" ? "statusOnlyNoAmount" : "");
   }
 
   function onConfirmGps() {
@@ -802,209 +854,255 @@ function MandoubDeliveryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-[#0A1840]/60 backdrop-blur-[6px] overflow-y-auto animate-in fade-in"
+      onClick={onClose}
+    >
       <div
-        className="bg-[#FDF8EE] border-[2px] border-[#38BDF8] rounded-[28px] shadow-[0_12px_40px_rgba(139,46,26,0.10)] overflow-hidden w-full max-w-[440px] text-right animate-in fade-in zoom-in-95"
+        className="bg-white border-[2px] border-[#FFC107] rounded-[28px] shadow-[0_20px_60px_rgba(255,140,0,0.25)] p-[20px] relative overflow-hidden w-full max-w-[390px] text-right select-none my-auto animate-in zoom-in-95 duration-200"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+        {/* تدرج إضاءة علوي دافئ (حار) */}
+        <div className="absolute top-0 inset-x-0 h-[84px] bg-gradient-to-b from-[#FFF8E1] to-transparent opacity-90 pointer-events-none" />
+
+        {/* رأس النافذة الحارة */}
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[18px]">🫴</span>
-            <h2 className="text-[18px] font-black text-[#8B2E1A]">تسجيل وارد</h2>
+            <div className="h-8 w-8 rounded-[10px] bg-[#FFF8E1] border border-[#FFECB3] flex items-center justify-center shrink-0">
+              <Package className="w-[18px] h-[18px] text-[#FF8C00]" />
+            </div>
+            <h2 className="text-[#0B2E8C] font-black text-[15px] tracking-tight">
+              تسجيل استلام {orderNumber ? `- طلب #${orderNumber}` : ""}
+            </h2>
+            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF8C00] flex items-center justify-center shadow-[0_2px_6px_rgba(255,140,0,0.4)] shrink-0">
+              <Zap className="w-3 h-3 text-white fill-white" />
+            </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F0EAD8] border border-[#38BDF8]/40 flex items-center justify-center text-[#0A3D2A] text-[16px] cursor-pointer hover:bg-[#E8E0D0] transition font-bold"
+            className="h-9 w-9 rounded-full bg-[#FFF8E1] border border-[#FFE082] flex items-center justify-center text-[#BF5D00] hover:bg-[#FFECB3] transition-colors cursor-pointer shrink-0"
+            title="إغلاق"
           >
-            ×
+            <X className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
-        <div className="h-[1px] bg-[#38BDF8]/30 mx-6" />
 
-        <div className="p-6">
-          <form
-            ref={formRef}
-            action={deliveryAction}
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
+        <div className="mt-4 h-[1px] w-full bg-[#FFE082]/80" />
+
+        <p className="mt-4 text-right text-[#5D4037] text-[13px] font-bold">
+          المبلغ (ألف دينار):
+        </p>
+
+        {/* خيارا الاختيار السريع للنافذة الحارة */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {/* خيار لم أستلم */}
+          <button
+            type="button"
+            onClick={() => {
+              setAmountAlf("0");
+              setSelectedBox("zero");
               if (missingCustomerLocation && !locationPromptDoneRef.current) {
                 setGeoError("");
                 setLocationModalOpen(true);
               } else {
-                const noteInput = formRef.current?.querySelector('textarea[name="mismatchNote"]') as HTMLTextAreaElement;
-                onInstantOptimistic?.(amountAlf || defaultAlf || "0", noteInput?.value || "", latRef.current?.value, lngRef.current?.value);
+                onInstantOptimistic?.("0", undefined, undefined, undefined, "statusOnlyNoAmount");
               }
             }}
+            className={`relative h-[90px] rounded-[20px] flex flex-col items-center justify-center gap-1 transition-all border-[2px] cursor-pointer ${
+              selectedBox === "zero"
+                ? "bg-[#FFECB3] border-[#FF8C00] border-[3px] shadow-[0_4px_16px_rgba(255,140,0,0.2)] scale-[1.02]"
+                : "bg-[#FFF8E1] border-[#FFE082] hover:border-[#FFC107]"
+            }`}
           >
-            <input type="hidden" name="c" value={auth.c} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-            <input type="hidden" name="orderId" value={orderId} />
-            <input type="hidden" name="next" value={nextUrl} />
-            <input type="hidden" name="advanceStatus" value={advanceStatus} />
-            <input type="hidden" name="mandoubMoneySubmitMode" value="" />
-            <input ref={latRef} type="hidden" name="lat" value="" />
-            <input ref={lngRef} type="hidden" name="lng" value="" />
-
-            <div className="text-right">
-              <span className="text-[14px] font-bold text-[#0A3D2A]">المبلغ (ألف دينار):</span>
-            </div>
-
-            {/* مربعات الاختيار السريع 120x120 */}
-            <div className="flex gap-4 justify-center" dir="ltr">
-              <MandoubAmountSquareBtn
-                value={defaultAlf || "0"}
-                selected={selectedBox === "num" || (amountAlf === defaultAlf && defaultAlf !== "" && defaultAlf !== "0")}
-                onClick={() => {
-                  setAmountAlf(defaultAlf);
-                  setSelectedBox("num");
-                  if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                    setGeoError("");
-                    setLocationModalOpen(true);
-                  } else {
-                    onInstantOptimistic?.(defaultAlf);
-                  }
-                }}
-                color="orange"
-              />
-              <MandoubZeroSquareBtn
-                label="لم استلم"
-                activeLabel="0"
-                selected={selectedBox === "zero" || amountAlf === "0"}
-                onClick={() => {
-                  setAmountAlf("0");
-                  setSelectedBox("zero");
-                  if (missingCustomerLocation && !locationPromptDoneRef.current) {
-                    setGeoError("");
-                    setLocationModalOpen(true);
-                  } else {
-                    onInstantOptimistic?.("0", undefined, undefined, undefined, "statusOnlyNoAmount");
-                  }
-                }}
-                color="orange"
-              />
-            </div>
-
-            {/* حقل إدخال المبلغ */}
-            <div>
-              <input
-                name="amountAlf"
-                inputMode="numeric"
-                value={amountAlf}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setAmountAlf(v);
-                  if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
-                  else if (v === "0") setSelectedBox("zero");
-                  else setSelectedBox(null);
-                }}
-                placeholder={defaultAlf || "0"}
-                className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#38BDF8] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
-              />
-            </div>
-
-            {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً */}
-            {isMismatch ? (
-              <div className="space-y-1.5 animate-in fade-in duration-200">
-                <div className="text-right">
-                  <span className="text-[13px] font-bold text-[#0A3D2A]">
-                    سبب اختلاف الوارد <span className="text-rose-600">*</span>
-                  </span>
-                </div>
-                <textarea
-                  name="mismatchNote"
-                  required
-                  rows={2}
-                  className="w-full min-h-[78px] rounded-[16px] border-[1.5px] border-[#38BDF8]/70 bg-white px-4 py-3 text-[13px] text-right placeholder:text-[#0A3D2A]/40 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/30 resize-none font-medium"
-                  placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
-                />
+            {selectedBox === "zero" && (
+              <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#FF8C00] flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
               </div>
-            ) : (
-              <input type="hidden" name="mismatchNote" value="" />
             )}
+            <span className={`font-bold text-[16px] ${selectedBox === "zero" ? "text-[#BF5D00]" : "text-[#8D6E63]"}`}>
+              لم أستلم
+            </span>
+            <span className="text-[11px] text-[#BF5D00]/60 font-medium">بعد</span>
+          </button>
 
-            <div className="h-[1px] bg-[#38BDF8]/20 my-4" />
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={deliveryPending}
-                className="flex-1 h-[48px] rounded-[16px] font-black text-[15px] text-white border border-[#38BDF8] shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:brightness-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                style={{ background: "linear-gradient(180deg, #F4A27A 0%, #D96A3A 100%)" }}
-              >
-                <span>💾</span>
-                <span>تأكيد الوارد ⚡</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-[88px] h-[48px] rounded-[16px] bg-[#F0EAD8] border border-[#38BDF8]/30 font-bold text-[14px] text-[#0A3D2A] hover:bg-[#E8E0D0] transition active:scale-[0.98] cursor-pointer"
-              >
-                إلغاء
-              </button>
-            </div>
-          </form>
+          {/* خيار المبلغ السريع */}
+          <button
+            type="button"
+            onClick={() => {
+              setAmountAlf(defaultAlf);
+              setSelectedBox("num");
+              if (missingCustomerLocation && !locationPromptDoneRef.current) {
+                setGeoError("");
+                setLocationModalOpen(true);
+              } else {
+                onInstantOptimistic?.(defaultAlf);
+              }
+            }}
+            className={`relative h-[90px] rounded-[20px] flex items-center justify-center transition-all border-[2px] cursor-pointer ${
+              selectedBox === "num"
+                ? "bg-[#FFECB3] border-[#FF8C00] border-[3px] shadow-[0_4px_16px_rgba(255,140,0,0.2)] scale-[1.02]"
+                : "bg-[#FFF8E1] border-[#FFE082] hover:border-[#FFC107]"
+            }`}
+          >
+            {selectedBox === "num" && (
+              <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-[#FF8C00] flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              </div>
+            )}
+            <span className="text-[#BF5D00] font-black text-[36px] leading-none">
+              {defaultAlf || "0"}
+            </span>
+          </button>
         </div>
 
-        {/* نافذة رفع موقع GPS إن لم يكن للطلب موقع */}
-        {locationModalOpen && typeof document !== "undefined"
-          ? createPortal(
-              <div
-                className="fixed inset-0 z-[140] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-              >
-                <div className="max-w-md rounded-2xl border-2 border-[#38BDF8] bg-[#06281D] p-5 shadow-2xl text-[#FFF8F0] text-right">
-                  <p className="text-base font-black leading-relaxed text-[#FDE047]">
-                    هذا الطلب لا يحتوي على موقع للزبون
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-[#FFF8F0]/85">
-                    أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#FDE047]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
-                  </p>
-                  {geoError ? (
-                    <p className="mt-3 text-sm font-bold text-rose-300">{geoError}</p>
-                  ) : null}
-                  <div className="mt-5 flex flex-col gap-2.5">
-                    <button
-                      type="button"
-                      onClick={onConfirmGps}
-                      disabled={deliveryPending}
-                      className="rounded-xl bg-gradient-to-r from-[#FDE047] via-[#E5C158] to-[#38BDF8] px-4 py-3 text-sm font-black text-[#06281D] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
-                    >
-                      ✓ نعم، ارفع موقعي الحالي
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onSkipLocation}
-                      disabled={deliveryPending}
-                      className="rounded-xl border-2 border-[#38BDF8] bg-[#0F4D3A] px-4 py-3 text-sm font-black text-[#FDE047] shadow-sm transition hover:bg-[#165B45] active:scale-95 disabled:opacity-60 cursor-pointer"
-                    >
-                      ✕ لا، لا ترفع موقعي
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLocationModalOpen(false);
-                        setGeoError("");
-                      }}
-                      className="mt-2 text-center text-sm font-bold text-[#38BDF8] hover:underline cursor-pointer"
-                      disabled={deliveryPending}
-                    >
-                      إلغاء والرجوع
-                    </button>
-                  </div>
-                </div>
-              </div>,
-              document.body,
-            )
-          : null}
+        <form
+          ref={formRef}
+          action={deliveryAction}
+          className="mt-4 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (missingCustomerLocation && !locationPromptDoneRef.current) {
+              setGeoError("");
+              setLocationModalOpen(true);
+            } else {
+              const val = amountAlf.trim() !== "" ? amountAlf.trim() : (selectedBox === "zero" ? "0" : (defaultAlf || "0"));
+              onInstantOptimistic?.(val, note, latRef.current?.value, lngRef.current?.value, val === "0" ? "statusOnlyNoAmount" : "");
+            }
+          }}
+        >
+          <input type="hidden" name="c" value={auth.c} />
+          <input type="hidden" name="exp" value={auth.exp} />
+          <input type="hidden" name="s" value={auth.s} />
+          <input type="hidden" name="orderId" value={orderId} />
+          <input type="hidden" name="next" value={nextUrl} />
+          <input type="hidden" name="advanceStatus" value={advanceStatus} />
+          <input type="hidden" name="mandoubMoneySubmitMode" value="" />
+          <input ref={latRef} type="hidden" name="lat" value="" />
+          <input ref={lngRef} type="hidden" name="lng" value="" />
+
+          {/* خانة كتابة السعر الحارة: فارغة تماماً بالبداية */}
+          <div className="relative">
+            <input
+              name="amountAlf"
+              inputMode="numeric"
+              value={amountAlf}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, "");
+                setAmountAlf(v);
+                if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
+                else if (v === "0") setSelectedBox("zero");
+                else setSelectedBox(null);
+              }}
+              placeholder={defaultAlf || "0"}
+              className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all"
+            />
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#FF8C00] bg-[#FFF8E1] px-2 py-1 rounded-full border border-[#FFE082]">
+              ألف د.ع
+            </span>
+          </div>
+
+          {/* حقل سبب اختلاف المبلغ إن وجد */}
+          {isMismatch ? (
+            <div className="space-y-1.5 animate-in fade-in duration-200">
+              <div className="text-right">
+                <span className="text-[12px] font-bold text-[#BF5D00]">
+                  سبب اختلاف الوارد <span className="text-rose-600">*</span>
+                </span>
+              </div>
+              <textarea
+                name="mismatchNote"
+                required
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                className="w-full min-h-[70px] rounded-[16px] border-[1.5px] border-[#FFE082] bg-[#FFF8E1] px-3 py-2 text-[12px] text-right text-[#5D4037] placeholder:text-[#BF5D00]/40 focus:outline-none focus:border-[#FF8C00] focus:ring-2 focus:ring-[#FFF8E1] resize-none font-medium"
+                placeholder="اكتب سبب اختلاف المبلغ عن المطلوب..."
+              />
+            </div>
+          ) : (
+            <input type="hidden" name="mismatchNote" value="" />
+          )}
+
+          <div className="h-[1px] w-full bg-[#FFE082]/60 my-2" />
+
+          {/* أزرار الإجراء */}
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-[48px] rounded-[20px] bg-[#FFF8E1] border border-[#FFE082] text-[#5D4037] font-bold text-[13px] hover:bg-[#FFECB3] active:scale-[0.98] transition-all cursor-pointer"
+              disabled={deliveryPending}
+            >
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={deliveryPending}
+              className="flex-[2] h-[48px] rounded-[20px] bg-gradient-to-br from-[#FFC107] to-[#FF8C00] text-[#0B2E8C] font-black text-[14px] flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(255,140,0,0.35)] hover:shadow-[0_10px_24px_rgba(255,140,0,0.45)] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+            >
+              <Package className="w-4 h-4 text-[#0B2E8C]" />
+              <span>{deliveryPending ? "جارٍ الحفظ…" : "تأكيد الاستلام"}</span>
+            </button>
+          </div>
+        </form>
+
+        {/* نافذة رفع الموقع GPS */}
+        {locationModalOpen ? (
+          <div
+            className="fixed inset-0 z-[140] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="max-w-md rounded-2xl border-2 border-[#FFC107] bg-[#0A1840] p-5 shadow-2xl text-[#FFF8F0] text-right">
+              <p className="text-base font-black leading-relaxed text-[#FFC107]">
+                هذا الطلب لا يحتوي على موقع للزبون
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-[#FFF8F0]/85">
+                أتممت تسليم الطلب الآن؟ هل تريد رفع <strong className="text-[#FFC107]">موقعك الحالي</strong> (حيث أنت الآن) على أنه موقع الزبون؟
+              </p>
+              {geoError ? (
+                <p className="mt-3 text-sm font-bold text-rose-300">{geoError}</p>
+              ) : null}
+              <div className="mt-5 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={onConfirmGps}
+                  disabled={deliveryPending}
+                  className="rounded-xl bg-gradient-to-r from-[#FFC107] via-[#FFA000] to-[#FF8C00] px-4 py-3 text-sm font-black text-[#0B2E8C] shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+                >
+                  ✓ نعم، ارفع موقعي الحالي
+                </button>
+                <button
+                  type="button"
+                  onClick={onSkipLocation}
+                  disabled={deliveryPending}
+                  className="rounded-xl border-2 border-[#FFC107]/40 bg-white/10 px-4 py-3 text-sm font-black text-[#FFC107] shadow-sm transition hover:bg-white/20 active:scale-95 disabled:opacity-60 cursor-pointer"
+                >
+                  ✕ لا، لا ترفع موقعي
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocationModalOpen(false);
+                    setGeoError("");
+                  }}
+                  className="mt-2 text-center text-sm font-bold text-[#FFC107] hover:underline cursor-pointer"
+                  disabled={deliveryPending}
+                >
+                  إلغاء والرجوع
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
+
 
 /* مكونات المربعات التفاعلية الفاخرة المطابقة للتصميم الملكي */
 function MandoubAmountSquareBtn({
@@ -1097,16 +1195,6 @@ function MandoubZeroSquareBtn({
   );
 }
 
-export function PickupMoneyForm({
-  orderId,
-  auth,
-  nextUrl,
-  expectedAlfHint,
-  remainingAlfHint,
-  advanceToDelivering,
-  pickupRemainingDinar,
-  pickupSumDinar,
-  orderSubtotalDinar,
 export function PickupMoneyForm({
   orderId,
   orderShortId,
