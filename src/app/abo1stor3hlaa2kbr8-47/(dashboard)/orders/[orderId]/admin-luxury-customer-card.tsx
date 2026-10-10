@@ -397,8 +397,15 @@ export function AdminLuxuryCustomerCard({
         <div className="p-3.5 space-y-3">
           <div className="flex gap-3 items-start">
             <div className="flex-1 min-w-0 flex flex-col gap-2">
-              {/* اسم الزبون إن وجد */}
-              {effectiveName && effectiveName !== "الزبون" && effectiveName !== "المستلم" && effectiveName !== "—" && (
+              {/* اسم الزبون إن وجد (مع التأكد من عدم ظهور اسم العميل أو المحل في كارت الزبون) */}
+              {effectiveName &&
+                effectiveName !== "الزبون" &&
+                effectiveName !== "المستلم" &&
+                effectiveName !== "—" &&
+                effectiveName.trim().toLowerCase() !== order.shop?.name?.trim()?.toLowerCase() &&
+                effectiveName.trim().toLowerCase() !== order.shop?.ownerName?.trim()?.toLowerCase() &&
+                effectiveName.trim().toLowerCase() !== order.submittedBy?.name?.trim()?.toLowerCase() &&
+                effectiveName.trim().toLowerCase() !== order.submittedByCompanyPreparer?.name?.trim()?.toLowerCase() && (
                 <div className="text-[15px] font-black text-[#0F172A] leading-tight truncate">
                   {effectiveName}
                 </div>

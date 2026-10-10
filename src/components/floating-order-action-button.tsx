@@ -252,12 +252,12 @@ export function FloatingOrderActionButton({
     : "تسليم الطلب للزبون وتسجيل الوارد (اضغط مطولاً للخصائص والإعدادات) 📦";
 
   const glowColor = isPickup
-    ? "rgba(10, 61, 46, 0.4)"
-    : "rgba(197, 48, 48, 0.4)";
+    ? "rgba(11, 46, 140, 0.45)"
+    : "rgba(255, 193, 7, 0.55)";
 
   return (
     <>
-      {/* --- الزر العائم الملكي الشامل بدون محيط أبيض فارغ --- */}
+      {/* --- الزر العائم الحر بهوية وصلي: أزرق للاستلام وأصفر للتسليم --- */}
       <div
         ref={dragRef}
         onMouseDown={handleStart}
@@ -279,27 +279,70 @@ export function FloatingOrderActionButton({
         title={btnTitle}
       >
         <div
-          className="relative w-full h-full rounded-full flex items-center justify-center transition-all overflow-hidden"
+          className={`relative w-full h-full rounded-full flex flex-col items-center justify-center transition-all overflow-hidden border-[3px] ${
+            isPickup
+              ? "bg-gradient-to-tr from-[#0B2E8C] via-[#153E9B] to-[#1E4DB7] border-[#FFC107] shadow-[0_8px_24px_rgba(11,46,140,0.5),inset_0_2px_4px_rgba(255,255,255,0.35)]"
+              : "bg-gradient-to-tr from-[#FFA000] via-[#FFB300] to-[#FFC107] border-white shadow-[0_8px_24px_rgba(255,193,7,0.6),inset_0_2px_4px_rgba(255,255,255,0.6)]"
+          }`}
           style={{
-            filter: `drop-shadow(0 6px 16px ${glowColor}) drop-shadow(0 2px 6px rgba(201,168,106,0.35))`,
+            filter: `drop-shadow(0 6px 16px ${glowColor})`,
           }}
         >
           {/* حلقة نبض ناعمة لجذب الانتباه */}
           <div
             className="absolute inset-0 rounded-full animate-ping opacity-25 pointer-events-none"
             style={{
-              backgroundColor: isPickup ? "#0A3D2E" : "#C53030",
+              backgroundColor: isPickup ? "#0B2E8C" : "#FFC107",
               animationDuration: "3.5s",
             }}
           />
 
-          {/* صورة الزر الملكية مالئة للحاوية 100% بدون أي حواف بيضاء */}
-          <img
-            src={btnImageSrc}
-            alt={isPickup ? "استلام" : "تسليم"}
-            className="w-full h-full object-cover pointer-events-none drop-shadow-md rounded-full scale-[1.03]"
-            draggable={false}
-          />
+          {/* محتوى الزر بهوية وصلي: أيقونة + نص واضح */}
+          {isPickup ? (
+            <div className="flex flex-col items-center justify-center pointer-events-none leading-none select-none">
+              <svg
+                className="text-[#FFC107] drop-shadow-sm transition-transform"
+                style={{ width: `${Math.round(size * 0.38)}px`, height: `${Math.round(size * 0.38)}px` }}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              <span
+                className="font-black text-[#FFC107] tracking-tight drop-shadow-sm mt-0.5"
+                style={{ fontSize: `${Math.max(10, Math.round(size * 0.18))}px` }}
+              >
+                استلام
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center pointer-events-none leading-none select-none">
+              <svg
+                className="text-[#0B2E8C] drop-shadow-sm transition-transform"
+                style={{ width: `${Math.round(size * 0.38)}px`, height: `${Math.round(size * 0.38)}px` }}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
+              <span
+                className="font-black text-[#0B2E8C] tracking-tight drop-shadow-sm mt-0.5"
+                style={{ fontSize: `${Math.max(10, Math.round(size * 0.18))}px` }}
+              >
+                تسليم
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
