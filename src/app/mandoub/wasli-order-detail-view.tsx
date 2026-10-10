@@ -458,18 +458,9 @@ export function WasliOrderDetailView({
                 </button>
               )}
 
-              {/* أزرار الاتصال والواتساب مع العميل */}
+              {/* أزرار الواتساب والاتصال مع العميل (الواتساب على اليمين والاتصال على اليسار) */}
               {shopPhone && (
                 <div className="mt-3 flex gap-2.5">
-                  <a
-                    href={telHref(shopPhone)}
-                    className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-[0_4px_12px_rgba(11,46,140,0.18)] transition hover:bg-[#1E4DB7] active:scale-[0.98]"
-                  >
-                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    <span>اتصال بالعميل</span>
-                  </a>
                   <button
                     type="button"
                     onClick={() => {
@@ -483,6 +474,15 @@ export function WasliOrderDetailView({
                     </svg>
                     <span>واتس العميل</span>
                   </button>
+                  <a
+                    href={telHref(shopPhone)}
+                    className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-[0_4px_12px_rgba(11,46,140,0.18)] transition hover:bg-[#1E4DB7] active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <span>اتصال بالعميل</span>
+                  </a>
                 </div>
               )}
             </div>
@@ -492,15 +492,6 @@ export function WasliOrderDetailView({
           {/* كارت الزبون (المستلم) */}
           {/* ========================================================================= */}
           <section className="relative overflow-visible rounded-[24px] border-[1.5px] border-[#FFD54F]/60 bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)]">
-            {/* الشارة الدائرية العائمة (تسليم) */}
-            <div className="absolute -left-2 -top-3 z-10 flex h-[56px] w-[56px] flex-col items-center justify-center rounded-full border-[3px] border-white bg-[#FFC107] shadow-[0_6px_16px_rgba(255,193,7,0.4)]">
-              <svg className="w-5 h-5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
-              <span className="mt-0.5 text-[11px] font-extrabold leading-none text-[#0B2E8C]">تسليم</span>
-            </div>
 
             {/* الترويسة */}
             <div className="flex items-center justify-between bg-[#FFFBEB] px-4 py-3 border-b border-[#FFE082]/40 rounded-t-[23px]">
@@ -705,18 +696,9 @@ export function WasliOrderDetailView({
                 </button>
               </div>
 
-              {/* أزرار الاتصال والواتساب مع الزبون */}
+              {/* أزرار الواتساب والاتصال مع الزبون (الواتساب على اليمين والاتصال على اليسار) */}
               {customerPhone && (
                 <div className="mt-2.5 flex gap-2.5">
-                  <a
-                    href={telHref(customerPhone)}
-                    className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-xs transition hover:bg-[#1E4DB7] active:scale-[0.98]"
-                  >
-                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    <span>اتصال</span>
-                  </a>
                   <button
                     type="button"
                     onClick={() => {
@@ -730,6 +712,15 @@ export function WasliOrderDetailView({
                     </svg>
                     <span>واتساب</span>
                   </button>
+                  <a
+                    href={telHref(customerPhone)}
+                    className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-xs transition hover:bg-[#1E4DB7] active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4 text-[#FFC107]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <span>اتصال</span>
+                  </a>
                 </div>
               )}
 
