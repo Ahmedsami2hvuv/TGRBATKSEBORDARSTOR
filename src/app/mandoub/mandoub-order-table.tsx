@@ -1767,7 +1767,7 @@ export function MandoubOrderTable({
           setPickupOrder={(o) => setPickupOrder(o)}
           setDeliveryOrder={(o) => setDeliveryOrder(o)}
           showQuickSelect={!!showQuickSelect}
-          setShowQuickSelect={(v) => {
+          setShowQuickSelect={(v: any) => {
             if (setShowQuickSelect) {
               setShowQuickSelect(typeof v === "function" ? v(!!showQuickSelect) : v);
             }
@@ -1779,11 +1779,16 @@ export function MandoubOrderTable({
           qSearch={qSearch}
           onSearchChange={onSearchChange}
           showSearch={!!showSearch}
-          setShowSearch={(v) => {
+          setShowSearch={(v: any) => {
             if (setShowSearch) {
               setShowSearch(typeof v === "function" ? v(!!showSearch) : v);
             }
           }}
+          isSortingMode={isSortingMode}
+          setIsSortingMode={setIsSortingMode}
+          moveRow={moveRow}
+          smartSortByRegion={smartSortByRegion}
+          resetSortOrder={resetSortOrder}
         />
       ) : courierSettings?.useFullBlockView ? (
         <MandoubFullBlockCardGrid
