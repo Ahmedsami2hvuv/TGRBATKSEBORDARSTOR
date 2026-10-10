@@ -111,6 +111,8 @@ type PhoneProfileFallback = {
   alternatePhone: string | null;
 } | null;
 
+import { WasliOrderDetailView } from "@/app/mandoub/wasli-order-detail-view";
+
 export function PreparerOrderDetailSection({
   order,
   closeHref,
@@ -148,6 +150,24 @@ export function PreparerOrderDetailSection({
   productBranchMap?: Record<string, string>;
   couriers?: { id: string; name: string }[];
 }) {
+  return (
+    <WasliOrderDetailView
+      order={order}
+      auth={{ c: preparerId || auth?.p || "", exp: auth?.exp || "", s: auth?.s || "" }}
+      closeHref={closeHref}
+      onCloseModal={onCloseModal}
+      nextUrl={nextUrl}
+      viewerCourierId={undefined}
+      courierName="المجهز"
+      phoneProfile={phoneProfile}
+      secondPhoneProfile={secondPhoneProfile}
+      smartHintLine={smartHintLine}
+      secondSmartHintLine={secondSmartHintLine}
+      isModal={Boolean(onCloseModal)}
+      customerDebt={null}
+      customWaButtons={[]}
+    />
+  );
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const [localOrderImageUrl, setLocalOrderImageUrl] = useState<string | null>(order.imageUrl || null);
   const [localOrderImageUploader, setLocalOrderImageUploader] = useState<string | null>(order.orderImageUploadedByName || null);

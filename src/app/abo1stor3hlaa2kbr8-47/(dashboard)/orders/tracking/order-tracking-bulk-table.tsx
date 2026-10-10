@@ -947,26 +947,23 @@ function TrackingCardsView({
 
         return (
           <div key={group.dateKey} className="space-y-2.5 w-full">
-            {/* شريط الفاصل الزمني البارز بين الأيام بالزخرفة الدمشقية الأرابيسك */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#06281D] via-[#0A3D2E] to-[#06281D] border-y border-[#C9A86A] px-3 sm:px-4 py-2 text-[#FFF8F0] shadow-md flex items-center justify-between w-full">
-              {/* زخرفة دمشقية يمنى */}
-              <div className="flex items-center gap-2 opacity-90">
-                <span className="text-[#F5D77F] text-base">❧</span>
-                <span className="text-[#C9A86A] text-sm">⚜️</span>
+            {/* شريط الفاصل الزمني للأيام بهوية وصلي الرسمية */}
+            <div className="relative overflow-hidden rounded-[16px] bg-gradient-to-r from-[#0B2E8C] via-[#153E9B] to-[#0B2E8C] border border-[#FFC107]/40 px-3.5 py-2 text-white shadow-sm flex items-center justify-between w-full">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FFC107]" />
+                <span className="text-[#FFC107] font-black text-xs">وصلي</span>
               </div>
 
               {/* تاريخ اليوم بالمنتصف */}
               <div className="text-center font-black text-xs sm:text-sm tracking-wide text-white drop-shadow-sm">
-                {group.dateLabel} <span className="text-[#F5D77F] font-semibold text-xs">({group.items.length} طلب)</span>
+                {group.dateLabel} <span className="text-[#FFC107] font-semibold text-xs">({group.items.length} طلب)</span>
               </div>
 
-              {/* أيقونة التقويم المذهبة في اليسار */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-b from-[#E67E22] to-[#D35400] text-white flex flex-col items-center justify-center border border-[#FFF0D0] shadow-xs leading-none">
-                  <span className="text-[8px] font-bold opacity-90">📅</span>
-                  <span className="text-xs sm:text-sm font-black">{dateDayNumber}</span>
+              {/* رقم اليوم */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-lg bg-[#FFC107] text-[#0B2E8C] flex items-center justify-center shadow-xs font-black text-xs">
+                  {dateDayNumber}
                 </div>
-                <span className="text-[#F5D77F] text-base">☙</span>
               </div>
             </div>
 
@@ -1039,67 +1036,40 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[20px] px-2.5 sm:px-5 py-2.5 sm:py-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-transparent bg-no-repeat bg-[length:100%_100%] w-full min-h-[215px] sm:min-h-[225px] select-none ${
-                      selected ? "ring-2 ring-[#0A3D2E]" : ""
+                    className={`group relative rounded-[22px] px-3.5 sm:px-4 py-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-white border-[1.5px] border-[#D0DDFB] shadow-[0_4px_16px_rgba(11,46,140,0.06)] hover:shadow-[0_8px_24px_rgba(11,46,140,0.12)] w-full min-h-[215px] sm:min-h-[225px] select-none ${
+                      selected ? "ring-2 ring-[#0B2E8C]" : ""
                     }`}
-                    style={{
-                      backgroundImage: "url('/images/order-luxury/order-card-frame-edge-v2.webp')",
-                      backgroundSize: "100% 100%",
-                      backgroundRepeat: "no-repeat",
-                    }}
                   >
                     {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
                     <TrackingCardMoneyBadges o={o} icons={icons} />
 
-                    {/* 1. السطر العلوي: كبسولة رقم الطلب وبلوك اسم المحل كلاهما داخل الإطار بدقة على نفس الخط */}
-                    <div className="relative z-10 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0 w-full shrink-0 h-11.5 sm:h-12.5">
-                      {/* اليمين: بلوك اسم المحل */}
-                      <div className="relative flex-1 min-w-0 h-full flex items-center justify-center">
-                        <div
-                          className="w-[92%] sm:w-[94%] h-full rounded-full flex items-center justify-center px-3 sm:px-4 bg-no-repeat bg-[length:100%_100%] select-none overflow-hidden"
-                          style={{
-                            backgroundImage: `url('${headerWebpBg}')`,
-                          }}
-                        >
-                          <span
-                            className="font-black text-xs sm:text-sm leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate text-center block w-full px-1"
-                            style={{
-                              color: "#FFFFFF",
-                              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                            }}
-                            title={headerTextStr}
-                          >
-                            {headerTextStr}
-                          </span>
-                        </div>
+                    {/* 1. السطر العلوي: شريط مسار وصلي وكبسولة رقم الطلب */}
+                    <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full shrink-0">
+                      {/* شريط المسار الملون بهوية وصلي */}
+                      <div className="flex-1 w-full min-w-0 flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-xs bg-[#0B2E8C] text-white">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FFC107] shrink-0" />
+                        <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
+                          <span className="font-black shrink-0">{o.shopCustomerLabel || "المحل"}</span>
+                          <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
+                          <span className="font-black truncate">{o.regionName || "المنطقة"}</span>
+                        </span>
                       </div>
 
-                      {/* اليسار: كبسولة رقم الطلب المكيشة + مربع الاختيار في أقصى اليسار */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 h-full">
+                      {/* اليسار: كبسولة رقم الطلب واختيار الطلب */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {showSelectColumn && (
                           <input
                             type="checkbox"
                             checked={selected}
                             onClick={(e) => e.stopPropagation()}
                             onChange={() => onToggleOne && onToggleOne(o.id)}
-                            className="size-5 rounded border-2 border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A] cursor-pointer"
+                            className="size-5 rounded border-2 border-[#D0DDFB] text-[#0B2E8C] focus:ring-[#0B2E8C] cursor-pointer"
                           />
                         )}
-
-                        <div className="relative shrink-0 h-full">
-                          {/* كبسولة رقم الطلب بصورة الخلفية المكيشة والنص متمركز وكبير في قلبها */}
-                          <div
-                            className="min-w-[76px] sm:min-w-[90px] h-full px-2 rounded-lg flex items-center justify-center text-center font-black font-mono text-base sm:text-xl tracking-wider select-none bg-no-repeat bg-[length:100%_100%] leading-none"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/order-number-bg.webp')",
-                              color: "#F5D77F",
-                              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
-                            }}
-                          >
-                            <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pt-0.5">
-                              {o.orderNumber}
-                            </span>
-                          </div>
+                        <div className="shrink-0 h-[28px] bg-[#0B2E8C] rounded-[8px] px-2.5 py-0.5 shadow-xs flex items-center justify-center gap-1">
+                          <span className="font-mono font-black text-[#FFC107] text-[13px] leading-none tracking-wide">
+                            #{o.orderNumber}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1122,25 +1092,14 @@ function TrackingCardsView({
                           <OrderSaderSideBadge o={o} />
                         </div>
 
-                        {/* دائرة السعر المركزية الثابتة دائماً في المنتصف 50% */}
-                        <div
-                          className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full flex items-center justify-center relative select-none bg-no-repeat bg-contain shrink-0 pointer-events-auto"
-                          style={{
-                            backgroundImage: "url('/images/order-luxury/price-circle.webp')",
-                          }}
-                        >
+                        {/* دائرة السعر المركزية بهوية وصلي */}
+                        <div className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center relative select-none shrink-0 pointer-events-auto shadow-[0_4px_12px_rgba(11,46,140,0.25)]">
                           {isAllPaid ? (
                             <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
-                              <span
-                                className="text-[12px] sm:text-[13.5px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                style={{ color: "#F5D77F" }}
-                              >
+                              <span className="text-[12px] sm:text-[13.5px] font-black tracking-tight text-[#FFC107]">
                                 كلشي
                               </span>
-                              <span
-                                className="text-[11px] sm:text-[12.5px] font-black tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                                style={{ color: "#F5D77F" }}
-                              >
+                              <span className="text-[11px] sm:text-[12.5px] font-black tracking-tight text-[#FFC107]">
                                 واصل
                               </span>
                             </div>
@@ -1154,10 +1113,7 @@ function TrackingCardsView({
                                   : numericPrice.length === 3
                                   ? "text-[24px] sm:text-[28px]"
                                   : "text-[30px] sm:text-[36px]"
-                              } font-black leading-none font-mono drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] tracking-tight pt-0.5`}
-                              style={{
-                                color: "#F5D77F",
-                              }}
+                              } font-black leading-none font-mono tracking-tight text-[#FFC107] pt-0.5`}
                             >
                               {numericPrice || "—"}
                             </span>

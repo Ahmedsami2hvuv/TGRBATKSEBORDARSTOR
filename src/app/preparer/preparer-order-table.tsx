@@ -22,6 +22,7 @@ import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-butt
 import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
 import { OrderCountUpTimer } from "@/components/order-count-up-timer";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { WasliThemeBoard } from "@/app/mandoub/wasli-theme-board";
 
 function getHeaderBannerWebp(orderStatus?: string) {
   switch (orderStatus) {
@@ -649,42 +650,37 @@ export function PreparerOrderTable({
         </div>
       )}
 
-      {/* شريط التبديل السريع بين الوضع الملكي والوضع العادي */}
-      <div className="flex items-center justify-between gap-2 px-2 sm:px-4 mb-3" dir="rtl">
-        <div className="inline-flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-1 rounded-2xl border border-[#C9A86A]/50 shadow-sm backdrop-blur">
-          <button
-            type="button"
-            onClick={() => handleSetViewMode("royal")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-              viewMode === "royal"
-                ? "bg-gradient-to-r from-[#0F4D3A] to-[#164E3D] text-[#F5D77F] shadow-sm border border-[#C9A86A]"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <span>👑</span>
-            <span>الوضع الملكي</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSetViewMode("normal")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-              viewMode === "normal"
-                ? "bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-sm border border-sky-400"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <span>📋</span>
-            <span>الوضع العادي</span>
-          </button>
-        </div>
-      </div>
+      {/* عرض الطلبات الرسمي بثيم وصلي الفاخر المعتمد للمجهز */}
+      <WasliThemeBoard
+        rows={rows}
+        allRows={rows}
+        auth={{ c: auth.p, exp: auth.exp, s: auth.s }}
+        tab={tab}
+        courierName="المجهز"
+        cashInHandStr="0"
+        onOpenRow={(id) => {
+          setActiveOrderId(id);
+          const p = new URLSearchParams(window.location.search);
+          p.set("activeOrderId", id);
+          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
+        }}
+        setPickupOrder={(o) => {
+          setPayOrder(o);
+        }}
+        setDeliveryOrder={() => {}}
+        showQuickSelect={showQuickSelect}
+        setShowQuickSelect={setShowQuickSelect}
+        selectedIds={selectedIds}
+        toggleOne={toggleOne}
+        toggleAll={toggleAll}
+        allSelected={allSelected}
+        qSearch={qSearch}
+        onSearchChange={() => {}}
+        showSearch={false}
+        setShowSearch={() => {}}
+      />
 
-      {/* عرض الطلبات بتصميم الكروت الملكية الفاخرة المطابقة للإدارة والمندوب */}
-      {!rows.length ? (
-        <div className="py-12 text-center text-[#0A3D2E] font-bold bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-[#C9A86A]/40 shadow-sm text-sm sm:text-base">
-          لا توجد طلبات للعرض في هذه القائمة
-        </div>
-      ) : (
+      {false && (
         <div className="space-y-6 pb-12">
           {groupedByDate.map((group) => {
             const dateDayNumber = group.items[0]?.createdAt

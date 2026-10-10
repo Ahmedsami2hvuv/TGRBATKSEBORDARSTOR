@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { AdminOrderMoneyEvents } from "./admin-order-money-events";
 import { OrderViewContent } from "./order-view-content";
+import { WasliOrderDetailView } from "@/app/mandoub/wasli-order-detail-view";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import {
   applyMandoubWaTemplate,
@@ -274,31 +275,17 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
     const safeSecondProfile = secondProfile ? JSON.parse(JSON.stringify(secondProfile)) : null;
 
     return (
-      <div className="space-y-4">
-        <OrderViewContent
+      <div className="w-full max-w-4xl mx-auto space-y-4">
+        <WasliOrderDetailView
           order={safeView}
-          preparers={safePreparers}
-          customWaButtons={safeWaButtons}
-          waButtonSettings={safeWaButtonSettings}
-          storeProducts={safeStoreProducts}
-          twoWayTemplates={safeTwoWayTemplates}
-          couriers={safeCouriers}
+          auth={{ c: "admin", exp: "", s: "" }}
+          closeHref={`${SECRET_ADMIN_PATH}/orders/tracking`}
+          nextUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+          courierName={order.courier?.name ?? "الإدارة"}
           phoneProfile={safeCustomerProfile}
           secondPhoneProfile={safeSecondProfile}
-          designerConfig={designerConfig || undefined}
-          initialCustomerDebt={typeof customerDebtVal === "number" ? customerDebtVal : null}
-        />
-        <AdminOrderMoneyEvents
-          orderId={order.id}
-          orderNumber={order.orderNumber}
-          orderStatus={order.status}
-          assignedCourierId={order.assignedCourierId}
-          courierName={order.courier?.name ?? null}
-          orderSubtotalDinar={order.orderSubtotal ? Number(order.orderSubtotal) : null}
-          totalAmountDinar={order.totalAmount ? Number(order.totalAmount) : null}
-          prepaidAll={order.prepaidAll}
-          nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-          events={safeMoneyEvents}
+          customerDebt={typeof customerDebtVal === "number" ? customerDebtVal : null}
+          customWaButtons={safeWaButtons}
         />
       </div>
     );
