@@ -513,6 +513,46 @@ function AdminDeliveryFormModal({
   );
 }
 
+import {
+  Truck,
+  Phone,
+  Clock,
+  MapPin,
+  Pencil,
+  X,
+  RotateCcw,
+  User,
+  UserCheck,
+  ArrowDown,
+  ArrowUp,
+  LayoutGrid,
+  Table2,
+  Zap,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ShoppingBag,
+} from "lucide-react";
+
+// تلوين بلوك اسم المحل والمنطقة حسب الحالة مثل حساب المندوب
+const getRouteBadgeStyle = (status: string) => {
+  switch (status) {
+    case "new":
+    case "pending":
+      return "bg-gradient-to-l from-sky-500 to-sky-400 text-white shadow-[0_2px_8px_rgba(14,165,233,0.25)]";
+    case "assigned":
+      return "bg-gradient-to-l from-rose-600 to-red-500 text-white shadow-[0_2px_8px_rgba(225,29,72,0.25)]";
+    case "delivering":
+      return "bg-gradient-to-l from-[#FFC107] to-amber-400 text-[#0B2E8C] font-black shadow-[0_2px_8px_rgba(245,158,11,0.25)]";
+    case "delivered":
+      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
+    case "cancelled":
+      return "bg-gradient-to-l from-slate-600 to-slate-500 text-white shadow-[0_2px_8px_rgba(100,116,139,0.2)]";
+    default:
+      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
+  }
+};
+
 function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   const pickup = o.pickupSumDinar ?? null;
   const preparerPickup = o.preparerPickupSumDinar ?? null;
@@ -524,7 +564,6 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
 
   if (showPickup) {
     text = formatDinarAsAlf(pickup);
@@ -532,7 +571,6 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   } else if (showPreparerPickup) {
     text = formatDinarAsAlf(preparerPickup);
     tooltip = `صادر المجهز: ${text}`;
-    isPreparer = true;
   } else if (showAdminPickup) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
@@ -545,13 +583,10 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
-      style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-sader.webp" : "/images/order-luxury/badge-sader.webp"}')`,
-      }}
+      className="h-[26px] px-2 rounded-[8px] bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C] truncate max-w-full text-center">
         {text}
       </span>
     </div>
@@ -567,7 +602,6 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
 
   let text = "";
   let tooltip = "";
-  let isPreparer = false;
 
   if (showDelivery) {
     text = formatDinarAsAlf(delivery);
@@ -575,7 +609,6 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
   } else if (showPreparerDelivery) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
-    isPreparer = true;
   } else if (o.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
@@ -591,13 +624,10 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
 
   return (
     <div
-      className="w-13 h-8 sm:w-14.5 sm:h-9 bg-contain bg-no-repeat bg-center flex items-center justify-center select-none shrink-0"
-      style={{
-        backgroundImage: `url('${isPreparer ? "/images/order-luxury/badge-preparer-ward.webp" : "/images/order-luxury/badge-ward.webp"}')`,
-      }}
+      className="h-[26px] px-2 rounded-[8px] bg-[#FFF8E1] border border-[#FFC107]/60 text-[#0B2E8C] flex items-center justify-center select-none shrink-0 shadow-2xs"
       title={tooltip}
     >
-      <span className="text-[10px] sm:text-[11.5px] font-black font-mono leading-none tracking-tighter text-[#F5D77F] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] pt-0.5 px-0.5 truncate max-w-full text-center">
+      <span className="text-[11px] font-black font-mono leading-none tracking-tight text-[#0B2E8C] truncate max-w-full text-center">
         {text}
       </span>
     </div>
@@ -605,57 +635,10 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
 }
 
 function TrackingCardMoneyBadges({ o, icons }: { o: TrackingTableRow; icons?: GlobalIconsConfig | null }) {
-  const hasMismatch =
-    Boolean(o.wardMismatchType) ||
-    o.saderMismatchType === "excess" ||
-    Boolean(o.orderStatus === "delivered" && o.noWardRecorded);
-
-  if (!hasMismatch) return null;
-
-  return (
-    <div
-      className="absolute -top-3.5 left-4 sm:left-6 z-30 pointer-events-none flex items-center gap-1.5 flex-wrap"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {o.wardMismatchType === "deficit" && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-rose-500 bg-rose-600 text-white animate-pulse drop-shadow-sm select-none pointer-events-auto"
-          title="نقص بالوارد"
-        >
-          <DynamicIcon iconKey="finance_deficit" config={icons} fallback="🔴" className="w-2.5 h-2.5" />
-          نقص بالوارد
-        </span>
-      )}
-      {o.wardMismatchType === "excess" && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-emerald-500 bg-emerald-600 text-white drop-shadow-sm select-none pointer-events-auto"
-          title="زيادة بالوارد"
-        >
-          <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
-          زيادة بالوارد
-        </span>
-      )}
-      {o.saderMismatchType === "excess" && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-sky-500 bg-sky-600 text-white drop-shadow-sm select-none pointer-events-auto"
-          title="زيادة بالصادر"
-        >
-          <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />
-          زيادة بالصادر
-        </span>
-      )}
-      {o.orderStatus === "delivered" && o.noWardRecorded && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-black leading-none shadow-md border border-[#C9A86A] bg-slate-900 text-[#F5D77F] animate-pulse drop-shadow-sm select-none pointer-events-auto"
-          title="بدون وارد مسجل"
-        >
-          <DynamicIcon iconKey="ui_warning" config={icons} fallback="⚠️" className="w-2.5 h-2.5" />
-          بدون وارد
-        </span>
-      )}
-    </div>
-  );
+  // نقلت البلوكات لتظهر داخل الكارت مثل حساب المندوب
+  return null;
 }
+
 
 function RoyalScallopedCardBorder() {
   return (
@@ -1036,18 +1019,24 @@ function TrackingCardsView({
                         onOpenRow(o.id);
                       }
                     }}
-                    className={`group relative rounded-[22px] px-3.5 sm:px-4 py-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-white border-[1.5px] border-[#D0DDFB] shadow-[0_4px_16px_rgba(11,46,140,0.06)] hover:shadow-[0_8px_24px_rgba(11,46,140,0.12)] w-full min-h-[215px] sm:min-h-[225px] select-none ${
-                      selected ? "ring-2 ring-[#0B2E8C]" : ""
+                    className={`group relative rounded-[20px] p-3 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between bg-white border-[1.5px] border-[#D0DDFB] shadow-[0_3px_10px_rgba(11,46,140,0.06)] hover:border-[#1E4DB7]/50 hover:shadow-[0_4px_14px_rgba(11,46,140,0.1)] w-full min-h-[195px] select-none ${
+                      selected ? "border-[#0B2E8C] ring-2 ring-[#0B2E8C]/25 bg-[#F0F5FF]" : ""
                     }`}
                   >
-                    {/* البادجات المالية العائمة أعلى الكرت (فوق بلوك الطلب: زيادة بالصادر، زيادة بالوارد، نقص بالصادر، نقص بالوارد، بدون وارد) */}
-                    <TrackingCardMoneyBadges o={o} icons={icons} />
-
                     {/* 1. السطر العلوي: شريط مسار وصلي وكبسولة رقم الطلب */}
                     <div className="relative z-10 flex items-center justify-between gap-2 min-w-0 w-full shrink-0">
-                      {/* شريط المسار الملون بهوية وصلي */}
-                      <div className="flex-1 w-full min-w-0 flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-xs bg-[#0B2E8C] text-white">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FFC107] shrink-0" />
+                      {/* شريط المسار الملون بهوية وصلي بحسب حالة الطلب */}
+                      <div
+                        className={`flex-1 w-full min-w-0 flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-xs transition-all ${getRouteBadgeStyle(
+                          o.orderStatus
+                        )}`}
+                      >
+                        <Truck
+                          className={`w-4 h-4 shrink-0 ${
+                            isDelivering ? "text-[#0B2E8C]" : "text-[#FFC107]"
+                          }`}
+                          strokeWidth={2.5}
+                        />
                         <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
                           <span className="font-black shrink-0">{o.shopCustomerLabel || "المحل"}</span>
                           <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
@@ -1074,32 +1063,101 @@ function TrackingCardsView({
                       </div>
                     </div>
 
-                    {/* 2. القسم الأوسط: دائرة السعر مثبتة في المنتصف تماماً 50% مع كبسولات آمنة للبضاعة والوقت */}
-                    <div className="relative z-10 flex items-center justify-between gap-1 sm:gap-2 px-0.5 w-full my-auto shrink-0 h-[70px] sm:h-[76px]">
-                      {/* النص الأيمن (نوع البضاعة داخل كبسولة أنيقة مؤطرة داخل الإطار) */}
-                      <div className="flex items-center justify-start flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
-                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF8F0]/95 dark:bg-slate-900/90 border border-[#C9A86A]/40 shadow-xs max-w-full">
-                          <span className="text-[10.5px] sm:text-xs font-black text-slate-900 dark:text-[#F5D77F] leading-tight truncate">
-                            {displayGoodsType}
-                          </span>
+                    {/* 2. القسم الأوسط: تفاصيل الشحنة وبلوكات الوارد في اليمين، دائرة السعر التفاعلية في المنتصف، ووقت الطلب */}
+                    <div className="relative z-10 flex items-center justify-between gap-2 px-1 w-full my-auto shrink-0 min-h-[68px]">
+                      {/* النص الأيمن: نوع البضاعة وبلوكات الوارد والصادر (نفس مكان حساب المندوب) */}
+                      <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
+                        {/* كبسولة نوع البضاعة */}
+                        <div className="bg-[#E8EEFF] border border-[#D0DDFB] text-[#0B2E8C] text-[11px] font-bold rounded-[14px] px-3 py-1 max-w-[200px] truncate leading-tight shadow-2xs">
+                          {displayGoodsType}
+                        </div>
+
+                        {/* بلوكات حالات الوارد المرتبة داخل الطلب (نفس حساب المندوب تماماً) */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* 1. بلوك نقص بالوارد */}
+                          {o.wardMismatchType === "deficit" && (
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-rose-50 border-[1.5px] border-rose-500 text-rose-700 shadow-xs select-none shrink-0"
+                              title="نقص بالوارد"
+                            >
+                              <div className="w-3.5 h-3.5 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
+                                <ArrowDown className="w-2.5 h-2.5 stroke-[3]" />
+                              </div>
+                              <span className="text-[11px] font-black leading-none">نقص بالوارد</span>
+                            </div>
+                          )}
+
+                          {/* 2. بلوك زيادة بالوارد */}
+                          {o.wardMismatchType === "excess" && (
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-emerald-50 border-[1.5px] border-emerald-500 text-emerald-700 shadow-xs select-none shrink-0"
+                              title="زيادة بالوارد"
+                            >
+                              <div className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                                <ArrowUp className="w-2.5 h-2.5 stroke-[3]" />
+                              </div>
+                              <span className="text-[11px] font-black leading-none">زيادة بالوارد</span>
+                            </div>
+                          )}
+
+                          {/* 3. بلوك بدون وارد */}
+                          {(o.noWardRecorded || (o.orderStatus === "delivered" && (o.deliverySumDinar === 0 || o.deliverySumDinar == null))) && (
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-black border border-slate-700 text-white shadow-xs select-none shrink-0"
+                              title="بدون وارد مسجل"
+                            >
+                              <div className="w-3 h-3 rounded-full bg-slate-600 flex items-center justify-center shrink-0">
+                                <span className="text-[8px] font-black text-white leading-none">✕</span>
+                              </div>
+                              <span className="text-[11px] font-black leading-none">بدون وارد</span>
+                            </div>
+                          )}
+
+                          {/* 4. زيادة بالصادر */}
+                          {o.saderMismatchType === "excess" && (
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-amber-50 border-[1.5px] border-amber-500 text-amber-700 shadow-xs select-none shrink-0"
+                              title="زيادة بالصادر"
+                            >
+                              <span className="text-[11px] font-black leading-none">زيادة بالصادر</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* حاوية السعر المركزية المثبتة 100% في منتصف الكرت دائماً */}
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-                        {/* بلوك الصادر (مثبت على يمين دائرة السعر دون زحزحتها) */}
-                        <div className="absolute right-full mr-1 pointer-events-auto shrink-0">
-                          <OrderSaderSideBadge o={o} />
-                        </div>
+                      {/* دائرة السعر التفاعلية المركزية مع بادجات الصادر والوارد */}
+                      <div className="flex items-center gap-1 shrink-0 relative">
+                        {/* بادج الصادر */}
+                        <OrderSaderSideBadge o={o} />
 
-                        {/* دائرة السعر المركزية بهوية وصلي */}
-                        <div className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center relative select-none shrink-0 pointer-events-auto shadow-[0_4px_12px_rgba(11,46,140,0.25)]">
+                        {/* زر دائرة السعر التفاعلية (المتفق عليه: زر التسليم والاستلام يصبح بدائرة السعر) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isDelivering && onAdminDelivery) {
+                              onAdminDelivery(o);
+                            } else if ((isPending || isAssigned) && onAdminPickup) {
+                              onAdminPickup(o);
+                            } else {
+                              onOpenRow(o.id);
+                            }
+                          }}
+                          className="w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center relative select-none shrink-0 cursor-pointer active:scale-95 transition-transform shadow-[0_4px_12px_rgba(11,46,140,0.22)] hover:shadow-[0_6px_16px_rgba(11,46,140,0.32)]"
+                          title={
+                            isDelivering
+                              ? "اضغط لتسجيل تسليم الطلب والوارد 🫴"
+                              : (isPending || isAssigned)
+                              ? "اضغط لتسجيل استلام الطلب والصادر ⚡"
+                              : "اضغط لعرض تفاصيل الطلب"
+                          }
+                        >
                           {isAllPaid ? (
                             <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
-                              <span className="text-[12px] sm:text-[13.5px] font-black tracking-tight text-[#FFC107]">
+                              <span className="text-[12px] sm:text-[13px] font-black tracking-tight text-[#FFC107]">
                                 كلشي
                               </span>
-                              <span className="text-[11px] sm:text-[12.5px] font-black tracking-tight text-[#FFC107]">
+                              <span className="text-[11px] sm:text-[12px] font-black tracking-tight text-[#FFC107]">
                                 واصل
                               </span>
                             </div>
@@ -1107,172 +1165,136 @@ function TrackingCardsView({
                             <span
                               className={`${
                                 numericPrice.length >= 5
-                                  ? "text-[17px] sm:text-[19px]"
+                                  ? "text-[16px] sm:text-[18px]"
                                   : numericPrice.length >= 4
-                                  ? "text-[20px] sm:text-[23px]"
+                                  ? "text-[19px] sm:text-[22px]"
                                   : numericPrice.length === 3
-                                  ? "text-[24px] sm:text-[28px]"
-                                  : "text-[30px] sm:text-[36px]"
+                                  ? "text-[23px] sm:text-[26px]"
+                                  : "text-[28px] sm:text-[32px]"
                               } font-black leading-none font-mono tracking-tight text-[#FFC107] pt-0.5`}
                             >
                               {numericPrice || "—"}
                             </span>
                           )}
-                        </div>
+                        </button>
 
-                        {/* بلوك الوارد (مثبت على يسار دائرة السعر دون زحزحتها) */}
-                        <div className="absolute left-full ml-1 pointer-events-auto shrink-0">
-                          <OrderWardSideBadge o={o} />
-                        </div>
-                      </div>
-
-                      {/* النص الأيسر (وقت الطلب داخل كبسولة عنابية أنيقة مؤطرة داخل الإطار) */}
-                      <div className="flex items-center justify-end flex-1 min-w-0 max-w-[26%] sm:max-w-[28%]">
-                        <div className="inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 rounded-full bg-[#FFF0F0]/95 dark:bg-rose-950/50 border border-[#8B0000]/30 shadow-xs max-w-full">
-                          <span className="text-[10px] sm:text-xs font-black text-[#8B0000] dark:text-rose-300 leading-tight truncate">
-                            {cleanNoteTime}
-                          </span>
-                        </div>
+                        {/* بادج الوارد */}
+                        <OrderWardSideBadge o={o} />
                       </div>
                     </div>
 
-                    {/* 3. القسم السفلي للكرت: كبسولة هاتف الزبون المكبرة الفخمة يميناً + أزرار الاستلام والإسناد يساراً */}
-                    <div className="relative z-10 flex flex-nowrap items-center justify-between gap-1.5 w-full shrink-0 h-[48px] sm:h-[52px]">
-                      {/* الجهة اليمنى: كبسولة هاتف الزبون المكبرة والمحيطة بالأزرار */}
-                      <div
-                        className="flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-0.5 bg-no-repeat bg-[length:100%_100%] h-full shrink min-w-0 flex-1 max-w-[245px] sm:max-w-[265px]"
-                        style={{
-                          backgroundImage: "url('/images/order-luxury/customer-phone-pill.webp')",
-                        }}
-                      >
-                        {/* 1. زر الاتصال 📞 (أقصى اليمين - مكبر) */}
+                    {/* 3. شريط التواصل والخيارات السفلي بهوية وصلي الرسمية الكاملة */}
+                    <div className="relative z-10 h-[44px] rounded-[20px] bg-gradient-to-r from-[#E8EEFF] to-[#FFF8E1] border border-[#D0DDFB] flex items-center justify-between px-2 w-full shrink-0 shadow-2xs">
+                      {/* قسم اليمين: زر الاتصال + رقم الزبون + وقت الطلب */}
+                      <div className="flex items-center gap-1.5 min-w-0">
                         {o.customerPhone ? (
                           <a
                             href={`tel:${o.customerPhone}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full flex items-center justify-center select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer -mr-1"
+                            className="w-7 h-7 rounded-full bg-[#FFC107] flex items-center justify-center shadow-xs active:scale-95 transition-transform cursor-pointer shrink-0"
                             title={`اتصال بالزبون: ${o.customerPhone}`}
-                          />
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#0B2E8C]" fill="#0B2E8C" strokeWidth={2.2} />
+                          </a>
                         ) : (
-                          <div className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full shrink-0 -mr-1 opacity-50" />
+                          <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center shrink-0 opacity-50">
+                            <Phone className="w-3.5 h-3.5 text-slate-500" strokeWidth={2.2} />
+                          </div>
                         )}
 
-                        {/* 2. رقم هاتف الزبون */}
-                        <div className="flex items-center px-0.5 min-w-0 truncate">
-                          <span className="text-[11px] sm:text-[12.5px] font-mono font-black text-slate-900 tracking-tight select-all truncate">
-                            {o.customerPhone || "—"}
-                          </span>
-                        </div>
+                        {/* رقم هاتف الزبون */}
+                        <span className="font-mono font-black text-[12px] tracking-wide text-[#0B2E8C] select-all truncate max-w-[100px] sm:max-w-[120px]">
+                          {o.customerPhone || "—"}
+                        </span>
 
-                        {/* 3. أزرار الإجراءات داخل الكبسولة مكبرة */}
-                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto pl-0.5">
-                          {/* زر اللوكيشن 📍 */}
-                          {hasGps ? (
-                            <RedGlassOrbButton3D
-                              href={o.customerLocationUrl || "#"}
-                              title="فتح موقع الزبون 📍"
-                            />
-                          ) : (
-                            <div
-                              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/btn-no-location.webp?v=royalLocV2')",
-                              }}
-                              title="الزبون لا يملك لوكيشن ⚠️"
-                            />
-                          )}
-
-                          {/* زر تعديل أسعار التجهيز 💰 (يظهر فقط لطلبات التجهيز) */}
-                          {isFromPreparer && (
-                            <Link
-                              href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/1789252908710.webp?v=royal3D')",
-                              }}
-                              title="تعديل تفاصيل وأسعار التجهيز 💰"
-                            />
-                          )}
-
-                          {/* زر تعديل الطلب ✏️ */}
-                          <Link
-                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition drop-shadow-sm"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-edit.webp?v=royal3D')",
-                            }}
-                            title="تعديل الطلب ✏️"
-                          />
-
-                          {/* زر الرفض / الإرجاع ❌ (أقصى اليسار) */}
-                          {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRejectOrder(o);
-                              }}
-                              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/btn-reject.webp?v=royal3D')",
-                              }}
-                              title="رفض الطلب ❌"
-                            />
-                          )}
-                          {onRestoreOrder && isCancelled && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRestoreOrder(o);
-                              }}
-                              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-no-repeat bg-contain select-none shrink-0 hover:scale-110 active:scale-95 transition cursor-pointer drop-shadow-sm"
-                              style={{
-                                backgroundImage: "url('/images/order-luxury/btn-restore.webp?v=royal3D')",
-                              }}
-                              title="إرجاع الطلب المرفوض إلى جديد 🔄"
-                            />
-                          )}
+                        {/* وقت الطلبية */}
+                        <div
+                          className="h-[24px] px-2 rounded-full border border-[#D0DDFB] bg-white text-[#0B2E8C] text-[10px] font-black flex items-center gap-1 shrink-0 shadow-2xs"
+                          title="وقت الطلبية"
+                        >
+                          <Clock className="w-3 h-3 text-[#1E4DB7]" />
+                          <span>{cleanNoteTime}</span>
                         </div>
                       </div>
 
-                      {/* الجهة اليسرى: أزرار الاستلام والإسناد والتسليم مرفوعة للأعلى قليلاً ومتناسقة */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 h-full -translate-y-1 sm:-translate-y-1.5">
-                        {/* زر استلام ⚡ (مكبر) */}
-                        {onAdminPickup && (isPending || isAssigned) && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                      {/* قسم اليسار: اللوكيشن، التعديل، الرفض/الإرجاع، وكبسولة المندوب */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* زر اللوكيشن 📍 */}
+                        {hasGps && o.customerLocationUrl ? (
+                          <a
+                            href={o.customerLocationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-7 h-7 rounded-full bg-[#0B2E8C] flex items-center justify-center shadow-xs active:scale-90 transition-transform hover:bg-[#1E4DB7] cursor-pointer shrink-0"
+                            title="فتح موقع الزبون 📍"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-[#FFC107]" />
+                          </a>
+                        ) : (
+                          <div
+                            className="relative w-7 h-7 rounded-full bg-[#0B2E8C] flex items-center justify-center shadow-xs shrink-0 cursor-default"
+                            title="تنبيه: الزبون لا يملك لوكيشن"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-[#FFC107]" />
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600 shadow-[0_0_8px_#ef4444] border border-white" />
+                            </span>
+                          </div>
+                        )}
+
+                        {/* زر تعديل أسعار التجهيز (إن وجد) */}
+                        {isFromPreparer && (
+                          <Link
+                            href={`${SECRET_ADMIN_PATH}/orders/${o.id}/price`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                            title="تعديل تفاصيل وأسعار التجهيز"
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                          </Link>
+                        )}
+
+                        {/* زر تعديل الطلب ✏️ */}
+                        <Link
+                          href={`${SECRET_ADMIN_PATH}/orders/${o.id}/edit`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                          title="تعديل الطلب"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                        </Link>
+
+                        {/* زر الرفض / الإرجاع ❌ */}
+                        {onRejectOrder && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onAdminPickup(o);
+                              onRejectOrder(o);
                             }}
-                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-sm"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-pickup-v2.webp')",
-                            }}
-                            title="استلام الطلب وتسجيل الصادر ⚡"
-                          />
+                            className="w-7 h-7 rounded-full bg-rose-50 border border-rose-300 flex items-center justify-center text-rose-600 shadow-xs active:scale-90 transition-transform hover:bg-rose-100 cursor-pointer shrink-0"
+                            title="رفض الطلب"
+                          >
+                            <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </button>
                         )}
-
-                        {/* زر تسليم 🫴 (مكبر) */}
-                        {onAdminDelivery && isDelivering && !isCancelled && !isDelivered && o.orderStatus !== "archived" && (
+                        {onRestoreOrder && isCancelled && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onAdminDelivery(o);
+                              onRestoreOrder(o);
                             }}
-                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black text-white hover:scale-105 active:scale-95 transition flex items-center justify-center bg-no-repeat bg-contain cursor-pointer shrink-0 drop-shadow-sm"
-                            style={{
-                              backgroundImage: "url('/images/order-luxury/btn-delivery-v2.webp')",
-                            }}
-                            title="تسليم الطلب وتسجيل الوارد 🫴"
-                          />
+                            className="w-7 h-7 rounded-full bg-sky-50 border border-sky-300 flex items-center justify-center text-sky-600 shadow-xs active:scale-90 transition-transform hover:bg-sky-100 cursor-pointer shrink-0"
+                            title="إرجاع الطلب المرفوض إلى جديد"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </button>
                         )}
 
-                        {/* زر إسناد الطلب (مكبر) */}
+                        {/* كبسولة المندوب وإسناد الطلب */}
                         {!isCancelled && (
                           <button
                             type="button"
@@ -1280,23 +1302,26 @@ function TrackingCardsView({
                               e.stopPropagation();
                               onAssignOrder(o);
                             }}
-                            className="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full text-xs sm:text-sm font-black flex items-center justify-center text-white hover:scale-105 active:scale-95 transition shrink-0 bg-no-repeat bg-contain cursor-pointer drop-shadow-sm"
-                            style={{
-                              backgroundImage: hasAssignedCourier
-                                ? "url('/images/order-luxury/btn-assign-empty-v2.webp')"
-                                : "url('/images/order-luxury/btn-assign-v2.webp')",
-                            }}
+                            className="h-[28px] px-2.5 rounded-full bg-[#0B2E8C] border border-[#FFC107]/40 text-white flex items-center gap-1 shadow-xs active:scale-95 transition-transform cursor-pointer shrink-0"
                             title={hasAssignedCourier ? `تغيير المندوب (${o.courierName})` : "إسناد لمندوب"}
                           >
-                            {hasAssignedCourier && (
-                              <span className="text-[#FFF8F0] text-[11px] sm:text-[12px] max-w-[46px] sm:max-w-[50px] truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] font-black">
-                                {o.courierName}
-                              </span>
+                            {hasAssignedCourier ? (
+                              <>
+                                <UserCheck className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                                <span className="text-[11px] font-black max-w-[65px] sm:max-w-[75px] truncate text-[#FFF8E1]">
+                                  {o.courierName}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <User className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                                <span className="text-[11px] font-bold text-white/90">إسناد</span>
+                              </>
                             )}
                           </button>
                         )}
 
-                        {/* زر/شارة طلب عكسي 🔄 يظهر فقط للطلبات العكسية */}
+                        {/* شارة طلب عكسي إن وجد */}
                         {isReverse && (
                           <LuxuryReverseOrderButton
                             orderId={o.id}
@@ -1306,17 +1331,19 @@ function TrackingCardsView({
                           />
                         )}
 
-                        {/* زر وجهتين 📦➔ */}
+                        {/* زر وجهتين */}
                         {isDoubleRoute && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <GlassOrbButton3D title="طلب وجهتين" size="sm">
-                              <span className="text-xs">📦➔</span>
-                            </GlassOrbButton3D>
+                          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                            <div
+                              className="h-[26px] px-2 rounded-full bg-[#0B2E8C] text-[#FFC107] text-[10px] font-black flex items-center justify-center shadow-xs"
+                              title="طلب وجهتين"
+                            >
+                              وجهتين
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
-
                   </div>
                 );
               })}
@@ -1521,14 +1548,15 @@ export function OrderTrackingBulkTable({
                   return !v;
                 })
               }
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 shadow-2xs ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 shadow-2xs cursor-pointer ${
                 showQuickSelect
-                  ? "bg-[#0A3D2E] border-[#C9A86A] text-[#F5D77F]"
-                  : "border-[#C9A86A]/70 bg-white text-[#0A3D2E] hover:border-[#C9A86A] hover:bg-[#FFF8F0]"
+                  ? "bg-[#0B2E8C] border-[#FFC107]/50 text-[#FFC107]"
+                  : "border-[#D0DDFB] bg-white text-[#0B2E8C] hover:bg-[#F0F4FF]"
               }`}
             >
-              <span>⚡ تحديد سريع</span>
-              <span className={showQuickSelect ? "text-[#F5D77F]" : "text-[#C9A86A]"}>
+              <Zap className="w-3.5 h-3.5 text-[#FFC107]" />
+              <span>تحديد سريع</span>
+              <span className={showQuickSelect ? "text-[#FFC107]" : "text-[#0B2E8C]"}>
                 {showQuickSelect ? "▲" : "▼"}
               </span>
             </button>
@@ -1536,7 +1564,7 @@ export function OrderTrackingBulkTable({
         ) : <div />}
 
         {/* أزرار التبديل بين عرض الكروت وعرض الجدول مع قائمة منسدلة لاختيار 1 2 3 */}
-        <div className="flex items-center gap-1 rounded-full bg-white p-0.5 border border-[#C9A86A]/70 shadow-2xs">
+        <div className="flex items-center gap-1 rounded-full bg-white p-0.5 border border-[#D0DDFB] shadow-2xs">
           {/* زر البطاقات مع القائمة المنسدلة */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
@@ -1549,27 +1577,27 @@ export function OrderTrackingBulkTable({
                   setShowCardsMenu((v) => !v);
                 }
               }}
-              className={`flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 ${
+              className={`flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 cursor-pointer ${
                 viewMode === "cards"
-                  ? "bg-[#0A3D2E] text-[#F5D77F] shadow-2xs border border-[#C9A86A]"
-                  : "text-[#0A3D2E] hover:bg-[#FFF8F0]"
+                  ? "bg-[#0B2E8C] text-[#FFC107] shadow-2xs border border-[#0B2E8C]"
+                  : "text-[#0B2E8C] hover:bg-[#F0F4FF]"
               }`}
               title="عرض البطاقات (انقر لاختيار 1 أو 2 أو 3 طلبات بالسطر)"
             >
-              <span>📱</span>
+              <LayoutGrid className="w-3.5 h-3.5 stroke-[2.2]" />
               <span>البطاقات</span>
-              <span className="inline-flex size-3.5 sm:size-4 items-center justify-center rounded-full bg-gradient-to-b from-[#F5D77F] to-[#C9A86A] text-[#0A3D2E] text-[9px] sm:text-[10px] font-black">
+              <span className="inline-flex size-3.5 sm:size-4 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] text-[9px] sm:text-[10px] font-black">
                 {cardColumns}
               </span>
-              <span className="text-[8px] text-[#C9A86A]">
+              <span className="text-[8px] text-[#FFC107]">
                 {showCardsMenu ? "▲" : "▼"}
               </span>
             </button>
 
             {/* القائمة المنسدلة لاختيار عدد الأعمدة 1 2 3 */}
             {showCardsMenu && (
-              <div className="absolute top-full right-0 mt-1.5 z-30 w-40 rounded-2xl bg-white p-1.5 shadow-2xl border-2 border-[#C9A86A] animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-2 py-1 text-[10px] font-black text-[#0A3D2E] border-b border-[#C9A86A]/30 mb-1">
+              <div className="absolute top-full right-0 mt-1.5 z-30 w-40 rounded-2xl bg-white p-1.5 shadow-xl border-2 border-[#D0DDFB] animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2 py-1 text-[10px] font-black text-[#0B2E8C] border-b border-[#D0DDFB] mb-1">
                   الطلبات بالسطر:
                 </div>
                 <div className="space-y-1">
@@ -1586,16 +1614,16 @@ export function OrderTrackingBulkTable({
                           }
                           setShowCardsMenu(false);
                         }}
-                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-black transition active:scale-95 ${
+                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-black transition active:scale-95 cursor-pointer ${
                           isSelectedNum
-                            ? "bg-[#0A3D2E] text-[#F5D77F] shadow-xs"
-                            : "text-[#0A3D2E] hover:bg-[#FFF8F0]"
+                            ? "bg-[#0B2E8C] text-[#FFC107] shadow-xs"
+                            : "text-[#0B2E8C] hover:bg-[#F0F4FF]"
                         }`}
                       >
                         <span>
                           {num === 1 ? "1 (طلب واحد)" : num === 2 ? "2 (طلبين)" : "3 (ثلاث طلبات)"}
                         </span>
-                        {isSelectedNum && <span className="text-xs text-[#F5D77F]">✓</span>}
+                        {isSelectedNum && <Check className="w-3.5 h-3.5 text-[#FFC107] stroke-[3]" />}
                       </button>
                     );
                   })}
@@ -1611,34 +1639,34 @@ export function OrderTrackingBulkTable({
               setViewMode("table");
               setShowCardsMenu(false);
             }}
-            className={`flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black transition active:scale-95 cursor-pointer ${
               viewMode === "table"
-                ? "bg-[#0A3D2E] text-[#F5D77F] shadow-2xs border border-[#C9A86A]"
-                : "text-[#0A3D2E] hover:bg-[#FFF8F0]"
+                ? "bg-[#0B2E8C] text-[#FFC107] shadow-2xs border border-[#0B2E8C]"
+                : "text-[#0B2E8C] hover:bg-[#F0F4FF]"
             }`}
           >
-            <span>📋</span>
+            <Table2 className="w-3.5 h-3.5 stroke-[2.2]" />
             <span>الجدول</span>
           </button>
         </div>
       </div>
 
       {showQuickSelect && visibleIds.length > 0 && (
-        <div className="rounded-2xl border-2 border-[#C9A86A]/40 bg-gradient-to-b from-[#FFFDF9] to-[#FFF8F0] p-2.5 sm:p-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+        <div className="rounded-2xl border-2 border-[#D0DDFB] bg-[#F8FAFF] p-2.5 sm:p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-xs text-[#C9A86A]">⚜️</span>
-            <p className="text-[11px] sm:text-xs font-black text-[#0A3D2E]">
+            <span className="w-2 h-2 rounded-full bg-[#FFC107]" />
+            <p className="text-[11px] sm:text-xs font-black text-[#0B2E8C]">
               اختر حالة و/أو مندوباً ثم اضغط «تحديد المطابقين»:
             </p>
           </div>
           
           <div className="flex flex-wrap items-end gap-1.5 sm:gap-2">
-            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
+            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0B2E8C]/80">
               الحالة الحالية
               <select
                 value={quickStatus}
                 onChange={(e) => setQuickStatus(e.target.value)}
-                className="h-8 sm:h-8.5 rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A] focus:ring-1 focus:ring-[#C9A86A]"
+                className="h-8 sm:h-8.5 rounded-xl border border-[#D0DDFB] bg-white px-2 py-1 text-xs font-black text-[#0B2E8C] outline-none shadow-2xs focus:border-[#0B2E8C]"
               >
                 {QUICK_STATUS_VALUES.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1648,12 +1676,12 @@ export function OrderTrackingBulkTable({
               </select>
             </label>
 
-            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
+            <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0B2E8C]/80">
               المندوب المسند
               <select
                 value={quickCourier}
                 onChange={(e) => setQuickCourier(e.target.value)}
-                className="h-8 sm:h-8.5 min-w-[7.5rem] sm:min-w-[8.5rem] rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A] focus:ring-1 focus:ring-[#C9A86A]"
+                className="h-8 sm:h-8.5 min-w-[7.5rem] sm:min-w-[8.5rem] rounded-xl border border-[#D0DDFB] bg-white px-2 py-1 text-xs font-black text-[#0B2E8C] outline-none shadow-2xs focus:border-[#0B2E8C]"
               >
                 <option value="any">أي مندوب</option>
                 {couriers.map((c) => (
@@ -1664,21 +1692,21 @@ export function OrderTrackingBulkTable({
               </select>
             </label>
 
-            {/* أزرار الإجراء السريع بتصميم ملكي مصغر ومدمج */}
+            {/* أزرار الإجراء السريع بتصميم وصلي */}
             <div className="flex items-center gap-1.5 pt-1">
               <button
                 type="button"
                 onClick={selectMatchingQuickFilters}
-                className="h-8 sm:h-8.5 rounded-xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-3 py-1 text-xs font-black text-[#F5D77F] border border-[#C9A86A] shadow-xs hover:brightness-110 active:scale-95 transition"
+                className="h-8 sm:h-8.5 rounded-xl bg-[#0B2E8C] px-3 py-1 text-xs font-black text-[#FFC107] border border-[#FFC107]/40 shadow-xs hover:bg-[#153E9B] active:scale-95 transition cursor-pointer"
                 title="تحديد الطلبات المطابقة للفلاتر"
               >
-                ✨ تحديد المطابقين
+                تحديد المطابقين
               </button>
 
               <button
                 type="button"
                 onClick={selectAllVisible}
-                className="h-8 sm:h-8.5 rounded-xl border border-[#C9A86A]/70 bg-white px-2.5 py-1 text-xs font-black text-[#0A3D2E] hover:bg-[#FFF8F0] shadow-2xs active:scale-95 transition"
+                className="h-8 sm:h-8.5 rounded-xl border border-[#D0DDFB] bg-white px-2.5 py-1 text-xs font-black text-[#0B2E8C] hover:bg-[#F0F4FF] shadow-2xs active:scale-95 transition cursor-pointer"
                 title="تحديد كل الطلبات الظاهرة"
               >
                 تحديد الكل
@@ -1687,7 +1715,7 @@ export function OrderTrackingBulkTable({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="h-8 sm:h-8.5 rounded-xl border border-rose-200 bg-white px-2 py-1 text-xs font-black text-rose-700 hover:bg-rose-50 shadow-2xs active:scale-95 transition"
+                className="h-8 sm:h-8.5 rounded-xl border border-rose-200 bg-white px-2 py-1 text-xs font-black text-rose-700 hover:bg-rose-50 shadow-2xs active:scale-95 transition cursor-pointer"
                 title="إفراغ التحديد الحالي"
               >
                 إفراغ
@@ -1698,12 +1726,12 @@ export function OrderTrackingBulkTable({
       )}
 
       {selectedCount ? (
-        <div className="fixed bottom-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 w-auto max-w-[calc(100vw-2rem)] md:max-w-5xl rounded-3xl border-2 border-[#C9A86A] bg-gradient-to-b from-white/95 to-[#FFF8F0]/95 backdrop-blur-md px-4 py-3 shadow-[0_15px_40px_rgba(10,61,46,0.18)] animate-in fade-in slide-in-from-bottom-8 duration-300" dir="rtl">
+        <div className="fixed bottom-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 w-auto max-w-[calc(100vw-2rem)] md:max-w-5xl rounded-3xl border-2 border-[#D0DDFB] bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_15px_40px_rgba(11,46,140,0.18)] animate-in fade-in slide-in-from-bottom-8 duration-300" dir="rtl">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center justify-between lg:justify-start gap-3 border-b lg:border-b-0 pb-2 lg:pb-0 border-[#C9A86A]/20">
+            <div className="flex items-center justify-between lg:justify-start gap-3 border-b lg:border-b-0 pb-2 lg:pb-0 border-[#D0DDFB]">
               <div>
-                <p className="text-xs sm:text-sm font-black text-[#0A3D2E]">
-                  تم اختيار <span className="text-base sm:text-lg font-black text-[#C9A86A]">{selectedCount}</span> طلبية
+                <p className="text-xs sm:text-sm font-black text-[#0B2E8C]">
+                  تم اختيار <span className="text-base sm:text-lg font-black text-[#0B2E8C]">{selectedCount}</span> طلبية
                 </p>
                 {bulkState.error ? (
                   <p className="mt-0.5 text-xs font-bold text-rose-600">
@@ -1711,7 +1739,7 @@ export function OrderTrackingBulkTable({
                   </p>
                 ) : null}
                 {bulkPending ? (
-                  <p className="mt-0.5 text-[11px] font-bold text-[#0A3D2E] animate-pulse">جارٍ حفظ التعديلات… ⏳</p>
+                  <p className="mt-0.5 text-[11px] font-bold text-[#0B2E8C] animate-pulse">جارٍ حفظ التعديلات… ⏳</p>
                 ) : null}
               </div>
               <button
@@ -1729,13 +1757,13 @@ export function OrderTrackingBulkTable({
                 <input key={id} type="hidden" name="orderIds" value={id} />
               ))}
 
-              <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
+              <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0B2E8C]/80">
                 الحالة الجديدة
                 <select
                   name="targetStatus"
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value)}
-                  className="h-8.5 rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A]"
+                  className="h-8.5 rounded-xl border border-[#D0DDFB] bg-white px-2 py-1 text-xs font-black text-[#0B2E8C] outline-none shadow-2xs focus:border-[#0B2E8C]"
                 >
                   <option value="pending">قيد الانتظار (جديد)</option>
                   <option value="assigned">مسند للمندوب</option>
@@ -1747,13 +1775,13 @@ export function OrderTrackingBulkTable({
               </label>
 
               {needsCourier ? (
-                <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0A3D2E]/80">
+                <label className="flex flex-col gap-0.5 text-[10.5px] font-black text-[#0B2E8C]/80">
                   المندوب المسند
                   <select
                     name="courierId"
                     value={courierId}
                     onChange={(e) => setCourierId(e.target.value)}
-                    className="h-8.5 min-w-[8rem] rounded-xl border border-[#C9A86A]/60 bg-white px-2 py-1 text-xs font-black text-[#0A3D2E] outline-none shadow-2xs focus:border-[#C9A86A]"
+                    className="h-8.5 min-w-[8rem] rounded-xl border border-[#D0DDFB] bg-white px-2 py-1 text-xs font-black text-[#0B2E8C] outline-none shadow-2xs focus:border-[#0B2E8C]"
                   >
                     <option value="">اختر مندوب للطلب…</option>
                     {couriers.map((c) => (
@@ -1768,16 +1796,16 @@ export function OrderTrackingBulkTable({
               )}
 
               {needsCourier && (
-                <div className="flex h-8.5 items-center gap-1.5 bg-[#FFF8F0] px-2.5 rounded-xl border border-[#C9A86A]/50">
-                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4 w-4 rounded border-[#C9A86A] text-[#0A3D2E] focus:ring-[#C9A86A]" />
-                  <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-[#0A3D2E] cursor-pointer select-none">استلام مباشر ⚡</label>
+                <div className="flex h-8.5 items-center gap-1.5 bg-[#F0F4FF] px-2.5 rounded-xl border border-[#D0DDFB]">
+                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4 w-4 rounded border-[#D0DDFB] text-[#0B2E8C] focus:ring-[#0B2E8C]" />
+                  <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-[#0B2E8C] cursor-pointer select-none">استلام مباشر</label>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={bulkPending || (needsCourier && !courierId)}
-                className="h-8.5 rounded-xl bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-4 text-xs font-black text-[#F5D77F] border border-[#C9A86A] shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition"
+                className="h-8.5 rounded-xl bg-[#0B2E8C] px-4 text-xs font-black text-[#FFC107] border border-[#FFC107]/40 shadow-sm hover:bg-[#153E9B] active:scale-95 disabled:opacity-50 transition cursor-pointer"
               >
                 تطبيق الإجراء
               </button>

@@ -3,6 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { Search, X } from "lucide-react";
+
 /** يحدّث الرابط بعد توقف الكتابة قليلاً لإعادة جلب الصفحة */
 export function OrderTrackingSearch({
   initialQ,
@@ -53,14 +55,14 @@ export function OrderTrackingSearch({
   return (
     <div className="relative flex-1 w-full" dir="rtl">
       <div className="relative flex items-center">
-        <span className="pointer-events-none absolute right-3.5 text-xs text-[#C9A86A]">
-          🔍
+        <span className="pointer-events-none absolute right-3.5 text-[#0B2E8C]">
+          <Search className="w-4 h-4 text-[#0B2E8C]/70" />
         </span>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="ابحث برقم الطلب، اسم المحل، المندوب، المنطقة، الهاتف…"
-          className="h-10 sm:h-10.5 w-full rounded-2xl border-2 border-[#C9A86A]/70 bg-white pr-9 pl-9 text-xs sm:text-sm font-black text-[#0A3D2E] placeholder:text-slate-400 placeholder:font-bold shadow-xs outline-none transition-all focus:border-[#C9A86A] focus:ring-2 focus:ring-[#C9A86A]/30"
+          className="h-10 sm:h-10.5 w-full rounded-2xl border-2 border-[#D0DDFB] bg-white pr-9 pl-9 text-xs sm:text-sm font-black text-[#0B2E8C] placeholder:text-slate-400 placeholder:font-bold shadow-xs outline-none transition-all focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20"
           autoComplete="off"
           type="search"
           enterKeyHint="search"
@@ -73,10 +75,10 @@ export function OrderTrackingSearch({
               setValue("");
               pushQuery("");
             }}
-            className="absolute left-3 flex size-5 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-700 text-xs font-bold transition"
+            className="absolute left-3 flex size-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C] hover:bg-[#D0DDFB] transition cursor-pointer"
             title="مسح البحث"
           >
-            ✕
+            <X className="w-3 h-3 stroke-[2.5]" />
           </button>
         )}
       </div>
