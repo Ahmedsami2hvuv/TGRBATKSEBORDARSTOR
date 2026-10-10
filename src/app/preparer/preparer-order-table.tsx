@@ -577,6 +577,16 @@ export function PreparerOrderTable({
     });
   }
 
+  const allSelected = allPendingSelected || (rows.length > 0 && rows.every((r) => selectedIds.has(r.id)));
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(rows.map((r) => r.id)));
+    }
+  }
+
   function toggleAllPending() {
     if (allPendingSelected) setSelectedIds(new Set());
     else setSelectedIds(new Set(pendingIds));
