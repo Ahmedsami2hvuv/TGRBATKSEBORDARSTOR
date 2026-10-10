@@ -137,28 +137,31 @@ export function whatsappMeUrl(phone: string, text?: string): string {
 }
 
 /**
- * رابط تطبيق واتساب مباشرة (الهاتف).
- * إن وُجد `text` تُحمَّل الرسالة في صندوق الإرسال.
+ * رابط تطبيق واتساب الرسمي والمباشر للهاتف والحاسوب.
+ * نستخدم https://api.whatsapp.com/send لتفادي خطأ net::ERR_UNKNOWN_URL_SCHEME في متصفحات الجوال والويب فيو.
+ * إن وُجد `text` تُحمَّل الرسالة في صندوق الإرسال مباشرة.
  */
 export function whatsappAppUrl(phone: string, text?: string): string {
   const d = normalizePhoneDigits(phone);
   if (!d || !isPlausibleWhatsAppNumber(d)) return "#";
-  const base = `whatsapp://send?phone=${d}`;
+  const base = `https://api.whatsapp.com/send?phone=${d}`;
   return appendTextParam(base, text);
 }
 
 /**
- * يفتح wa.me / https / tel: من تفاعل المستخدم — بدون `window.open` الذي يُحظر أو يُعطّل
- * كثيراً على Safari/iOS ومتصفحات الجوال عند فتح واتساب أو تبويب جديد.
+ * يفتح wa.me / https / tel: بأمان عبر تفاعل المستخدم.
+ * يحمي ضد حظر النوافذ المنبثقة وضد أخطاء الويب فيو على أندرويد وiOS.
  */
 export function openUrlFromUserGesture(url: string): void {
   if (typeof window === "undefined" || !url || url === "#") return;
-  const a = document.createElement("a");
-  a.href = url;
-  if (url.startsWith("https://") || url.startsWith("http://")) {
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
+  let safeUrl = url;
+  if (safeUrl.startsWith("whatsapp://send?")) {
+    safeUrl = safeUrl.replace("whatsapp://send?", "https://api.whatsapp.com/send?");
   }
+  const a = document.createElement("a");
+  a.href = safeUrl;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
   a.style.display = "none";
   document.body.appendChild(a);
   a.click();

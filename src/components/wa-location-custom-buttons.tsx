@@ -179,8 +179,7 @@ export function WaLocationCustomButtons({
         ? shopPhone
         : p1 || p2;
 
-    // على الجوال نستخدم رابط whatsapp:// المباشر لتفادي شاشة "جاري البحث"
-    // وعلى الحاسوب نستخدم wa.me كالعادة
+    // نستخدم الرابط الآمن api.whatsapp.com على الجوال لفتح التطبيق مباشرة وتفادي أي أخطاء
     const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const url = isMobile ? whatsappAppUrl(targetPhone, text) : whatsappMeUrl(targetPhone, text);
     if (url && url !== "#") {
