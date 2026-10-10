@@ -365,182 +365,175 @@ export function MandoubOrderMoneyFlow({
         </div>
       )}
 
-      {/* كارت المعاملات المالية المتطابق 100% مع واجهة الإدارة والتصميم الملكي الفاخر */}
-      <div className="relative rounded-[22px] border-[1.5px] border-[#38BDF8] bg-[#FFFEFB] shadow-[0_6px_20px_rgba(201,168,106,0.12)] overflow-hidden">
-        {/* هيدر الكارت المذهب */}
-        <div className="relative px-3.5 py-3 bg-gradient-to-b from-[#F0F9FF] to-[#FFFEFB] border-b border-[#38BDF8]/20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-[30px] h-[30px] rounded-[10px] gold-grad flex items-center justify-center shadow-[0_2px_8px_rgba(201,168,106,0.35)] border border-[#9C7D46]/30">
-              <svg className="w-[16px] h-[16px] text-[#0369A1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <circle cx="9" cy="12" r="6" />
-                <circle cx="15" cy="12" r="6" />
-              </svg>
-            </div>
-            <h3 className="text-[13.5px] font-black text-[#0369A1] leading-none tracking-wide">المعاملات المالية</h3>
-          </div>
+      {/* كارت وسجل المعاملات المالية بهوية وصلي الرسمية */}
+      <div className="space-y-4">
+        {/* زري استلام وتسليم (أعطيت وأخذت) بهوية وصلي الفاخرة */}
+        {orderId && (
+          <div className="flex items-center justify-center gap-3 sm:gap-4 py-1">
+            {/* زر استلام (صادر / أعطيت للمحل) */}
+            <button
+              type="button"
+              onClick={() => {
+                setPickupAdvanceToDelivering(true);
+                setPickupOpen(true);
+                setDeliveryOpen(false);
+              }}
+              className="group relative flex-1 max-w-[210px] h-[58px] sm:h-[64px] rounded-[18px] bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] border-2 border-[#FFC107] text-white flex items-center justify-between px-3.5 shadow-[0_4px_16px_rgba(11,46,140,0.25)] hover:shadow-[0_6px_22px_rgba(11,46,140,0.35)] active:scale-95 transition-all cursor-pointer overflow-hidden"
+              title="استلام الطلب وتسجيل الصادر (أعطيت للمحل)"
+            >
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-[13px] font-black text-[#FFC107] tracking-tight">استلام (صادر)</span>
+                <span className="text-[10px] font-bold text-white/80">تسجيل مدفوع المحل</span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-[#FFC107] text-[#0B2E8C] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+            </button>
 
-          <div className="w-[8px] h-[8px] rounded-full bg-[#38BDF8] shadow-[0_0_6px_#38BDF8] animate-pulse" />
+            {/* زر تسليم (وارد / أخذت من الزبون) */}
+            <button
+              type="button"
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(true);
+                setDeliveryOpen(true);
+                setPickupOpen(false);
+              }}
+              className="group relative flex-1 max-w-[210px] h-[58px] sm:h-[64px] rounded-[18px] bg-gradient-to-r from-[#FFA000] via-[#FFB300] to-[#FFC107] border-2 border-white text-[#0B2E8C] flex items-center justify-between px-3.5 shadow-[0_4px_16px_rgba(255,193,7,0.3)] hover:shadow-[0_6px_22px_rgba(255,193,7,0.4)] active:scale-95 transition-all cursor-pointer overflow-hidden"
+              title="تسليم الطلب وتسجيل الوارد (أخذت من الزبون)"
+            >
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-[13px] font-black text-[#0B2E8C] tracking-tight">تسليم (وارد)</span>
+                <span className="text-[10px] font-bold text-[#0B2E8C]/80">تسجيل مقبوض الزبون</span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-[#0B2E8C] text-[#FFC107] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* فاصل هندسي ناعم بهوية وصلي */}
+        <div className="flex items-center gap-2 py-0.5">
+          <div className="h-[1px] flex-1 bg-gradient-to-l from-[#D0DDFB] to-transparent" />
+          <div className="w-2 h-2 rotate-45 bg-[#0B2E8C]" />
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-[#D0DDFB] to-transparent" />
         </div>
 
-        <div className="relative p-3.5 bg-[#FFFEF8] space-y-3.5">
-          {/* زري استلام وتسليم (أعطيت وأخذت) الفاخرين بالصور الملكية */}
-          {orderId && (
-            <div className="flex items-center justify-center gap-4 py-1">
-              {/* زر استلام (صادر / أعطيت) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setPickupAdvanceToDelivering(true);
-                  setPickupOpen(true);
-                  setDeliveryOpen(false);
-                }}
-                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(10,61,46,0.2)] hover:shadow-[0_6px_20px_rgba(10,61,46,0.35)]"
-                title="استلام الطلب وتسجيل الصادر (أعطيت للمحل)"
-              >
-                <img
-                  src="/images/order-luxury/btn-istilam.webp"
-                  alt="استلام (أعطيت)"
-                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
-                />
-              </button>
-
-              {/* زر تسليم (وارد / أخذت) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setDeliveryAdvanceToDelivered(true);
-                  setDeliveryOpen(true);
-                  setPickupOpen(false);
-                }}
-                className="group relative flex-1 max-w-[200px] h-[58px] sm:h-[64px] rounded-[16px] flex items-center justify-center active:scale-95 transition-all cursor-pointer overflow-hidden shadow-[0_4px_15px_rgba(197,48,48,0.2)] hover:shadow-[0_6px_20px_rgba(197,48,48,0.35)]"
-                title="تسليم الطلب وتسجيل الوارد (أخذت من الزبون)"
-              >
-                <img
-                  src="/images/order-luxury/btn-tasleem.webp"
-                  alt="تسليم (أخذت)"
-                  className="w-full h-full object-contain pointer-events-none drop-shadow-md group-hover:scale-105 transition duration-300"
-                />
-              </button>
-            </div>
-          )}
-
-          {/* فاصل ذهبي ناعم */}
-          <div className="flex items-center gap-2 py-0.5">
-            <div className="h-[1px] flex-1 bg-gradient-to-l from-[#38BDF8]/40 to-transparent" />
-            <div className="w-[6px] h-[6px] rotate-45 bg-[#38BDF8]/60" />
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#38BDF8]/40 to-transparent" />
+        {/* قائمة المعاملات */}
+        {moneyEvents.length === 0 ? (
+          <div className="text-center text-[#0B2E8C] py-4 bg-[#F8FAFF] rounded-[16px] border border-dashed border-[#D0DDFB] text-xs font-bold">
+            لا توجد معاملات نقد مسجّلة لهذا الطلب حتى الآن.
           </div>
+        ) : (
+          <div className="space-y-2.5">
+            {moneyEvents.map((ev) => {
+              const isSader = ev.kind === MONEY_KIND_PICKUP;
+              const timeInfo = formatBaghdadMoneyRecordedAt(ev.recordedAt);
+              const noteText = [ev.mismatchReason, ev.mismatchNote].filter(Boolean).join(" - ");
+              const deleted = ev.deletedAt != null;
+              const recordedByPreparer = ev.recordedByCompanyPreparerId != null;
+              const canDeleteFromMandoubUi = !recordedByPreparer && !deleted;
 
-          {/* قائمة المعاملات */}
-          {moneyEvents.length === 0 ? (
-            <p className="text-center text-[#8B6A2A]/70 py-4 bg-[#F0F9FF]/60 rounded-xl border border-[#38BDF8]/25 text-xs font-bold">
-              لا توجد معاملات نقد مسجّلة لهذا الطلب بعد.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {moneyEvents.map((ev) => {
-                const isSader = ev.kind === MONEY_KIND_PICKUP;
-                const timeInfo = formatBaghdadMoneyRecordedAt(ev.recordedAt);
-                const noteText = [ev.mismatchReason, ev.mismatchNote].filter(Boolean).join(" - ");
-                const deleted = ev.deletedAt != null;
-                const recordedByPreparer = ev.recordedByCompanyPreparerId != null;
-                const canDeleteFromMandoubUi = !recordedByPreparer && !deleted;
-
-                return (
-                  <div
-                    key={ev.id}
-                    className={`relative rounded-[14px] bg-[#FFFEF8] border-[1.5px] border-[#38BDF8]/40 shadow-[0_2px_8px_rgba(201,168,106,0.08),inset_0_1px_0_white] p-2.5 overflow-hidden ${
-                      deleted ? "opacity-50 grayscale" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {/* أيقونة الاتجاه */}
-                        <div
-                          className={`w-[28px] h-[28px] rounded-full flex items-center justify-center border shrink-0 ${
-                            isSader ? "bg-[#E6F4EF] border-[#0369A1]/20" : "bg-[#FFF0F0] border-[#FFB4B4]/60"
-                          }`}
-                        >
-                          {isSader ? (
-                            <svg className="w-3.5 h-3.5 text-[#0369A1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <line x1="7" y1="17" x2="17" y2="7" />
-                              <polyline points="7 7 17 7 17 17" />
-                            </svg>
-                          ) : (
-                            <svg className="w-3.5 h-3.5 text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <line x1="7" y1="7" x2="17" y2="17" />
-                              <polyline points="17 7 17 17 7 17" />
-                            </svg>
-                          )}
-                        </div>
-
-                        {/* تفاصيل الحركة */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span
-                              className={`px-2 py-[2px] rounded-full text-[10px] font-black border ${
-                                isSader
-                                  ? "bg-[#E6F4EF] border-[#0369A1]/20 text-[#0369A1]"
-                                  : "bg-[#FFF0F0] border-[#FFB4B4] text-[#C53030]"
-                              }`}
-                            >
-                              {isSader ? "صادر" : "وارد"}
-                            </span>
-
-                            <span className="text-[11px] font-bold text-[#0369A1]">
-                              {ev.performedByDisplayName?.trim() || courierName?.trim() || "المندوب"}
-                            </span>
-
-                            <span className="text-[9px] font-bold text-[#8B6A2A]/60 px-2 py-[2px] rounded-full bg-[#F7F5EF] border border-[#BAE6FD]/50">
-                              {timeInfo.dateStr} {timeInfo.timeStr}
-                            </span>
-
-                            <span className="text-[11px] font-black text-[#0369A1] font-mono mr-auto">
-                              {formatDinarAsAlfWithUnit(ev.amountDinar)}
-                            </span>
-                          </div>
-
-                          {noteText && (
-                            <div className="mt-1 text-[11px] font-bold text-[#3A2E1A] leading-[1.4] line-clamp-2">
-                              {noteText}
-                            </div>
-                          )}
-                        </div>
+              return (
+                <div
+                  key={ev.id}
+                  className={`relative rounded-[16px] bg-[#F8FAFF] border border-[#D0DDFB] shadow-2xs hover:border-[#0B2E8C]/30 p-2.5 transition-all overflow-hidden ${
+                    deleted ? "opacity-50 grayscale" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {/* أيقونة الاتجاه بهوية وصلي */}
+                      <div
+                        className={`w-[32px] h-[32px] rounded-full flex items-center justify-center shrink-0 shadow-2xs ${
+                          isSader
+                            ? "bg-[#0B2E8C] text-[#FFC107]"
+                            : "bg-[#FFC107] text-[#0B2E8C]"
+                        }`}
+                      >
+                        {isSader ? (
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
+                            <line x1="7" y1="17" x2="17" y2="7" />
+                            <polyline points="7 7 17 7 17 17" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
+                            <line x1="7" y1="7" x2="17" y2="17" />
+                            <polyline points="17 7 17 17 7 17" />
+                          </svg>
+                        )}
                       </div>
 
-                      {/* زر الحذف الوردي الصغير كما في الإدارة */}
-                      {!deleted && canDeleteFromMandoubUi && (
-                        <form action={deleteAction}>
-                          <input type="hidden" name="c" value={auth.c} />
-                          <input type="hidden" name="exp" value={auth.exp} />
-                          <input type="hidden" name="s" value={auth.s} />
-                          <input type="hidden" name="eventId" value={ev.id} />
-                          <input type="hidden" name="next" value={nextUrl} />
-                          <button
-                            type="submit"
-                            disabled={deletePending}
-                            className="w-[26px] h-[26px] rounded-full bg-[#FFF0F0] border border-[#FF8A8A]/40 flex items-center justify-center shadow-[0_1px_4px_rgba(197,48,48,0.12)] active:scale-90 shrink-0 cursor-pointer hover:bg-rose-100 transition"
-                            title="مسح المعاملة"
-                            onClick={(e) => {
-                              if (!confirm("هل أنت متأكد من مسح هذه المعاملة المالية؟")) {
-                                e.preventDefault();
-                              }
-                            }}
+                      {/* تفاصيل الحركة */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                              isSader
+                                ? "bg-[#0B2E8C] text-white"
+                                : "bg-[#FFC107] text-[#0B2E8C]"
+                            }`}
                           >
-                            <svg className="w-3 h-3 text-[#C53030]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
-                        </form>
-                      )}
+                            {isSader ? "صادر" : "وارد"}
+                          </span>
+
+                          <span className="text-[12px] font-black text-[#0B2E8C]">
+                            {ev.performedByDisplayName?.trim() || courierName?.trim() || "المندوب"}
+                          </span>
+
+                          <span className="text-[10px] font-bold text-slate-500 px-2 py-0.5 rounded-full bg-white border border-[#D0DDFB]">
+                            {timeInfo.dateStr} {timeInfo.timeStr}
+                          </span>
+
+                          <span className="text-[13px] font-black text-[#0B2E8C] font-mono mr-auto">
+                            {formatDinarAsAlfWithUnit(ev.amountDinar)}
+                          </span>
+                        </div>
+
+                        {noteText && (
+                          <div className="mt-1.5 text-[11px] font-bold text-slate-600 bg-white border border-[#D0DDFB]/70 rounded-[10px] p-2 leading-[1.4] line-clamp-2">
+                            {noteText}
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* زر الحذف */}
+                    {!deleted && canDeleteFromMandoubUi && (
+                      <form action={deleteAction}>
+                        <input type="hidden" name="c" value={auth.c} />
+                        <input type="hidden" name="exp" value={auth.exp} />
+                        <input type="hidden" name="s" value={auth.s} />
+                        <input type="hidden" name="eventId" value={ev.id} />
+                        <input type="hidden" name="next" value={nextUrl} />
+                        <button
+                          type="submit"
+                          disabled={deletePending}
+                          className="w-[28px] h-[28px] rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-2xs active:scale-90 shrink-0 cursor-pointer hover:bg-rose-100 transition"
+                          title="مسح المعاملة"
+                          onClick={(e) => {
+                            if (!confirm("هل أنت متأكد من مسح هذه المعاملة المالية؟")) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </form>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* --- مودال تسجيل الصادر (أعطيت للمحل/العميل) الفاخر --- */}
