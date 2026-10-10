@@ -925,7 +925,38 @@ export function WasliThemeBoard({
               {/* 1. خيارات الاتصال */}
               {actionModal.type === "call" && (
                 <>
-                  {/* اتصال بالزبون */}
+                  {/* اتصال بالعميل / المحل (أولاً بالأعلى) */}
+                  <a
+                    href={actionModal.row.shopPhone ? `tel:${actionModal.row.shopPhone}` : "#"}
+                    onClick={(e) => {
+                      if (!actionModal.row.shopPhone) {
+                        e.preventDefault();
+                        showToast("رقم هاتف المحل غير متوفر في هذا الطلب");
+                      }
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-[14px] border transition-colors ${
+                      actionModal.row.shopPhone
+                        ? "bg-amber-50 hover:bg-amber-100 border-amber-200"
+                        : "bg-slate-50 border-slate-200 opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-amber-950">
+                          اتصال بالعميل (المحل): {actionModal.row.shopName || "المحل"}
+                        </p>
+                        <p className="text-[11px] font-mono font-bold text-slate-600">
+                          {actionModal.row.shopPhone || "رقم المحل غير مسجل"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-amber-800">اتصال 📞</span>
+                  </a>
+
+                  {/* اتصال بالزبون (ثانياً بالأسفل) */}
                   <a
                     href={`tel:${actionModal.row.customerPhone}`}
                     className="flex items-center justify-between p-3 rounded-[14px] bg-[#F0F4FF] hover:bg-[#E8EEFF] border border-[#D0DDFB] transition-colors"
@@ -966,44 +997,48 @@ export function WasliThemeBoard({
                       <span className="text-xs font-bold text-[#1E4DB7]">اتصال 📞</span>
                     </a>
                   )}
-
-                  {/* اتصال بالعميل / المحل */}
-                  <a
-                    href={actionModal.row.shopPhone ? `tel:${actionModal.row.shopPhone}` : "#"}
-                    onClick={(e) => {
-                      if (!actionModal.row.shopPhone) {
-                        e.preventDefault();
-                        showToast("رقم هاتف المحل غير متوفر في هذا الطلب");
-                      }
-                    }}
-                    className={`flex items-center justify-between p-3 rounded-[14px] border transition-colors ${
-                      actionModal.row.shopPhone
-                        ? "bg-amber-50 hover:bg-amber-100 border-amber-200"
-                        : "bg-slate-50 border-slate-200 opacity-60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-bold text-amber-950">
-                          اتصال بالعميل (المحل): {actionModal.row.shopName || "المحل"}
-                        </p>
-                        <p className="text-[11px] font-mono font-bold text-slate-600">
-                          {actionModal.row.shopPhone || "رقم المحل غير مسجل"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-amber-800">اتصال 📞</span>
-                  </a>
                 </>
               )}
 
               {/* 2. خيارات واتساب */}
               {actionModal.type === "whatsapp" && (
                 <>
-                  {/* واتساب الزبون */}
+                  {/* واتساب العميل / المحل (أولاً بالأعلى) */}
+                  <a
+                    href={actionModal.row.shopPhone ? toInternationalWhatsApp(actionModal.row.shopPhone) : "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      if (!actionModal.row.shopPhone) {
+                        e.preventDefault();
+                        showToast("رقم واتساب المحل غير متوفر");
+                      }
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-[14px] border transition-colors ${
+                      actionModal.row.shopPhone
+                        ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+                        : "bg-slate-50 border-slate-200 opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center">
+                        <MessageCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-emerald-950">
+                          واتساب العميل (المحل): {actionModal.row.shopName}
+                        </p>
+                        <p className="text-[11px] font-mono font-bold text-emerald-800">
+                          {actionModal.row.shopPhone || "رقم المحل غير مسجل"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                      فتح <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </a>
+
+                  {/* واتساب الزبون (ثانياً بالأسفل) */}
                   <a
                     href={toInternationalWhatsApp(actionModal.row.customerPhone)}
                     target="_blank"
@@ -1052,48 +1087,46 @@ export function WasliThemeBoard({
                       </span>
                     </a>
                   )}
-
-                  {/* واتساب العميل / المحل */}
-                  <a
-                    href={actionModal.row.shopPhone ? toInternationalWhatsApp(actionModal.row.shopPhone) : "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      if (!actionModal.row.shopPhone) {
-                        e.preventDefault();
-                        showToast("رقم واتساب المحل غير متوفر");
-                      }
-                    }}
-                    className={`flex items-center justify-between p-3 rounded-[14px] border transition-colors ${
-                      actionModal.row.shopPhone
-                        ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
-                        : "bg-slate-50 border-slate-200 opacity-60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center">
-                        <MessageCircle className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-bold text-emerald-950">
-                          واتساب العميل (المحل): {actionModal.row.shopName}
-                        </p>
-                        <p className="text-[11px] font-mono font-bold text-emerald-800">
-                          {actionModal.row.shopPhone || "رقم المحل غير مسجل"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                      فتح <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </a>
                 </>
               )}
 
               {/* 3. خيارات الموقع الجغرافي */}
               {actionModal.type === "location" && (
                 <>
-                  {/* لوكيشن الزبون */}
+                  {/* لوكيشن العميل / المحل (أولاً بالأعلى) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (actionModal.row.shopLocationUrl) {
+                        window.open(actionModal.row.shopLocationUrl, "_blank");
+                      } else {
+                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          actionModal.row.shopRegionName || actionModal.row.shopName || ""
+                        )}`;
+                        window.open(url, "_blank");
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-[14px] bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[13px] font-bold text-amber-950">
+                          موقع العميل (المحل): {actionModal.row.shopName}
+                        </p>
+                        <p className="text-[11px] text-slate-600 truncate max-w-[230px]">
+                          {actionModal.row.shopRegionName || "خريطة موقع المحل"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-amber-800 flex items-center gap-1">
+                      خريطة <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </button>
+
+                  {/* لوكيشن الزبون (ثانياً بالأسفل) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1145,82 +1178,13 @@ export function WasliThemeBoard({
                       </span>
                     </button>
                   )}
-
-                  {/* لوكيشن العميل / المحل */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (actionModal.row.shopLocationUrl) {
-                        window.open(actionModal.row.shopLocationUrl, "_blank");
-                      } else {
-                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                          actionModal.row.shopRegionName || actionModal.row.shopName || ""
-                        )}`;
-                        window.open(url, "_blank");
-                      }
-                    }}
-                    className="w-full flex items-center justify-between p-3 rounded-[14px] bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center">
-                        <MapPin className="w-4 h-4" />
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[13px] font-bold text-amber-950">
-                          موقع العميل (المحل): {actionModal.row.shopName}
-                        </p>
-                        <p className="text-[11px] text-slate-600 truncate max-w-[230px]">
-                          {actionModal.row.shopRegionName || "خريطة موقع المحل"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-amber-800 flex items-center gap-1">
-                      خريطة <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </button>
                 </>
               )}
 
               {/* 4. خيارات صور الأبواب */}
               {actionModal.type === "doorPhoto" && (
                 <>
-                  {/* باب الزبون */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (actionModal.row.customerDoorPhotoUrl) {
-                        setPreviewPhotoUrl({
-                          url: actionModal.row.customerDoorPhotoUrl,
-                          title: "صورة باب الزبون",
-                        });
-                        setActionModal(null);
-                      } else {
-                        showToast("لا توجد صورة مسجلة لباب الزبون في هذا الطلب");
-                      }
-                    }}
-                    className={`w-full flex items-center justify-between p-3 rounded-[14px] border transition-colors cursor-pointer ${
-                      actionModal.row.customerDoorPhotoUrl
-                        ? "bg-[#F0F4FF] hover:bg-[#E8EEFF] border-[#D0DDFB]"
-                        : "bg-slate-50 border-slate-200 opacity-60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#0B2E8C] text-[#FFC107] flex items-center justify-center">
-                        <Camera className="w-4 h-4" />
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[13px] font-bold text-[#0B2E8C]">صورة باب الزبون</p>
-                        <p className="text-[11px] text-slate-500">
-                          {actionModal.row.customerDoorPhotoUrl ? "متوفرة (اضغط للمعاينة)" : "غير متوفرة"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-[#1E4DB7]">
-                      {actionModal.row.customerDoorPhotoUrl ? "عرض 🖼️" : "لا يوجد"}
-                    </span>
-                  </button>
-
-                  {/* باب المحل / العميل */}
+                  {/* باب المحل / العميل (أولاً بالأعلى) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1253,6 +1217,42 @@ export function WasliThemeBoard({
                     </div>
                     <span className="text-xs font-bold text-amber-800">
                       {actionModal.row.shopDoorPhotoUrl ? "عرض 🖼️" : "لا يوجد"}
+                    </span>
+                  </button>
+
+                  {/* باب الزبون (ثانياً بالأسفل) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (actionModal.row.customerDoorPhotoUrl) {
+                        setPreviewPhotoUrl({
+                          url: actionModal.row.customerDoorPhotoUrl,
+                          title: "صورة باب الزبون",
+                        });
+                        setActionModal(null);
+                      } else {
+                        showToast("لا توجد صورة مسجلة لباب الزبون في هذا الطلب");
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-[14px] border transition-colors cursor-pointer ${
+                      actionModal.row.customerDoorPhotoUrl
+                        ? "bg-[#F0F4FF] hover:bg-[#E8EEFF] border-[#D0DDFB]"
+                        : "bg-slate-50 border-slate-200 opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[#0B2E8C] text-[#FFC107] flex items-center justify-center">
+                        <Camera className="w-4 h-4" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[13px] font-bold text-[#0B2E8C]">صورة باب الزبون</p>
+                        <p className="text-[11px] text-slate-500">
+                          {actionModal.row.customerDoorPhotoUrl ? "متوفرة (اضغط للمعاينة)" : "غير متوفرة"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-[#1E4DB7]">
+                      {actionModal.row.customerDoorPhotoUrl ? "عرض 🖼️" : "لا يوجد"}
                     </span>
                   </button>
                 </>
