@@ -658,9 +658,9 @@ export function WasliThemeBoard({
                         </div>
                       )}
 
-                      {/* شريط المسار الملون حسب الحالة - بحجم وخط كبير جداً للقراءة أثناء القيادة */}
+                      {/* شريط المسار الملون حسب الحالة - ممتد بالكامل ليأخذ كل المساحة المتاحة ويظهر اسم المحل والمنطقة كاملاً */}
                       <div
-                        className={`inline-flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-sm transition-all max-w-[82%] ${getRouteBadgeStyle(
+                        className={`flex-1 w-full min-w-0 flex items-center gap-2 text-[14px] sm:text-[15px] font-black rounded-[14px] px-3.5 py-2 shadow-sm transition-all ${getRouteBadgeStyle(
                           r.orderStatus
                         )}`}
                       >
@@ -670,10 +670,10 @@ export function WasliThemeBoard({
                           }`}
                           strokeWidth={2.5}
                         />
-                        <span className="truncate tracking-wide flex items-center gap-1">
-                          <span className="font-black">{r.shopName || "المحل"}</span>
-                          <span className="opacity-70 text-[12px]">←</span>
-                          <span className="font-black">{r.regionLine || "الوجهة"}</span>
+                        <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
+                          <span className="font-black shrink-0">{r.shopName || "المحل"}</span>
+                          <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
+                          <span className="font-black truncate">{r.regionLine || "الوجهة"}</span>
                         </span>
                       </div>
                     </div>
