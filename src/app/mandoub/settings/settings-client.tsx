@@ -54,6 +54,21 @@ export default function CourierSettingsClient({
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
   const [luxuryEnabled, setLuxuryEnabled] = useState(initialLuxuryEnabled !== false);
   const [savingLuxury, setSavingLuxury] = useState(false);
+  const [wasliThemeActive, setWasliThemeActive] = useState(false);
+
+  useEffect(() => {
+    try {
+      setWasliThemeActive(localStorage.getItem("mandoub_wasli_theme_active") === "true");
+    } catch {}
+  }, []);
+
+  const toggleWasliTheme = () => {
+    const next = !wasliThemeActive;
+    setWasliThemeActive(next);
+    try {
+      localStorage.setItem("mandoub_wasli_theme_active", next ? "true" : "false");
+    } catch {}
+  };
 
   async function handleToggleLuxury() {
     const nextVal = !luxuryEnabled;
@@ -338,6 +353,29 @@ export default function CourierSettingsClient({
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">تصميم كبسولي فخم مع أزرار كبسولية ورأس أزرق عصري</p>
+            </button>
+
+            {/* ثيم وصلي الحصري */}
+            <button
+              type="button"
+              onClick={toggleWasliTheme}
+              className={`p-4 rounded-xl border-2 text-right transition-all flex flex-col justify-between gap-3 ${
+                wasliThemeActive
+                  ? "border-[#0B2E8C] bg-gradient-to-br from-[#E8EEFF] to-[#FFF8E1] ring-2 ring-[#FFC107] shadow-md"
+                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#0B2E8C]/40"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-black text-sm text-[#0B2E8C] flex items-center gap-1.5">
+                  ⚡ ثيم وصلي (Wasli Theme)
+                </span>
+                {wasliThemeActive ? (
+                  <span className="text-xs font-black bg-[#0B2E8C] text-[#FFC107] px-2 py-0.5 rounded-md">مُفعّل</span>
+                ) : (
+                  <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">تفعيل</span>
+                )}
+              </div>
+              <p className="text-xs text-[#1E4DB7]/80">تصميم وصلي الأصلي بالأزرق الكحلي والأصفر الذهبي مع الدوائر السعرية الكبيرة وكروت الإحصائيات</p>
             </button>
           </div>
         </section>

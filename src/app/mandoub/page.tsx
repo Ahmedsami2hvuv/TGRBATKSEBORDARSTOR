@@ -1048,36 +1048,47 @@ export default async function MandoubPage({ searchParams }: Props) {
           <PortalAuthCookieSetter auth={baseAuth} />
           {/* تم نقل الهيدر إلى المكون العميل MandoubOrdersSection تفاعلياً */}
 
-          <MandoubWebPushBanner auth={baseAuth} />
-          <MandoubMoneySummarySection
-            totalsBaseline={totalsBaseline}
-            sumDeliveryInDinar={Number(sumDeliveryIn)}
-            sumPickupOutDinar={Number(sumPickupOut)}
-            remainingNetDinar={Number(remainingNet)}
-            sumEarningsDinar={Number(activeOrderMetrics.sumEarnings)}
-            courierVehicleType={courier.vehicleType}
-            hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
-            hideTitle hideResetText
-            showAdminBox={false}
-          />
+          <style>{`
+            body.wasli-theme-active .mandoub-classic-header-section {
+              display: none !important;
+            }
+            body.wasli-theme-active {
+              background-color: #F0F4FF !important;
+            }
+          `}</style>
 
-          {/* أزرار الفلترة محذوفة بناءً على طلب المستخدم */}
+          <div className="mandoub-classic-header-section space-y-4">
+            <MandoubWebPushBanner auth={baseAuth} />
+            <MandoubMoneySummarySection
+              totalsBaseline={totalsBaseline}
+              sumDeliveryInDinar={Number(sumDeliveryIn)}
+              sumPickupOutDinar={Number(sumPickupOut)}
+              remainingNetDinar={Number(remainingNet)}
+              sumEarningsDinar={Number(activeOrderMetrics.sumEarnings)}
+              courierVehicleType={courier.vehicleType}
+              hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
+              hideTitle hideResetText
+              showAdminBox={false}
+            />
 
-          {tab === "checkSader" && (
-            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-emerald-100 animate-in fade-in slide-in-from-right-2">
-              <span className="text-xs font-bold text-slate-500 ms-1">فلترة الصادر:</span>
-              <Link prefetch={false} href={`/mandoub?tab=checkSader&saderFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'lower' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أقل من المتوقع</Link>
-              <Link prefetch={false} href={`/mandoub?tab=checkSader&saderFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'higher' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أكبر من المتوقع</Link>
-            </div>
-          )}
+            {/* أزرار الفلترة محذوفة بناءً على طلب المستخدم */}
 
-          {tab === "checkWard" && (
-            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-rose-100 animate-in fade-in slide-in-from-right-2">
-              <span className="text-xs font-bold text-slate-500 ms-1">فلترة الوارد:</span>
-              <Link prefetch={false} href={`/mandoub?tab=checkWard&wardFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'lower' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أقل من المتوقع</Link>
-              <Link prefetch={false} href={`/mandoub?tab=checkWard&wardFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'higher' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أكبر من المتوقع</Link>
-            </div>
-          )}
+            {tab === "checkSader" && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-emerald-100 animate-in fade-in slide-in-from-right-2">
+                <span className="text-xs font-bold text-slate-500 ms-1">فلترة الصادر:</span>
+                <Link prefetch={false} href={`/mandoub?tab=checkSader&saderFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'lower' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أقل من المتوقع</Link>
+                <Link prefetch={false} href={`/mandoub?tab=checkSader&saderFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'higher' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أكبر من المتوقع</Link>
+              </div>
+            )}
+
+            {tab === "checkWard" && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-rose-100 animate-in fade-in slide-in-from-right-2">
+                <span className="text-xs font-bold text-slate-500 ms-1">فلترة الوارد:</span>
+                <Link prefetch={false} href={`/mandoub?tab=checkWard&wardFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'lower' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أقل من المتوقع</Link>
+                <Link prefetch={false} href={`/mandoub?tab=checkWard&wardFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'higher' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أكبر من المتوقع</Link>
+              </div>
+            )}
+          </div>
 
           <section className="overflow-hidden border-0 sm:border border-sky-200 rounded-2xl bg-transparent sm:bg-white/80 shadow-none sm:shadow-sm">
             <MandoubOrdersSection
@@ -1093,6 +1104,12 @@ export default async function MandoubPage({ searchParams }: Props) {
               cashInHandStr={cashInHandStr}
               customWaButtons={JSON.parse(JSON.stringify(waButtonsRaw))}
               initialCustomSortIds={customSortOrderIds}
+              moneyMetrics={{
+                sumPickupOutDinar: Number(sumPickupOut),
+                sumDeliveryInDinar: Number(sumDeliveryIn),
+                remainingNetDinar: Number(remainingNet),
+                sumEarningsDinar: Number(activeOrderMetrics.sumEarnings),
+              }}
               courierSettings={{
                 showDoorBtn: courier.showDoorBtn,
                 showLocationBtn: courier.showLocationBtn,

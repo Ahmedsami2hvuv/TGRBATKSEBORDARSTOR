@@ -30,6 +30,7 @@ import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { MandoubActionMenuModal } from "./mandoub-action-menu-modal";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 import { createReverseOrderFromExisting } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/reverse-order-actions";
+import { WasliThemeBoard } from "./wasli-theme-board";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -1300,6 +1301,10 @@ export function MandoubOrderTable({
   customWaButtons,
   initialCustomSortIds,
   courierSettings,
+  isWasliTheme,
+  onToggleWasliTheme,
+  moneyMetrics,
+  cashInHandStr,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -1318,6 +1323,15 @@ export function MandoubOrderTable({
   customWaButtons?: any[];
   initialCustomSortIds?: string[];
   courierSettings?: any;
+  isWasliTheme?: boolean;
+  onToggleWasliTheme?: () => void;
+  moneyMetrics?: {
+    sumPickupOutDinar?: number;
+    sumDeliveryInDinar?: number;
+    remainingNetDinar?: number;
+    sumEarningsDinar?: number;
+  };
+  cashInHandStr?: string;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -1729,7 +1743,49 @@ export function MandoubOrderTable({
         </div>
       )}
 
-      {courierSettings?.useFullBlockView ? (
+      {isWasliTheme ? (
+        <WasliThemeBoard
+          rows={tableRowsToRender}
+          allRows={rows}
+          auth={auth}
+          tab={tab}
+          courierName={courierName}
+          cashInHandStr={cashInHandStr || "0"}
+          moneyMetrics={moneyMetrics}
+          onToggleWasliTheme={onToggleWasliTheme || (() => {})}
+          onOpenRow={(id) => {
+            if (isSortingMode) return;
+            if (showQuickSelect) {
+              toggleOne(id);
+              return;
+            }
+            setActiveOrderId(id);
+            const p = new URLSearchParams(window.location.search);
+            p.set("activeOrderId", id);
+            window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
+          }}
+          setPickupOrder={(o) => setPickupOrder(o)}
+          setDeliveryOrder={(o) => setDeliveryOrder(o)}
+          showQuickSelect={!!showQuickSelect}
+          setShowQuickSelect={(v) => {
+            if (setShowQuickSelect) {
+              setShowQuickSelect(typeof v === "function" ? v(!!showQuickSelect) : v);
+            }
+          }}
+          selectedIds={selectedIds}
+          toggleOne={toggleOne}
+          toggleAll={toggleAll}
+          allSelected={allSelected}
+          qSearch={qSearch}
+          onSearchChange={onSearchChange}
+          showSearch={!!showSearch}
+          setShowSearch={(v) => {
+            if (setShowSearch) {
+              setShowSearch(typeof v === "function" ? v(!!showSearch) : v);
+            }
+          }}
+        />
+      ) : courierSettings?.useFullBlockView ? (
         <MandoubFullBlockCardGrid
           rows={tableRowsToRender}
           onOpenRow={(id) => {
