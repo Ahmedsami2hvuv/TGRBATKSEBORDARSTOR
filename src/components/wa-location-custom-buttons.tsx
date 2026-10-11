@@ -93,10 +93,10 @@ export function WaLocationCustomButtons({
 
     if (!matchRole) return false;
 
-    // فحص حالة الطلب
-    if (orderStatus && btn.statusesCsv) {
+    // فحص حالة الطلب: إذا الزر محدد لحالات معينة فلا يظهر إذا حالة الطلب غير معروفة أو غير مسموحة.
+    if (btn.statusesCsv?.trim()) {
       const allowedStatuses = btn.statusesCsv.split(",").map((s) => s.trim()).filter(Boolean);
-      if (allowedStatuses.length > 0 && !allowedStatuses.includes(orderStatus)) {
+      if (!orderStatus || (allowedStatuses.length > 0 && !allowedStatuses.includes(orderStatus))) {
         return false;
       }
     }
@@ -119,16 +119,9 @@ export function WaLocationCustomButtons({
     return true;
   });
 
-  // 2. إذا لم يكن هناك زر محدد بـ showNextToLocation صراحة، نبحث عن أول زر مخصص متاح في صفحة أزرار الواتساب
-  if (locationButtons.length === 0 && buttons.length > 0) {
-    const candidate = buttons.find((b) => b.label?.includes("تبليغ") || b.label?.includes("مراسلة") || b.recipient !== "shop") || buttons[0];
-    if (candidate) {
-      locationButtons = [candidate];
-    }
-  }
-
-  // 3. إذا لم تكن هناك أزرار إطلاقاً مسجلة، نضع زر تبليغ الزبون الافتراضي الفاخر
-  if (locationButtons.length === 0) {
+  // لا نتجاوز شروط الدور وحالة الطلب: الزر الذي لا يطابق الشروط يجب ألا يظهر.
+  // نستخدم الزر الافتراضي فقط إذا لم توجد إعدادات أزرار أصلاً، وليس عندما تُصفّى الأزرار بسبب الشروط.
+  if (buttons.length === 0) {
     locationButtons = [
       {
         id: "default-notify-customer",
