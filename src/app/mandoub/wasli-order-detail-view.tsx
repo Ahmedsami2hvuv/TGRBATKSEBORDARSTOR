@@ -196,6 +196,12 @@ export function WasliOrderDetailView({
 
   const customerRegion = order.customerRegion?.name || "";
   const customerPhone = order.customerPhone || "";
+
+  // المبالغ المالية
+  const totalAmount = Number(order.totalAmount || order.totalPrice || 0);
+  const deliveryPrice = Number(order.deliveryPrice || 0);
+  const orderSubtotal = Math.max(0, totalAmount - deliveryPrice);
+
   const initialCustLocation = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
   const [currentCustLocation, setCurrentCustLocation] = useState(initialCustLocation);
 
