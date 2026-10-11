@@ -23,6 +23,7 @@ import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/ma
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import { whatsappAppUrl } from "@/lib/whatsapp";
 import { toast } from "sonner";
+import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
 
 type Props = {
   order: any;
