@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aboakbr.com"),
   title: "وصلي",
-  description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
+  description: "وصلي_ نتسوق اي شي تريده_ونوصلك كل طلباتك",
   manifest: "/site.webmanifest",
   icons: {
     icon: "/icon.png",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "وصلي",
-    description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
+    description: "وصلي_ نتسوق اي شي تريده_ونوصلك كل طلباتك",
     url: "https://aboakbr.com",
     siteName: "وصلي",
     images: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
         url: "/images/wasly-logo.png",
         width: 1024,
         height: 1024,
-        alt: "وصلي — توصيل أسرع .. لكل مكان",
+        alt: "وصلي_ نتسوق اي شي تريده_ونوصلك كل طلباتك",
       },
     ],
     locale: "ar_IQ",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "وصلي",
-    description: "خدمة وصلي — توصيل أسرع .. لكل مكان",
+    description: "وصلي_ نتسوق اي شي تريده_ونوصلك كل طلباتك",
     images: ["/images/wasly-logo.png"],
   },
   appleWebApp: { capable: true, title: "وصلي", statusBarStyle: "default" },
