@@ -1,7 +1,7 @@
 export type MandoubWaButtonVariableValues = Record<string, string>;
 
-const TRIPLE_TOKEN_RE = /\{\{\{([a-zA-Z0-9_]+)\}\}\}/g;
-const SINGLE_TOKEN_RE = /\{([a-zA-Z0-9_]+)\}/g;
+const ANY_TOKEN_RE = /\{\{\{?\s*([a-zA-Z0-9_]+)\s*\}?\}\}/g;
+const SINGLE_TOKEN_RE = /\{\s*([a-zA-Z0-9_]+)\s*\}/g;
 
 export function applyMandoubWaTemplate(
   templateText: string,
@@ -61,8 +61,8 @@ export function applyMandoubWaTemplate(
     return vars[key] ?? vars[k] ?? "";
   };
 
-  // استبدال النمط الأقواس الثلاثية أولاً {{{var}}}
-  let result = templateText.replace(TRIPLE_TOKEN_RE, (_, key: string) => getValue(key));
+  // استبدال النمط الأقواس الثلاثية والمزدوجة أولاً {{{var}}} و {{var}}
+  let result = templateText.replace(ANY_TOKEN_RE, (_, key: string) => getValue(key));
 
   // استبدال النمط الأقواس الأحادية {var} ثانياً
   result = result.replace(SINGLE_TOKEN_RE, (_, key: string) => getValue(key));

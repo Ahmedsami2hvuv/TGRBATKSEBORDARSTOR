@@ -324,94 +324,107 @@ export function WasliOrderDetailView({
     messageText: string;
   } | null>(null);
 
-  // تحديد دور المستخدم الحالي (إدارة أم مندوب)
-  const isUserAdmin = auth?.c === "admin" || !viewerCourierId;
-  const currentUserRole: "admin" | "mandoub" = isUserAdmin ? "admin" : "mandoub";
+  // تحديد دور المستخدم بدقة استناداً للمسار والصلاحية
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const isMandoubView = pathname.includes("/mandoub") || Boolean(viewerCourierId && viewerCourierId !== "admin");
+  const currentUserRole: "admin" | "mandoub" = isMandoubView ? "mandoub" : "admin";
   const currentOrderStatus = (order.status || "").toLowerCase().trim();
 
-  // دالة فحص هل الزر يطابق الصلاحيات وحالة الطلب الحالية وقواعد اللوكيشن
-  const isButtonValidForContext = (b: any, targetType: "request_location" | "with_location") => {
-    if (!b || b.isActive === false) return false;
+  // خريطة مرادفات حالات الطلب (عربي + إنجليزي) لضمان عدم فشل المطابقة
+  const matchStatusRule = (ruleItem: string, orderStatusVal: string): boolean => {
+    const r = ruleItem.trim().toLowerCase();
+    const c = orderStatusVal.trim().toLowerCase();
+    if (!r || !c || r === c) return true;
 
-    // 1. فحص الصلاحية (الدور)
-    const rawScope = b.visibilityScope && String(b.visibilityScope).trim() ? String(b.visibilityScope).trim().toLowerCase() : "all";
-    const scopes = rawScope.split(",").map((s: string) => s.trim()).filter(Boolean);
-    const matchesRole =
-      scopes.includes("all") ||
-      (currentUserRole === "admin" && scopes.includes("admin")) ||
-      (currentUserRole === "mandoub" && scopes.includes("mandoub"));
-    if (!matchesRole) return false;
+    const synonymsMap: Record<string, string[]> = {
+      pending: ["pending", "طلب جديد", "جديد", "جديدة", "new"],
+      assigned: ["assigned", "بانتظار المندوب", "مسند للمندوب", "مسند", "waiting_courier"],
+      delivering: ["delivering", "عند المندوب", "مستلم", "قيد التوصيل", "مع المندوب", "in_transit"],
+      delivered: ["delivered", "تم التسليم", "مسلمة", "مسلم", "completed"],
+      cancelled: ["cancelled", "ملغى", "ملغي", "مرفوض", "canceled", "rejected"],
+      archived: ["archived", "مؤرشف", "مؤرشفة"],
+    };
 
-    // 2. فحص حالة الطلب (statusesCsv) - صارم ودقيق
-    const rawStatuses = b.statusesCsv && String(b.statusesCsv).trim() ? String(b.statusesCsv).trim().toLowerCase() : "";
-    if (rawStatuses) {
-      const allowedStatuses = rawStatuses.split(",").map((s: string) => s.trim()).filter(Boolean);
-      if (allowedStatuses.length > 0 && currentOrderStatus) {
-        if (!allowedStatuses.includes(currentOrderStatus)) {
-          return false;
-        }
-      }
+    for (const key of Object.keys(synonymsMap)) {
+      const syns = synonymsMap[key];
+      const rIn = syns.some((s) => s.toLowerCase() === r);
+      const cIn = syns.some((s) => s.toLowerCase() === c);
+      if (rIn && cIn) return true;
     }
-
-    // 3. فحص قاعدة اللوكيشن
-    const rawRule = b.customerLocationRule && String(b.customerLocationRule).trim() ? String(b.customerLocationRule).trim().toLowerCase() : "any";
-    const rules = rawRule.split(",").map((s: string) => s.trim()).filter(Boolean);
-
-    if (targetType === "request_location") {
-      // عند عدم وجود لوكيشن: يجب ألا يتطلب الزر وجود اللوكيشن
-      const requiresExists = rules.some((r) => r === "exists" || r === "has_location" || r === "courier_gps");
-      if (requiresExists) return false;
-    } else {
-      // عند وجود لوكيشن: يجب ألا يتطلب الزر فقدان اللوكيشن فقط
-      const requiresMissing = rules.some((r) => r === "missing" || r === "no_location");
-      if (requiresMissing) return false;
-    }
-
-    return true;
+    return false;
   };
 
-  // دالة اختيار الزر الأنسب بحسب الدور وحالة الطلب
+  // دالة فحص هل الزر يطابق الدور الحالي للمستخدم
+  const isRoleMatching = (b: any): boolean => {
+    if (!b || b.isActive === false) return false;
+    const rawScope = b.visibilityScope && String(b.visibilityScope).trim() ? String(b.visibilityScope).trim().toLowerCase() : "all";
+    const scopes = rawScope.split(",").map((s: string) => s.trim()).filter(Boolean);
+    return (
+      scopes.includes("all") ||
+      (currentUserRole === "admin" && scopes.includes("admin")) ||
+      (currentUserRole === "mandoub" && scopes.includes("mandoub"))
+    );
+  };
+
+  // دالة فحص مطابقة حالة الطلب الحالية للزر
+  const isStatusMatching = (b: any): boolean => {
+    const rawStatuses = b.statusesCsv && String(b.statusesCsv).trim() ? String(b.statusesCsv).trim() : "";
+    if (!rawStatuses) return true; // إذا لم تحدد حالات فيعمل على كل الحالات
+    const allowed = rawStatuses.split(",").map((s: string) => s.trim()).filter(Boolean);
+    if (allowed.length === 0 || !currentOrderStatus) return true;
+    return allowed.some((rule) => matchStatusRule(rule, currentOrderStatus));
+  };
+
+  // دالة اختيار زر المستخدم الحقيقي بنماذجه المخصصة
   const findBestMatchingButton = (type: "request" | "notify") => {
     const isRequest = type === "request";
-    const targetType = isRequest ? "request_location" : "with_location";
 
-    // تصفية الأزرار الصالحة فقط للدور وحالة الطلب وقاعدة اللوكيشن
-    const validButtons = waButtons.filter((b: any) => isButtonValidForContext(b, targetType));
+    // تصفية أزرار الدور الحالي
+    const roleButtons = waButtons.filter((b: any) => isRoleMatching(b));
 
     if (isRequest) {
-      // للأزرار عند عدم وجود لوكيشن (طلب لوكيشن): نستبعد أزرار التقييم
-      const requestButtons = validButtons.filter((b: any) => {
-        const lbl = (b.label || "").toLowerCase();
-        return !lbl.includes("تقييم") && !lbl.includes("تقيم");
+      // المطلوب: زر "طلب لكيشن" عند عدم وجود لوكيشن
+      // 1. أولاً نبحث عن زر المستخدم المخصص للدور الحالي المطابق لحالة الطلب واسمه طلب لكيشن/لوكيشن
+      const userExactMatching = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        if (lbl.includes("تقييم") || lbl.includes("تقيم")) return false;
+        const isLocName = lbl.includes("لكيشن") || lbl.includes("لوكيشن") || lbl.includes("موقع");
+        return isLocName && isStatusMatching(b);
       });
+      if (userExactMatching) return userExactMatching;
 
-      // 1. أولوية لزر مخصص حصرياً للدور الحالي ومفعل له showNextToLocation
-      const exactRoleNextToLoc = requestButtons.find((b: any) => {
-        const scopes = (b.visibilityScope || "").toLowerCase().split(",").map((s: string) => s.trim());
-        return b.showNextToLocation && scopes.includes(currentUserRole);
+      // 2. زر مخصص للدور ومفعل له showNextToLocation ومطابق للحالة
+      const userNextToLoc = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        if (lbl.includes("تقييم") || lbl.includes("تقيم")) return false;
+        return b.showNextToLocation && isStatusMatching(b);
       });
-      if (exactRoleNextToLoc) return exactRoleNextToLoc;
+      if (userNextToLoc) return userNextToLoc;
 
-      // 2. زر مخصص حصرياً للدور الحالي ويحتوي اسمه على لوكيشن/لكيشن
-      const exactRoleByName = requestButtons.find((b: any) => {
-        const scopes = (b.visibilityScope || "").toLowerCase().split(",").map((s: string) => s.trim());
-        const lbl = (b.label || "").toLowerCase();
-        return scopes.includes(currentUserRole) && (lbl.includes("لوكيشن") || lbl.includes("لكيشن") || lbl.includes("موقع"));
+      // 3. زر مخصص للدور واسمه طلب لكيشن (حتى لو كانت حالة الطلب لم تطابق حرفياً، أولوية لزر المستخدم)
+      const userExactAnyStatus = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        if (lbl.includes("تقييم") || lbl.includes("تقيم")) return false;
+        return lbl.includes("لكيشن") || lbl.includes("لوكيشن");
       });
-      if (exactRoleByName) return exactRoleByName;
+      if (userExactAnyStatus) return userExactAnyStatus;
 
-      // 3. أي زر صالح يحتوي على showNextToLocation
-      const anyNextToLoc = requestButtons.find((b: any) => b.showNextToLocation);
+      // 4. أي زر مخصص للدور مفعل له showNextToLocation
+      const anyNextToLoc = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        return b.showNextToLocation && !lbl.includes("تقييم") && !lbl.includes("تقيم");
+      });
       if (anyNextToLoc) return anyNextToLoc;
 
-      // 4. أي زر صالح يخص طلب اللوكيشن
-      const anyReq = requestButtons.find((b: any) => {
-        const lbl = (b.label || "").toLowerCase();
-        return lbl.includes("لوكيشن") || lbl.includes("لكيشن") || lbl.includes("موقع");
+      // 5. أي زر عام لطلب اللوكيشن في قاعدة البيانات
+      const globalBtn = waButtons.find((b: any) => {
+        if (!b || b.isActive === false) return false;
+        const lbl = (b.label || "").trim().toLowerCase();
+        return (lbl.includes("لكيشن") || lbl.includes("لوكيشن")) && !lbl.includes("تقييم");
       });
-      if (anyReq) return anyReq;
+      if (globalBtn) return globalBtn;
 
-      // 5. القالب الافتراضي المضمون
+      // كحل أخير احتياطي فقط إذا كانت قاعدة البيانات فارغة تماماً من أي زر
       return {
         label: isUserAdmin ? "طلب لوكيشن" : "طلب لكيشن",
         templateText: isUserAdmin
@@ -419,29 +432,38 @@ export function WasliOrderDetailView({
           : "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
       };
     } else {
-      // للأزرار عند وجود لوكيشن (تبليغ أو تقييم في حال التسليم)
-      // 1. أولوية لزر مخصص حصرياً للدور الحالي ومفعل له showNextToLocation
-      const exactRoleNextToLoc = validButtons.find((b: any) => {
-        const scopes = (b.visibilityScope || "").toLowerCase().split(",").map((s: string) => s.trim());
-        return b.showNextToLocation && scopes.includes(currentUserRole);
+      // المطلوب: زر عند وجود لوكيشن (تبليغ زبون أو طلب تقييم عند التسليم)
+      // إذا كانت الطلبية مسلّمة (delivered)، نبحث أولاً عن زر التقييم المخصص
+      if (currentOrderStatus === "delivered") {
+        const reviewBtn = roleButtons.find((b: any) => {
+          const lbl = (b.label || "").trim().toLowerCase();
+          return (lbl.includes("تقييم") || lbl.includes("تقيم")) && isStatusMatching(b);
+        });
+        if (reviewBtn) return reviewBtn;
+      }
+
+      // 1. نبحث عن زر "تبليغ زبون" المخصص للدور والمطابق للحالة
+      const userNotifyMatching = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        const isNotify = lbl.includes("تبليغ") || (b.showNextToLocation && !lbl.includes("لكيشن") && !lbl.includes("لوكيشن"));
+        return isNotify && isStatusMatching(b);
       });
-      if (exactRoleNextToLoc) return exactRoleNextToLoc;
+      if (userNotifyMatching) return userNotifyMatching;
 
-      // 2. زر مخصص حصرياً للدور الحالي
-      const exactRole = validButtons.find((b: any) => {
-        const scopes = (b.visibilityScope || "").toLowerCase().split(",").map((s: string) => s.trim());
-        return scopes.includes(currentUserRole);
+      // 2. زر مخصص للدور واسمه تبليغ
+      const userNotifyAnyStatus = roleButtons.find((b: any) => {
+        const lbl = (b.label || "").trim().toLowerCase();
+        return lbl.includes("تبليغ");
       });
-      if (exactRole) return exactRole;
+      if (userNotifyAnyStatus) return userNotifyAnyStatus;
 
-      // 3. أي زر صالح مفعّل له showNextToLocation
-      const anyNextToLoc = validButtons.find((b: any) => b.showNextToLocation);
-      if (anyNextToLoc) return anyNextToLoc;
+      // 3. أي زر عام للتبليغ
+      const globalNotify = waButtons.find((b: any) => {
+        if (!b || b.isActive === false) return false;
+        return (b.label || "").includes("تبليغ");
+      });
+      if (globalNotify) return globalNotify;
 
-      // 4. أي زر صالح متاح
-      if (validButtons.length > 0) return validButtons[0];
-
-      // 5. القالب الافتراضي المضمون
       return {
         label: "تبليغ الزبون",
         templateText: isUserAdmin
