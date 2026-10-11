@@ -245,37 +245,85 @@ export function WasliOrderDetailView({
     messageText: string;
   } | null>(null);
 
-  // استخراج زر طلب لكيشن وزر تبليغ الزبون
-  const requestLocationBtn = waButtons.find((b: any) => {
-    const lbl = (b.label || "").toLowerCase();
-    const rule = (b.customerLocationRule || "").toLowerCase();
-    return (
-      lbl.includes("طلب") ||
-      lbl.includes("لوكيشن") ||
-      lbl.includes("لكيشن") ||
-      rule.includes("missing") ||
-      rule.includes("no_location") ||
-      (b.showNextToLocation && !rule.includes("exists"))
-    );
-  }) || {
-    label: "طلب لكيشن",
-    templateText: "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
+  // تحديد دور المستخدم الحالي (إدارة أم مندوب)
+  const isUserAdmin = auth?.c === "admin";
+  const currentUserRole: "admin" | "mandoub" = isUserAdmin ? "admin" : "mandoub";
+
+  // دالة فحص هل الزر متاح للدور الحالي
+  const matchesCurrentRole = (btn: any) => {
+    const rawScope = btn.visibilityScope && String(btn.visibilityScope).trim() ? String(btn.visibilityScope).trim() : "all";
+    const scopes = rawScope.split(",").map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+    if (scopes.includes("all")) return true;
+    if (currentUserRole === "admin") return scopes.includes("admin");
+    return scopes.includes("mandoub");
   };
 
-  const notifyCustomerBtn = waButtons.find((b: any) => {
-    const lbl = (b.label || "").toLowerCase();
-    const rule = (b.customerLocationRule || "").toLowerCase();
-    return (
-      lbl.includes("تبليغ") ||
-      rule.includes("exists") ||
-      rule.includes("location") ||
-      rule.includes("has_location") ||
-      (b.showNextToLocation && !rule.includes("missing"))
-    );
-  }) || {
-    label: "تبليغ الزبون",
-    templateText: "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
+  const roleFilteredButtons = waButtons.filter(matchesCurrentRole);
+
+  // دالة اختيار الزر الأنسب بحسب الدور (أولوية للزر المخصص حصرياً للمندوب أو للإدارة)
+  const findBestMatchingButton = (type: "request" | "notify") => {
+    const isRequest = type === "request";
+
+    const isButtonOfType = (b: any) => {
+      const lbl = (b.label || "").toLowerCase();
+      const rule = (b.customerLocationRule || "").toLowerCase();
+      if (isRequest) {
+        return (
+          lbl.includes("طلب") ||
+          lbl.includes("لوكيشن") ||
+          lbl.includes("لكيشن") ||
+          rule.includes("missing") ||
+          rule.includes("no_location") ||
+          (b.showNextToLocation && !rule.includes("exists"))
+        );
+      } else {
+        return (
+          lbl.includes("تبليغ") ||
+          rule.includes("exists") ||
+          rule.includes("location") ||
+          rule.includes("has_location") ||
+          (b.showNextToLocation && !rule.includes("missing"))
+        );
+      }
+    };
+
+    // 1. أولوية قصوى: زر مخصص حصرياً للدور الحالي (مثال: admin للإدارة أو mandoub للمندوب)
+    const exactRoleCandidate = roleFilteredButtons.find((b: any) => {
+      if (!isButtonOfType(b)) return false;
+      const rawScope = b.visibilityScope ? String(b.visibilityScope).trim().toLowerCase() : "";
+      const scopes = rawScope.split(",").map((s: string) => s.trim());
+      return scopes.includes(currentUserRole);
+    });
+    if (exactRoleCandidate) return exactRoleCandidate;
+
+    // 2. زر متاح للدور الحالي (بما فيه all)
+    const anyRoleCandidate = roleFilteredButtons.find(isButtonOfType);
+    if (anyRoleCandidate) return anyRoleCandidate;
+
+    // 3. أي زر متاح كحل احتياطي
+    const fallbackCandidate = waButtons.find(isButtonOfType);
+    if (fallbackCandidate) return fallbackCandidate;
+
+    // 4. القالب الافتراضي في حال عدم وجود أزرار في قاعدة البيانات
+    if (isRequest) {
+      return {
+        label: "طلب لكيشن",
+        templateText: isUserAdmin
+          ? "السلام عليكم، نود تزويدنا بموقعكم (اللوكيشن) لتوصيل طلبكم رقم #{order_number}."
+          : "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
+      };
+    } else {
+      return {
+        label: "تبليغ الزبون",
+        templateText: isUserAdmin
+          ? "مرحباً، تم تجهيز طلبكم رقم #{order_number} وسيتم توصيله لكم قريباً."
+          : "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
+      };
+    }
   };
+
+  const requestLocationBtn = findBestMatchingButton("request");
+  const notifyCustomerBtn = findBestMatchingButton("notify");
 
   // دالة إرسال رسالة الواتساب للزبون مع دعم المتغيرات واختيار الرقم
   const handleSendCustomerWa = (rawTemplate: string, fallbackText: string) => {
