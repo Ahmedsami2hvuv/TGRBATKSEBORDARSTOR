@@ -285,7 +285,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           phoneProfile={safeCustomerProfile}
           secondPhoneProfile={safeSecondProfile}
           customerDebt={typeof customerDebtVal === "number" ? customerDebtVal : null}
-          customWaButtons={safeWaButtons}
+          customWaButtons={safeWaButtonSettings}
         />
       </div>
     );

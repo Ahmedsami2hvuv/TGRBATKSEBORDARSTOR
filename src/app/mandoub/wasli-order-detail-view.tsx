@@ -12,9 +12,16 @@ import { MANDOUB_ORDER_EDIT_TOGGLE } from "./mandoub-order-detail-actions";
 import { FloatingOrderActionButton } from "@/components/floating-order-action-button";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
 import { normalizeOrderSummaryText } from "@/lib/preparation-invoice";
-import { compressImageForMandoubUpload, assignFileToInput } from "@/lib/client-image-compress";
-import { uploadCustomerDoorPhotoFromView, uploadShopDoorPhotoFromView } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/customer-door-photo-actions";
+import {
+  uploadCustomerDoorPhotoFromView,
+  uploadShopDoorPhotoFromView,
+  uploadCustomerLocationFromView,
+  pasteCustomerLocationFromView,
+} from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/[orderId]/customer-door-photo-actions";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
+import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
+import { PhoneActionModal } from "@/components/phone-action-modal";
+import { whatsappAppUrl } from "@/lib/whatsapp";
 import { toast } from "sonner";
 
 type Props = {
@@ -189,30 +196,212 @@ export function WasliOrderDetailView({
 
   const customerRegion = order.customerRegion?.name || "";
   const customerPhone = order.customerPhone || "";
-  const customerLocation = order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "";
+  const initialCustLocation = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
+  const [currentCustLocation, setCurrentCustLocation] = useState(initialCustLocation);
 
-  // المبالغ المالية
-  const totalAmount = Number(order.totalAmount || order.totalPrice || 0);
-  const deliveryPrice = Number(order.deliveryPrice || 0);
-  const orderSubtotal = Math.max(0, totalAmount - deliveryPrice);
+  useEffect(() => {
+    const loc = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
+    if (loc) setCurrentCustLocation(loc);
+  }, [order.customerLocationUrl, order.customer?.customerLocationUrl, phoneProfile?.locationUrl]);
 
-  // صادر ووارد
-  const moneyEvents = order.moneyEvents || [];
-  const saderEvents = moneyEvents.filter((e: any) => e.kind === "courier_pickup_out" || e.kind === "pickup_out");
-  const wardEvents = moneyEvents.filter((e: any) => e.kind === "courier_delivery_in" || e.kind === "delivery_in");
-  const totalSader = saderEvents.reduce((acc: number, e: any) => acc + Number(e.amountDinar || 0), 0);
-  const totalWard = wardEvents.reduce((acc: number, e: any) => acc + Number(e.amountDinar || 0), 0);
+  // إدارة أزرار الواتساب المخصصة من قاعدة البيانات
+  const [waButtons, setWaButtons] = useState<any[]>(customWaButtons || []);
+  useEffect(() => {
+    if (customWaButtons && customWaButtons.length > 0) {
+      setWaButtons(customWaButtons);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data) && data.length > 0) {
+          setWaButtons(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [customWaButtons]);
 
-  // تبليغ الزبون عبر واتساب
-  const handleNotifyCustomer = () => {
-    if (!customerPhone) {
+  // حالات الرفع والجلب واللصق والمودالات
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
+  const [isSavingGps, setIsSavingGps] = useState(false);
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pastedUrlInput, setPastedUrlInput] = useState("");
+  const [isPastingSaving, setIsPastingSaving] = useState(false);
+  const [activePhoneModal, setActivePhoneModal] = useState<{
+    phone1: string;
+    phone2?: string | null;
+    messageText: string;
+  } | null>(null);
+
+  // استخراج زر طلب لكيشن وزر تبليغ الزبون
+  const requestLocationBtn = waButtons.find((b: any) => {
+    const lbl = (b.label || "").toLowerCase();
+    const rule = (b.customerLocationRule || "").toLowerCase();
+    return (
+      lbl.includes("طلب") ||
+      lbl.includes("لوكيشن") ||
+      lbl.includes("لكيشن") ||
+      rule.includes("missing") ||
+      rule.includes("no_location") ||
+      (b.showNextToLocation && !rule.includes("exists"))
+    );
+  }) || {
+    label: "طلب لكيشن",
+    templateText: "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
+  };
+
+  const notifyCustomerBtn = waButtons.find((b: any) => {
+    const lbl = (b.label || "").toLowerCase();
+    const rule = (b.customerLocationRule || "").toLowerCase();
+    return (
+      lbl.includes("تبليغ") ||
+      rule.includes("exists") ||
+      rule.includes("location") ||
+      rule.includes("has_location") ||
+      (b.showNextToLocation && !rule.includes("missing"))
+    );
+  }) || {
+    label: "تبليغ الزبون",
+    templateText: "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
+  };
+
+  // دالة إرسال رسالة الواتساب للزبون مع دعم المتغيرات واختيار الرقم
+  const handleSendCustomerWa = (rawTemplate: string, fallbackText: string) => {
+    const p1 = customerPhone || "";
+    const p2 = order.customerPhone2 || order.alternatePhone || "";
+    if (!p1 && !p2) {
       showToast("لا يوجد رقم هاتف للزبون!");
       return;
     }
-    const cleanPhone = customerPhone.replace(/\D/g, "");
-    const msg = `مرحباً، مندوب التوصيل في طريقه إليك لتسليم طلبك #${order.orderNumber || order.id}. يرجى التواجد واستلام الطلب.`;
-    const url = `https://wa.me/${cleanPhone.startsWith("0") ? "964" + cleanPhone.slice(1) : cleanPhone}?text=${encodeURIComponent(msg)}`;
-    openUrlFromUserGesture(url);
+
+    const tpl = rawTemplate || fallbackText;
+    const variants = splitMandoubWaTemplateVariants(tpl);
+    const chosenTemplate = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : tpl;
+
+    const vars = {
+      order_number: String(order.orderNumber || order.id || ""),
+      clientshop: shopName || "المحل",
+      city: customerRegion || "—",
+      total_price: formatDinarAsAlfWithUnit(totalAmount) || String(totalAmount),
+      total: formatDinarAsAlfWithUnit(totalAmount) || String(totalAmount),
+      delivery: courierName || "المندوب",
+      courier: courierName || "المندوب",
+      courierName: courierName || "المندوب",
+      customer_phone: p1,
+      customer_phone2: p2,
+      shop_phone: shopPhone || "",
+      location_url: currentCustLocation || "",
+      landmark: landmarkVal || "",
+      driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
+    };
+
+    const text = applyMandoubWaTemplate(chosenTemplate, vars);
+
+    if (p1 && p2 && p1.trim() !== p2.trim()) {
+      setActivePhoneModal({
+        phone1: p1,
+        phone2: p2,
+        messageText: text,
+      });
+      return;
+    }
+
+    const targetPhone = p1 || p2;
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile ? whatsappAppUrl(targetPhone, text) : whatsappMeUrl(targetPhone, text);
+    if (url && url !== "#") {
+      openUrlFromUserGesture(url);
+    } else {
+      showToast("تعذر فتح الواتساب");
+    }
+  };
+
+  // دالة رفع لوكيشن عبر GPS
+  const handleUploadGpsLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      showToast("المتصفح لا يدعم تحديد الموقع");
+      return;
+    }
+    setIsLocatingGps(true);
+    showToast("جارٍ تحديد الموقع عبر GPS...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        setIsLocatingGps(false);
+        setIsSavingGps(true);
+        try {
+          const fd = new FormData();
+          fd.append("lat", String(latitude));
+          fd.append("lng", String(longitude));
+          fd.append("target", "first");
+          const res = await uploadCustomerLocationFromView(order.id, {}, fd);
+          if (res?.ok) {
+            setCurrentCustLocation(mapsUrl);
+            showToast("تم رفع وحفظ لوكيشن الزبون بنجاح");
+          } else {
+            showToast(res?.error || "فشل حفظ الموقع");
+          }
+        } catch {
+          showToast("حدث خطأ أثناء حفظ الموقع");
+        } finally {
+          setIsSavingGps(false);
+        }
+      },
+      () => {
+        setIsLocatingGps(false);
+        showToast("يرجى تفعيل إذن الوصول للموقع في الهاتف ثم المحاولة ثانية");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
+  // دالة حفظ اللوكيشن الملصوق
+  const handleSavePastedLocation = async () => {
+    if (!pastedUrlInput.trim()) {
+      showToast("يرجى إدخال أو لصق رابط اللوكيشن أولاً");
+      return;
+    }
+    setIsPastingSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append("locationUrl", pastedUrlInput.trim());
+      fd.append("target", "first");
+      const res = await pasteCustomerLocationFromView(order.id, {}, fd);
+      if (res?.ok) {
+        setCurrentCustLocation(pastedUrlInput.trim());
+        setShowPasteModal(false);
+        setPastedUrlInput("");
+        showToast("تم حفظ لوكيشن الزبون بنجاح");
+      } else {
+        showToast(res?.error || "فشل حفظ الرابط");
+      }
+    } catch {
+      showToast("حدث خطأ أثناء حفظ الرابط");
+    } finally {
+      setIsPastingSaving(false);
+    }
+  };
+
+  // دالة لصق الرابط من الحافظة
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          setPastedUrlInput(text.trim());
+          showToast("تم لصق الرابط من الحافظة");
+          return;
+        }
+      }
+      showToast("يرجى كتابة أو لصق الرابط في الحقل");
+    } catch {
+      showToast("يرجى كتابة أو لصق الرابط في الحقل");
+    }
   };
 
   return (
@@ -666,35 +855,86 @@ export function WasliOrderDetailView({
               </div>
 
               {/* أزرار اللوكيشن والتبليغ */}
-              <div className="mt-4 flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customerLocation) openUrlFromUserGesture(customerLocation);
-                    else showToast("لا يوجد لوكيشن مسجل لهذا الزبون");
-                  }}
-                  className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                  </span>
-                  <span>فتح لوكيشن الزبون</span>
-                </button>
+              {currentCustLocation && currentCustLocation !== "—" ? (
+                /* الحالة 1: يوجد لوكيشن للزبون -> فتح لوكيشن الزبون على اليمين وتبليغ الزبون على اليسار */
+                <div className="mt-4 flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentCustLocation) openUrlFromUserGesture(currentCustLocation);
+                      else showToast("لا يوجد لوكيشن مسجل لهذا الزبون");
+                    }}
+                    className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C]">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </span>
+                    <span>فتح لوكيشن الزبون</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleNotifyCustomer}
-                  className="flex h-[46px] w-[114px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  <span>تبليغ زبون</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSendCustomerWa(notifyCustomerBtn.templateText, "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.")}
+                    className="flex h-[46px] w-[124px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer px-2"
+                  >
+                    <svg className="w-3.5 h-3.5 text-[#0B2E8C] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <span className="truncate">{notifyCustomerBtn.label || "تبليغ الزبون"}</span>
+                  </button>
+                </div>
+              ) : (
+                /* الحالة 2: لا يوجد لوكيشن للزبون -> رفع لوكيشن على اليمين، بجانبه لصق لوكيشن، بجانبه طلب لكيشن */
+                <div className="mt-4 flex gap-2">
+                  {/* الزر 1: رفع لوكيشن (GPS) على اليمين */}
+                  <button
+                    type="button"
+                    onClick={handleUploadGpsLocation}
+                    disabled={isLocatingGps || isSavingGps}
+                    className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[12px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer min-w-0"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] shrink-0">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                      </svg>
+                    </span>
+                    <span className="truncate">{isLocatingGps ? "جارٍ التحديد…" : isSavingGps ? "جارٍ الحفظ…" : "رفع لوكيشن"}</span>
+                  </button>
+
+                  {/* الزر 2: لصق لوكيشن في الوسط */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasteModal(true);
+                      setPastedUrlInput("");
+                    }}
+                    className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[12px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer min-w-0"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[#FFC107] shrink-0">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                      </svg>
+                    </span>
+                    <span className="truncate">لصق لوكيشن</span>
+                  </button>
+
+                  {/* الزر 3: طلب لكيشن على اليسار (من أزرار الواتساب) */}
+                  <button
+                    type="button"
+                    onClick={() => handleSendCustomerWa(requestLocationBtn.templateText, "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍")}
+                    className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer px-1 min-w-0"
+                  >
+                    <svg className="w-3.5 h-3.5 text-[#0B2E8C] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <span className="truncate">{requestLocationBtn.label || "طلب لكيشن"}</span>
+                  </button>
+                </div>
+              )}
 
               {/* أزرار الواتساب والاتصال مع الزبون (الواتساب على اليمين والاتصال على اليسار) */}
               {customerPhone && (
@@ -975,7 +1215,7 @@ export function WasliOrderDetailView({
         orderId={order.id}
         defaultOrderStatus={order.status}
         defaultCustomerPhone={order.customerPhone}
-        defaultCustomerLocationUrl={customerLocation}
+        defaultCustomerLocationUrl={currentCustLocation}
         defaultCustomerLandmark={landmarkVal}
         defaultAlternatePhone={order.alternatePhone || ""}
         auth={auth}
@@ -991,6 +1231,88 @@ export function WasliOrderDetailView({
             setPreviewImageUrl(null);
             setPreviewUploadedByName(null);
           }}
+        />
+      )}
+
+      {/* مودال لصق اللوكيشن بهوية وصلي الفاخرة */}
+      {showPasteModal && (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-[#0B2E8C]/50 backdrop-blur-xs p-4 animate-in fade-in duration-200" dir="rtl">
+          <div className="w-full max-w-sm rounded-[24px] border-[2px] border-[#D0DDFB] bg-white p-5 shadow-[0_12px_36px_rgba(11,46,140,0.25)] space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[#F0F4FF] pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0B2E8C] text-[#FFC107]">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-[14px] font-black text-[#0B2E8C]">لصق لوكيشن الزبون</h3>
+                  <p className="text-[11px] font-medium text-[#7A90C0]">الصق رابط خرائط قوقل ماب</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={pastedUrlInput}
+                  onChange={(e) => setPastedUrlInput(e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                  className="flex-1 rounded-[14px] border-[1.5px] border-[#D0DDFB] bg-[#F0F4FF] px-3 py-2.5 text-xs font-bold text-[#0B2E8C] outline-none focus:border-[#0B2E8C] transition text-right [direction:ltr]"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePasteFromClipboard}
+                className="flex w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#F0F4FF] hover:bg-[#E2ECFF] py-2 text-[11px] font-extrabold text-[#0B2E8C] transition active:scale-95 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                </svg>
+                <span>لصق تلقائي من الحافظة</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isPastingSaving}
+                onClick={handleSavePastedLocation}
+                className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[13px] font-extrabold text-[#FFC107] shadow-md transition hover:bg-[#1E4DB7] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              >
+                {isPastingSaving ? "جارٍ الحفظ…" : "حفظ اللوكيشن"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(false)}
+                className="flex h-[44px] px-4 items-center justify-center rounded-[16px] bg-slate-100 text-[12px] font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال اختيار الرقم عند إرسال رسالة الواتساب */}
+      {activePhoneModal && (
+        <PhoneActionModal
+          type="whatsapp"
+          phone1={activePhoneModal.phone1}
+          phone2={activePhoneModal.phone2}
+          messageText={activePhoneModal.messageText}
+          onClose={() => setActivePhoneModal(null)}
         />
       )}
 
