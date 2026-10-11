@@ -878,7 +878,15 @@ export function WasliOrderDetailView({
                 </span>
                 <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">الزبون (المستلم)</h2>
               </div>
-              <div className="h-1.5 w-12 rounded-full bg-[#FFE082]" />
+              <div className="flex items-center gap-2">
+                <OtherRegionsCustomerDetails
+                  phone={order.customerPhone}
+                  currentRegionId={order.customerRegionId}
+                  currentRegionName={order.customerRegion?.name}
+                  orderId={order.id}
+                  isSecondDestination={false}
+                />
+              </div>
             </div>
 
             {/* تفاصيل الزبون */}
@@ -1194,9 +1202,18 @@ export function WasliOrderDetailView({
                   </span>
                   <h2 className="text-[14px] font-extrabold text-[#0369A1]">المستلم (الوجهة الثانية)</h2>
                 </div>
-                <span className="text-[11px] font-bold text-[#0284C7] bg-white px-2 py-0.5 rounded-full border border-[#38BDF8]/40">
-                  الوجهة 2
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-[#0284C7] bg-white px-2 py-0.5 rounded-full border border-[#38BDF8]/40">
+                    الوجهة 2
+                  </span>
+                  <OtherRegionsCustomerDetails
+                    phone={(order as any).secondCustomerPhone}
+                    currentRegionId={(order as any).secondCustomerRegionId}
+                    currentRegionName={(order as any).secondCustomerRegion?.name}
+                    orderId={order.id}
+                    isSecondDestination={true}
+                  />
+                </div>
               </div>
 
               {/* تفاصيل المستلم الثاني */}
