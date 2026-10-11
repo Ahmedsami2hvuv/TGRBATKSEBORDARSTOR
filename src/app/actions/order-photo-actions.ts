@@ -17,6 +17,18 @@ export type UploadOrderImageResult = {
   error?: string;
 };
 
+function isValidUploadFile(f: unknown): f is File {
+  return Boolean(
+    f &&
+    typeof f === "object" &&
+    "size" in f &&
+    typeof (f as any).size === "number" &&
+    (f as any).size > 0 &&
+    "arrayBuffer" in f &&
+    typeof (f as any).arrayBuffer === "function"
+  );
+}
+
 /**
  * إجراء سيرفر موحّد لرفع صورة الطلب سواء من لوحة الإدارة أو من لوحة المندوب
  */
@@ -33,7 +45,7 @@ export async function uploadOrderImageUniversal(formData: FormData): Promise<Upl
       formData.get("orderImageCamera") ||
       formData.get("orderImageGallery");
 
-    if (!(file instanceof File) || file.size <= 0) {
+    if (!isValidUploadFile(file)) {
       return { ok: false, error: "يرجى اختيار أو التقاط صورة أولاً" };
     }
 

@@ -218,7 +218,7 @@ export async function uploadOrderImageFromView(
     formData.get("orderImage") ||
     formData.get("orderImageCamera") ||
     formData.get("orderImageGallery");
-  if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أولاً" };
+  if (!isValidUploadFile(file)) return { error: "اختر صورة أولاً" };
 
   let photoUrl: string;
   try {
@@ -243,7 +243,8 @@ export async function uploadOrderImageFromView(
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`);
   revalidatePath("/mandoub");
-  return { ok: true };
+  revalidatePath(`/mandoub/order/${order.id}`);
+  return { ok: true, photoUrl };
 }
 
 export async function uploadCustomerLocationFromView(

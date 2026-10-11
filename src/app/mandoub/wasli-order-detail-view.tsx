@@ -21,9 +21,10 @@ import {
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
 import { PhoneActionModal } from "@/components/phone-action-modal";
-import { whatsappAppUrl } from "@/lib/whatsapp";
+import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 import { toast } from "sonner";
 import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
+import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
 
 type Props = {
   order: any;
@@ -74,7 +75,7 @@ export function WasliOrderDetailView({
     resolvePublicAssetSrc((order as any).secondCustomerDoorPhotoUrl || secondPhoneProfile?.photoUrl || null)
   );
   const [orderGoodsPhoto, setOrderGoodsPhoto] = useState<string | null>(
-    resolvePublicAssetSrc(order.packagePhotoUrl || order.orderPhotoUrl || null)
+    resolvePublicAssetSrc((order as any).imageUrl || order.packagePhotoUrl || order.orderPhotoUrl || null)
   );
 
   useEffect(() => {
@@ -92,8 +93,10 @@ export function WasliOrderDetailView({
   }, [(order as any).secondCustomerDoorPhotoUrl, secondPhoneProfile?.photoUrl]);
 
   useEffect(() => {
-    setOrderGoodsPhoto(resolvePublicAssetSrc(order.packagePhotoUrl || order.orderPhotoUrl || null));
-  }, [order.packagePhotoUrl, order.orderPhotoUrl]);
+    setOrderGoodsPhoto(
+      resolvePublicAssetSrc((order as any).imageUrl || order.packagePhotoUrl || order.orderPhotoUrl || null)
+    );
+  }, [(order as any).imageUrl, order.packagePhotoUrl, order.orderPhotoUrl]);
 
   // مراجع رفع الصور
   const shopGalleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -191,7 +194,26 @@ export function WasliOrderDetailView({
         showToast("تم حفظ صورة باب المستلم (الوجهة الثانية) بنجاح");
       } else {
         setOrderGoodsPhoto(objectUrl);
-        showToast("تم تحديث صورة الطلب");
+        const fd = new FormData();
+        fd.append("orderId", String(order.id));
+        fd.append("orderImage", compressed);
+        fd.append("isMandoubPortal", "true");
+        if (auth?.c) fd.append("c", auth.c);
+        if (auth?.exp) fd.append("exp", auth.exp);
+        if (auth?.s) fd.append("s", auth.s);
+
+        const res = await uploadOrderImageUniversal(fd);
+        if (!res.ok) {
+          showToast(res.error || "فشل رفع صورة الطلبية");
+          setOrderGoodsPhoto(
+            resolvePublicAssetSrc((order as any).imageUrl || order.packagePhotoUrl || order.orderPhotoUrl || null)
+          );
+          return;
+        }
+        if (res.imageUrl) {
+          setOrderGoodsPhoto(res.imageUrl);
+        }
+        showToast("تم حفظ صورة الطلبية بنجاح");
       }
     } catch (err: any) {
       console.error("handleImagePicked error:", err);

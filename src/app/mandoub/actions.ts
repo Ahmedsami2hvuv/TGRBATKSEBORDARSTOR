@@ -805,7 +805,7 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
   }
 
   const file = formData.get("orderImage");
-  if (!(file instanceof File) || file.size === 0) {
+  if (!isValidUploadFile(file)) {
     redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 
@@ -861,7 +861,7 @@ export async function uploadMandoubOrderImage(
     formData.get("orderPhoto") ||
     formData.get("orderImageCamera") ||
     formData.get("orderImageGallery");
-  if (!(file instanceof File) || file.size === 0) {
+  if (!isValidUploadFile(file)) {
     return { error: "التقط صورة أو اختر ملفاً من المعرض" };
   }
 
