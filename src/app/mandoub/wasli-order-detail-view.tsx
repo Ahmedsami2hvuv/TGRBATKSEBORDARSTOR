@@ -201,9 +201,11 @@ export function WasliOrderDetailView({
   const totalAmount = Number(order.totalAmount || order.totalPrice || 0);
   const deliveryPrice = Number(order.deliveryPrice || 0);
   const orderSubtotal = Math.max(0, totalAmount - deliveryPrice);
+  const moneyEvents = order.moneyEvents || [];
 
   const initialCustLocation = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
   const [currentCustLocation, setCurrentCustLocation] = useState(initialCustLocation);
+  const customerLocation = currentCustLocation;
 
   useEffect(() => {
     const loc = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
