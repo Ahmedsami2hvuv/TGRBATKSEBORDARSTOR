@@ -119,19 +119,36 @@ export function WaLocationCustomButtons({
     return true;
   });
 
-  // لا نتجاوز شروط الدور وحالة الطلب: الزر الذي لا يطابق الشروط يجب ألا يظهر.
-  // نستخدم الزر الافتراضي فقط إذا لم توجد إعدادات أزرار أصلاً، وليس عندما تُصفّى الأزرار بسبب الشروط.
-  if (buttons.length === 0) {
-    locationButtons = [
-      {
-        id: "default-notify-customer",
-        label: "تبليغ الزبون",
-        iconKey: "💬",
-        templateText: "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
-        recipient: "customer",
-        showNextToLocation: true,
-      },
-    ];
+  // في حال عدم وجود أي زر مخصص يطابق شروط الدور وحالة الطلب الحالية:
+  // نستخدم الزر الافتراضي المناسب (تبليغ الزبون عند وجود لوكيشن، أو طلب لوكيشن عند عدم وجوده)
+  if (locationButtons.length === 0) {
+    const isExistingLoc = Boolean(hasCustomerLocation || hasCourierUploadedLocation);
+    if (isExistingLoc) {
+      locationButtons = [
+        {
+          id: "default-notify-customer",
+          label: "تبليغ الزبون",
+          iconKey: "💬",
+          templateText: "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
+          recipient: "customer",
+          showNextToLocation: true,
+        },
+      ];
+    } else {
+      locationButtons = [
+        {
+          id: "default-request-location",
+          label: userRole === "admin" ? "طلب لوكيشن" : "طلب لكيشن",
+          iconKey: "📍",
+          templateText:
+            userRole === "admin"
+              ? "السلام عليكم، نود تزويدنا بموقعكم (اللوكيشن) لتوصيل طلبكم رقم #{order_number}."
+              : "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
+          recipient: "customer",
+          showNextToLocation: true,
+        },
+      ];
+    }
   }
 
   const handleButtonClick = (btn: WaButtonNextItem) => {

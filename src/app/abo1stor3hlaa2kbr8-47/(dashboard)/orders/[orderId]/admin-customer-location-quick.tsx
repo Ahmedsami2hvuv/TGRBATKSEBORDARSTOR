@@ -161,12 +161,37 @@ export function AdminCustomerLocationQuick({
   const uploadBtnCustom = designerConfig?.customerCard?.btnUploadLocation;
   const pasteBtnCustom = designerConfig?.customerCard?.btnPasteLocation;
 
-  // فحص هل توجد أزرار واتساب مخصصة مفعلة بجانب اللوكيشن عند عدم وجود لوكيشن
+  // فحص هل توجد أزرار واتساب مخصصة صالحة للدور الحالي وحالة الطلب الحالي عند عدم وجود لوكيشن
   const missingLocWaButtons = buttons.filter((btn) => {
     if (!btn.showNextToLocation) return false;
+
+    // استبعاد أزرار التقييم تماماً من مكان طلب اللوكيشن
+    const lbl = (btn.label || "").toLowerCase();
+    if (lbl.includes("تقييم") || lbl.includes("تقيم")) return false;
+
+    // فحص الدور
+    const rawScope = btn.visibilityScope ? String(btn.visibilityScope).trim().toLowerCase() : "all";
+    const scopes = rawScope.split(",").map((s) => s.trim()).filter(Boolean);
+    const matchesRole =
+      scopes.includes("all") ||
+      (userRole === "admin" && scopes.includes("admin")) ||
+      (userRole === "mandoub" && scopes.includes("mandoub")) ||
+      (userRole === "staff" && (scopes.includes("employee") || scopes.includes("preparer")));
+    if (!matchesRole) return false;
+
+    // فحص حالة الطلب
+    if (btn.statusesCsv?.trim()) {
+      const allowed = btn.statusesCsv.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+      const current = (orderStatus || "").trim().toLowerCase();
+      if (allowed.length > 0 && current && !allowed.includes(current)) {
+        return false;
+      }
+    }
+
+    // فحص قاعدة اللوكيشن: يجب ألا يتطلب وجود لوكيشن
     if (btn.customerLocationRule) {
       const rules = btn.customerLocationRule.split(",").map((s) => s.trim().toLowerCase());
-      if (rules.includes("exists") || rules.includes("location") || rules.includes("has_location")) {
+      if (rules.some((r) => r === "exists" || r === "location" || r === "has_location" || r === "courier_gps")) {
         return false;
       }
     }
@@ -270,7 +295,7 @@ export function AdminCustomerLocationQuick({
                 hasCustomerLocation={false}
                 hasCourierUploadedLocation={hasCourierUploadedLocation}
                 templateVars={templateVars}
-                customButtons={buttons}
+                customButtons={missingLocWaButtons}
                 designerConfig={designerConfig}
               />
             ) : (
