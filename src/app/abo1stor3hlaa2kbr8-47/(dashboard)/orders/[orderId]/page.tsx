@@ -160,6 +160,20 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       return order.customer?.customerDoorPhotoUrl || null;
     };
 
+    const getSecondCustomerDoorUrl = () => {
+      if (order.secondCustomerDoorPhotoUrl) {
+        return order.secondCustomerDoorPhotoUrl.startsWith("data:")
+          ? `/api/image/order/${order.id}/secondCustomerDoor`
+          : order.secondCustomerDoorPhotoUrl;
+      }
+      if (secondProfile?.photoUrl) {
+        return secondProfile.photoUrl.startsWith("data:")
+          ? `/api/image/customerPhoneProfile/${secondProfile.id}/photo`
+          : secondProfile.photoUrl;
+      }
+      return null;
+    };
+
     const createdAtStr =
       order.createdAt instanceof Date
         ? order.createdAt.toISOString()
@@ -186,11 +200,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       adminVoiceNoteUrl: resolvePublicAssetSrc(order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : order.adminVoiceNoteUrl),
       shopDoorPhotoUrl: resolvePublicAssetSrc(shopDoorPhotoUrlFinal),
       customerDoorPhotoUrl: resolvePublicAssetSrc(getCustomerDoorUrl()),
-      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
-        order.secondCustomerDoorPhotoUrl?.startsWith("data:")
-          ? `/api/image/order/${order.id}/secondCustomerDoor`
-          : order.secondCustomerDoorPhotoUrl
-      ),
+      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(getSecondCustomerDoorUrl()),
       shopPhotoUrl: resolvePublicAssetSrc(shopPhotoUrlFinal),
       orderSubtotalRaw: order.orderSubtotal ? Number(order.orderSubtotal) : 0,
       deliveryPriceRaw: order.deliveryPrice ? Number(order.deliveryPrice) : 0,

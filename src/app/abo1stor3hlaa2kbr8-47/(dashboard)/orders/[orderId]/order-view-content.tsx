@@ -205,8 +205,8 @@ export function OrderViewContent({
   const voiceSrc = resolvePublicAssetSrc(order.voiceNoteUrl);
   const adminVoiceSrc = resolvePublicAssetSrc(order.adminVoiceNoteUrl);
   const imgShopDoor = resolvePublicAssetSrc(order.shopPhotoUrl || order.shopDoorPhotoUrl || null);
-  const imgCustDoor = resolvePublicAssetSrc(order.customerDoorPhotoUrl);
-  const imgCustDoor2 = resolvePublicAssetSrc(order.secondCustomerDoorPhotoUrl);
+  const imgCustDoor = resolvePublicAssetSrc(order.customerDoorPhotoUrl || phoneProfile?.photoUrl);
+  const imgCustDoor2 = resolvePublicAssetSrc(order.secondCustomerDoorPhotoUrl || secondPhoneProfile?.photoUrl);
 
 
   const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);

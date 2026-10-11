@@ -60,6 +60,18 @@ async function verifyDelegateAllowed(
   return { ok: true, courierId: v.courierId };
 }
 
+function isValidUploadFile(f: unknown): f is File {
+  return Boolean(
+    f &&
+    typeof f === "object" &&
+    "size" in f &&
+    typeof (f as any).size === "number" &&
+    (f as any).size > 0 &&
+    "arrayBuffer" in f &&
+    typeof (f as any).arrayBuffer === "function"
+  );
+}
+
 function revalidateMandoubPaths(nextUrl: string, orderId?: string) {
   revalidatePath("/mandoub");
   revalidatePath("/mandoub/wallet");
@@ -648,7 +660,7 @@ export async function uploadMandoubCustomerDoorPhoto(
   }
 
   const file = formData.get("customerDoorPhoto");
-  if (!(file instanceof File) || file.size === 0) {
+  if (!isValidUploadFile(file)) {
     return { error: "التقط صورة أو اختر ملفاً من المعرض" };
   }
 
@@ -740,7 +752,7 @@ export async function uploadMandoubSecondCustomerDoorPhotoSubmit(
   }
 
   const file = formData.get("secondCustomerDoorPhoto");
-  if (!(file instanceof File) || file.size === 0) {
+  if (!isValidUploadFile(file)) {
     redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
   }
 

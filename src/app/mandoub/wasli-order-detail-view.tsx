@@ -70,15 +70,38 @@ export function WasliOrderDetailView({
   const [custDoorPhoto, setCustDoorPhoto] = useState<string | null>(
     resolvePublicAssetSrc(order.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
   );
+  const [secondCustDoorPhoto, setSecondCustDoorPhoto] = useState<string | null>(
+    resolvePublicAssetSrc((order as any).secondCustomerDoorPhotoUrl || secondPhoneProfile?.photoUrl || null)
+  );
   const [orderGoodsPhoto, setOrderGoodsPhoto] = useState<string | null>(
     resolvePublicAssetSrc(order.packagePhotoUrl || order.orderPhotoUrl || null)
   );
+
+  useEffect(() => {
+    setShopPhoto(resolvePublicAssetSrc(order.shopPhotoUrl || order.shopDoorPhotoUrl || null));
+  }, [order.shopPhotoUrl, order.shopDoorPhotoUrl]);
+
+  useEffect(() => {
+    setCustDoorPhoto(resolvePublicAssetSrc(order.customerDoorPhotoUrl || phoneProfile?.photoUrl || null));
+  }, [order.customerDoorPhotoUrl, phoneProfile?.photoUrl]);
+
+  useEffect(() => {
+    setSecondCustDoorPhoto(
+      resolvePublicAssetSrc((order as any).secondCustomerDoorPhotoUrl || secondPhoneProfile?.photoUrl || null)
+    );
+  }, [(order as any).secondCustomerDoorPhotoUrl, secondPhoneProfile?.photoUrl]);
+
+  useEffect(() => {
+    setOrderGoodsPhoto(resolvePublicAssetSrc(order.packagePhotoUrl || order.orderPhotoUrl || null));
+  }, [order.packagePhotoUrl, order.orderPhotoUrl]);
 
   // مراجع رفع الصور
   const shopGalleryInputRef = useRef<HTMLInputElement | null>(null);
   const shopCameraInputRef = useRef<HTMLInputElement | null>(null);
   const custGalleryInputRef = useRef<HTMLInputElement | null>(null);
   const custCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const secondCustGalleryInputRef = useRef<HTMLInputElement | null>(null);
+  const secondCustCameraInputRef = useRef<HTMLInputElement | null>(null);
   const goodsGalleryInputRef = useRef<HTMLInputElement | null>(null);
   const goodsCameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -112,7 +135,7 @@ export function WasliOrderDetailView({
   };
 
   // معالجة اختيار صورة
-  const handleImagePicked = async (file: File | null, type: "shop" | "customer" | "goods") => {
+  const handleImagePicked = async (file: File | null, type: "shop" | "customer" | "secondCustomer" | "goods") => {
     if (!file) return;
     try {
       showToast("جارٍ تجهيز الصورة وضغطها...");
@@ -127,7 +150,11 @@ export function WasliOrderDetailView({
         const res = await uploadShopDoorPhotoFromView(order.id, {}, fd);
         if (res?.error) {
           showToast(res.error);
+          setShopPhoto(resolvePublicAssetSrc(order.shopPhotoUrl || order.shopDoorPhotoUrl || null));
           return;
+        }
+        if (res?.photoUrl) {
+          setShopPhoto(res.photoUrl);
         }
         showToast("تم حفظ صورة المحل بنجاح");
       } else if (type === "customer") {
@@ -138,12 +165,30 @@ export function WasliOrderDetailView({
         const res = await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
         if (res?.error) {
           showToast(res.error);
+          setCustDoorPhoto(resolvePublicAssetSrc(order.customerDoorPhotoUrl || phoneProfile?.photoUrl || null));
           return;
         }
         if (res?.photoUrl) {
           setCustDoorPhoto(res.photoUrl);
         }
         showToast("تم حفظ صورة باب الزبون بنجاح");
+      } else if (type === "secondCustomer") {
+        setSecondCustDoorPhoto(objectUrl);
+        const fd = new FormData();
+        fd.append("customerDoorPhoto", compressed);
+        fd.append("target", "second");
+        const res = await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
+        if (res?.error) {
+          showToast(res.error);
+          setSecondCustDoorPhoto(
+            resolvePublicAssetSrc((order as any).secondCustomerDoorPhotoUrl || secondPhoneProfile?.photoUrl || null)
+          );
+          return;
+        }
+        if (res?.photoUrl) {
+          setSecondCustDoorPhoto(res.photoUrl);
+        }
+        showToast("تم حفظ صورة باب المستلم (الوجهة الثانية) بنجاح");
       } else {
         setOrderGoodsPhoto(objectUrl);
         showToast("تم تحديث صورة الطلب");
@@ -1110,6 +1155,220 @@ export function WasliOrderDetailView({
               )}
             </div>
           </section>
+
+          {/* ========================================================================= */}
+          {/* كارت الوجهة الثانية (المستلم) — لطلبات الوجهتين */}
+          {/* ========================================================================= */}
+          {(order.routeMode === "double" || Boolean((order as any).secondCustomerPhone)) && (
+            <section className="relative overflow-visible rounded-[24px] border-[1.5px] border-[#38BDF8]/60 bg-white shadow-[0_4px_20px_rgba(2,132,199,0.08)]">
+              {/* الترويسة */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] px-4 py-3 border-b border-[#38BDF8]/40 rounded-t-[23px]">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0284C7] text-base text-[#FDE047] shadow-xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                  <h2 className="text-[14px] font-extrabold text-[#0369A1]">المستلم (الوجهة الثانية)</h2>
+                </div>
+                <span className="text-[11px] font-bold text-[#0284C7] bg-white px-2 py-0.5 rounded-full border border-[#38BDF8]/40">
+                  الوجهة 2
+                </span>
+              </div>
+
+              {/* تفاصيل المستلم الثاني */}
+              <div className="p-[14px] pt-4">
+                <div className="flex gap-3">
+                  <div className="flex flex-1 flex-col gap-2.5 min-w-0">
+                    {((order as any).secondCustomerName || "المستلم") && (
+                      <h3 className="text-[15px] font-extrabold text-[#0369A1] truncate">
+                        {(order as any).secondCustomerName || "المستلم"}
+                      </h3>
+                    )}
+
+                    {(order as any).secondCustomerRegion?.name && (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E0F2FE] px-2.5 py-1 text-[11px] font-bold text-[#0369A1] truncate">
+                          <svg className="w-3 h-3 text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                          <span>{(order as any).secondCustomerRegion.name}</span>
+                        </span>
+                      </div>
+                    )}
+
+                    {(order as any).secondCustomerPhone && (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={telHref((order as any).secondCustomerPhone)}
+                          className="flex items-center gap-1.5 rounded-full border border-[#38BDF8]/40 bg-white px-2.5 py-1 shadow-xs transition hover:border-[#0284C7]"
+                        >
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0284C7] text-[#FDE047]">
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                          </span>
+                          <span className="text-[12px] font-bold text-[#0369A1] font-mono [direction:ltr]">
+                            {(order as any).secondCustomerPhone}
+                          </span>
+                        </a>
+                      </div>
+                    )}
+
+                    {/* النقطة الدالة للمستلم */}
+                    {((order as any).secondCustomerLandmark || secondPhoneProfile?.landmark) && (
+                      <div className="mt-1 rounded-[14px] border border-[#38BDF8]/40 bg-[#F0F9FF] p-2.5 shadow-xs">
+                        <span className="text-[10px] font-bold text-[#0284C7]">ن داله المستلم</span>
+                        <p className="mt-1 text-[12px] font-extrabold leading-snug text-[#0369A1]">
+                          {(order as any).secondCustomerLandmark || secondPhoneProfile?.landmark}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* صورة باب المستلم (الوجهة الثانية) */}
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <div
+                      onClick={() => {
+                        if (secondCustDoorPhoto) setPreviewImageUrl(secondCustDoorPhoto);
+                      }}
+                      className="relative h-[132px] w-[132px] overflow-hidden rounded-[20px] border-[2px] border-[#38BDF8] bg-[#F0F9FF] cursor-pointer"
+                    >
+                      {secondCustDoorPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={secondCustDoorPhoto} alt="صورة باب المستلم" className="h-full w-full object-cover transition hover:scale-105" />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#F0F9FF]">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-[#0284C7]">
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 21h18" />
+                              <path d="M6 21V3h12v18" />
+                              <circle cx="15" cy="12" r="1" />
+                            </svg>
+                          </span>
+                          <span className="text-[10px] font-bold text-[#0284C7]">باب المستلم 2</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => secondCustGalleryInputRef.current?.click()}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#38BDF8]/40 bg-white py-1.5 text-[11px] font-bold text-[#0369A1] transition active:scale-95 shadow-xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-[#0284C7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        <span>المعرض</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => secondCustCameraInputRef.current?.click()}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#0284C7] py-1.5 text-[11px] font-bold text-[#FDE047] transition active:scale-95 shadow-xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                        <span>كاميرا</span>
+                      </button>
+                    </div>
+
+                    <input
+                      ref={secondCustGalleryInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/*"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        if (f) void handleImagePicked(f, "secondCustomer");
+                        e.target.value = "";
+                      }}
+                    />
+                    <input
+                      ref={secondCustCameraInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/*"
+                      capture="environment"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        if (f) void handleImagePicked(f, "secondCustomer");
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* أزرار الاتصال والواتساب للمستلم الثاني */}
+                {(order as any).secondCustomerPhone && (
+                  <div className="mt-3 flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const clean = String((order as any).secondCustomerPhone).replace(/\D/g, "");
+                        openUrlFromUserGesture(`https://wa.me/${clean.startsWith("0") ? "964" + clean.slice(1) : clean}`);
+                      }}
+                      className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-[#FDE047] shadow-xs transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                      </svg>
+                      <span>واتساب المستلم</span>
+                    </button>
+                    <a
+                      href={telHref((order as any).secondCustomerPhone)}
+                      className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-white shadow-xs transition hover:bg-[#0369A1] active:scale-[0.98]"
+                    >
+                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      <span>اتصال المستلم</span>
+                    </a>
+                  </div>
+                )}
+
+                {/* لوكيشن المستلم الثاني */}
+                {(order as any).secondCustomerLocationUrl && String((order as any).secondCustomerLocationUrl).trim() ? (
+                  <div className="mt-3 flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => openUrlFromUserGesture((order as any).secondCustomerLocationUrl)}
+                      className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(2,132,199,0.2)] transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7]">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                      </span>
+                      <span>فتح لوكيشن المستلم</span>
+                    </button>
+                  </div>
+                ) : null}
+
+                {/* استدلال ذكي للوجهة الثانية */}
+                {secondSmartHintLine && secondSmartHintLine !== "—" && (
+                  <div className="mt-3 flex gap-3 rounded-[18px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] p-3 shadow-md text-white">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7] shadow-xs">
+                      💡
+                    </span>
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-[12px] font-extrabold text-[#FDE047]">الاستدلال الذكي (المستلم)</span>
+                      <p className="text-[11px] font-medium leading-snug text-sky-100">
+                        {secondSmartHintLine}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* ========================================================================= */}
           {/* كارت تفاصيل الطلبية والمبلغ */}

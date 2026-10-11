@@ -16,6 +16,18 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export type CustomerDoorPhotoState = { ok?: boolean; error?: string; photoUrl?: string };
 
+function isValidUploadFile(f: unknown): f is File {
+  return Boolean(
+    f &&
+    typeof f === "object" &&
+    "size" in f &&
+    typeof (f as any).size === "number" &&
+    (f as any).size > 0 &&
+    "arrayBuffer" in f &&
+    typeof (f as any).arrayBuffer === "function"
+  );
+}
+
 export async function uploadCustomerDoorPhotoFromView(
   orderId: string,
   _prev: CustomerDoorPhotoState,
@@ -41,7 +53,7 @@ export async function uploadCustomerDoorPhotoFromView(
   const targetRaw = String(formData.get("target") ?? "first");
   const isSecond = targetRaw === "second";
 
-  if (!(file instanceof File) || file.size <= 0) {
+  if (!isValidUploadFile(file)) {
     return { error: "اختر صورة أولاً" };
   }
 
@@ -141,7 +153,7 @@ export async function uploadShopDoorPhotoFromView(
   if (!order) return { error: "الطلب غير موجود" };
 
   const file = formData.get("shopDoorPhoto");
-  if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أولاً" };
+  if (!isValidUploadFile(file)) return { error: "اختر صورة أولاً" };
 
   const shop = await prisma.shop.findUnique({
     where: { id: order.shopId },

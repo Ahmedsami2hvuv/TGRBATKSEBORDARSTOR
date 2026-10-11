@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useRef, useState, useActionState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { telHref, whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import {
   uploadCustomerDoorPhotoFromView,
   deleteCustomerDoorPhotoAction,
-  type CustomerDoorPhotoState,
 } from "./customer-door-photo-actions";
 import {
   compressImageForMandoubUpload,
@@ -19,8 +18,6 @@ import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { SwipeableLuxuryPhotoBox } from "./swipeable-luxury-photo-box";
 import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 import { useModalBackHandler } from "@/hooks/use-modal-back-handler";
-
-const initial: CustomerDoorPhotoState = {};
 
 function contactLine(phone: string): string {
   const t = (phone || "").trim();
@@ -228,15 +225,13 @@ export function AdminLuxuryCustomerCard({
   const cameraFileRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
 
-  const [state, formAction, pending] = useActionState(
-    uploadCustomerDoorPhotoFromView.bind(null, order.id),
-    initial
-  );
+  const [uploadingDoorPhoto, setUploadingDoorPhoto] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleFileSelected(file: File | undefined, inputEl: HTMLInputElement | null) {
-    if (!(file instanceof File) || file.size <= 0) return;
+    if (!file || typeof file !== "object" || !("size" in file) || file.size <= 0) return;
 
+    setUploadingDoorPhoto(true);
     let photoToUpload = file;
     try {
       photoToUpload = await compressImageForMandoubUpload(file);
@@ -257,13 +252,29 @@ export function AdminLuxuryCustomerCard({
     } else {
       fd.set("target", "first");
     }
-    await formAction(fd);
 
-    if (inputEl) {
-      inputEl.value = "";
-    }
-    if (userRole !== "mandoub") {
-      router.refresh();
+    try {
+      const res = await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
+      if (res?.error) {
+        alert(res.error);
+        setLocalDoorPhoto(null);
+        return;
+      }
+      if (res?.photoUrl) {
+        setLocalDoorPhoto(res.photoUrl);
+      }
+      if (userRole !== "mandoub") {
+        router.refresh();
+      }
+    } catch (err: any) {
+      console.error("خطأ في رفع صورة الباب:", err);
+      alert("تعذّر حفظ الصورة: " + (err?.message || "يرجى المحاولة ثانية"));
+      setLocalDoorPhoto(null);
+    } finally {
+      setUploadingDoorPhoto(false);
+      if (inputEl) {
+        inputEl.value = "";
+      }
     }
   }
 
@@ -512,7 +523,7 @@ export function AdminLuxuryCustomerCard({
               variant="customer"
               imageUrl={currentDisplayPhoto}
               label={isSecondDestination ? "باب المستلم" : "صورة الباب"}
-              isBusy={pending}
+              isBusy={uploadingDoorPhoto}
               cameraInputId={cameraInputUniqueId}
               galleryInputId={galleryInputUniqueId}
               onCameraClick={() => cameraFileRef.current?.click()}
