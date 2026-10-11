@@ -12,29 +12,46 @@ export async function syncDoorPhotoToOrdersByPhoneRegion(input: {
   doorPhotoUrl: string;
   uploadedByName?: string | null;
 }): Promise<void> {
-  const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
-  const regionId = input.regionId;
-  const door = input.doorPhotoUrl.trim();
-  if (!targetPhone || !regionId || !door) return;
+  try {
+    const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
+    const regionId = input.regionId;
+    const door = input.doorPhotoUrl.trim();
+    if (!targetPhone || !regionId || !door) return;
 
-  const candidates = await prisma.order.findMany({
-    where: { customerRegionId: regionId },
-    select: { id: true, customerPhone: true },
-  });
-  const ids = candidates
-    .filter((row) => normalizeIraqMobileLocal11(row.customerPhone) === targetPhone)
-    .map((row) => row.id);
-  if (ids.length === 0) return;
+    const digits = targetPhone.replace(/\D/g, "");
+    const shortPhone = digits.startsWith("0") ? digits.slice(1) : digits;
+    const withZero = digits.startsWith("0") ? digits : `0${digits}`;
 
-  await prisma.order.updateMany({
-    where: { id: { in: ids } },
-    data: {
-      customerDoorPhotoUrl: door,
-      ...(input.uploadedByName !== undefined
-        ? { customerDoorPhotoUploadedByName: input.uploadedByName }
-        : {}),
-    },
-  });
+    const candidates = await prisma.order.findMany({
+      where: {
+        customerRegionId: regionId,
+        OR: [
+          { customerPhone: targetPhone },
+          { customerPhone: shortPhone },
+          { customerPhone: withZero },
+          { customerPhone: { contains: shortPhone } },
+        ],
+      },
+      select: { id: true, customerPhone: true },
+      take: 50,
+    });
+    const ids = candidates
+      .filter((row) => normalizeIraqMobileLocal11(row.customerPhone) === targetPhone)
+      .map((row) => row.id);
+    if (ids.length === 0) return;
+
+    await prisma.order.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        customerDoorPhotoUrl: door,
+        ...(input.uploadedByName !== undefined
+          ? { customerDoorPhotoUploadedByName: input.uploadedByName }
+          : {}),
+      },
+    });
+  } catch (err) {
+    console.error("Non-critical syncDoorPhotoToOrdersByPhoneRegion error:", err);
+  }
 }
 
 /** نسخ صورة باب المستلم (الوجهة الثانية) لكل الطلبات بنفس الرقم والمنطقة الثانية. */
@@ -44,31 +61,48 @@ export async function syncSecondDoorPhotoToOrdersByPhoneRegion(input: {
   doorPhotoUrl: string;
   uploadedByName?: string | null;
 }): Promise<void> {
-  const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
-  const regionId = input.regionId;
-  const door = input.doorPhotoUrl.trim();
-  if (!targetPhone || !regionId || !door) return;
+  try {
+    const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
+    const regionId = input.regionId;
+    const door = input.doorPhotoUrl.trim();
+    if (!targetPhone || !regionId || !door) return;
 
-  const candidates = await prisma.order.findMany({
-    where: { secondCustomerRegionId: regionId },
-    select: { id: true, secondCustomerPhone: true },
-  });
-  const ids = candidates
-    .filter(
-      (row) => normalizeIraqMobileLocal11(row.secondCustomerPhone ?? "") === targetPhone,
-    )
-    .map((row) => row.id);
-  if (ids.length === 0) return;
+    const digits = targetPhone.replace(/\D/g, "");
+    const shortPhone = digits.startsWith("0") ? digits.slice(1) : digits;
+    const withZero = digits.startsWith("0") ? digits : `0${digits}`;
 
-  await prisma.order.updateMany({
-    where: { id: { in: ids } },
-    data: {
-      secondCustomerDoorPhotoUrl: door,
-      ...(input.uploadedByName !== undefined
-        ? { secondCustomerDoorPhotoUploadedByName: input.uploadedByName }
-        : {}),
-    },
-  });
+    const candidates = await prisma.order.findMany({
+      where: {
+        secondCustomerRegionId: regionId,
+        OR: [
+          { secondCustomerPhone: targetPhone },
+          { secondCustomerPhone: shortPhone },
+          { secondCustomerPhone: withZero },
+          { secondCustomerPhone: { contains: shortPhone } },
+        ],
+      },
+      select: { id: true, secondCustomerPhone: true },
+      take: 50,
+    });
+    const ids = candidates
+      .filter(
+        (row) => normalizeIraqMobileLocal11(row.secondCustomerPhone ?? "") === targetPhone,
+      )
+      .map((row) => row.id);
+    if (ids.length === 0) return;
+
+    await prisma.order.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        secondCustomerDoorPhotoUrl: door,
+        ...(input.uploadedByName !== undefined
+          ? { secondCustomerDoorPhotoUploadedByName: input.uploadedByName }
+          : {}),
+      },
+    });
+  } catch (err) {
+    console.error("Non-critical syncSecondDoorPhotoToOrdersByPhoneRegion error:", err);
+  }
 }
 
 /** يقرأ الطلب بعد التحديث ويحدّث مرجع (رقم + منطقة الزبون)، ويرفد الطلب بالتلقائيات إن كانت فارغة. */

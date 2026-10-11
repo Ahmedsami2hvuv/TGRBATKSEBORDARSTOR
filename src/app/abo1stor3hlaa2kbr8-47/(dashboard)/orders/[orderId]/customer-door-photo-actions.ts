@@ -14,7 +14,7 @@ import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/li
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-export type CustomerDoorPhotoState = { ok?: boolean; error?: string };
+export type CustomerDoorPhotoState = { ok?: boolean; error?: string; photoUrl?: string };
 
 export async function uploadCustomerDoorPhotoFromView(
   orderId: string,
@@ -27,8 +27,10 @@ export async function uploadCustomerDoorPhotoFromView(
       id: true,
       customerId: true,
       customerPhone: true,
+      customerRegionId: true,
       shopId: true,
       customerDoorPhotoUrl: true,
+      secondCustomerDoorPhotoUrl: true,
     },
   });
   if (!order) {
@@ -47,7 +49,11 @@ export async function uploadCustomerDoorPhotoFromView(
   try {
     const currentUrl = isSecond ? order.secondCustomerDoorPhotoUrl : order.customerDoorPhotoUrl;
     if (currentUrl) {
-      await deleteFromR2(currentUrl);
+      try {
+        await deleteFromR2(currentUrl);
+      } catch (delErr) {
+        console.error("Non-critical delete error from R2:", delErr);
+      }
     }
     photoUrl = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
   } catch (e) {
@@ -64,25 +70,55 @@ export async function uploadCustomerDoorPhotoFromView(
     return { error: "تعذّر رفع الصورة" };
   }
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: isSecond ? {
-      secondCustomerDoorPhotoUrl: photoUrl,
-    } : {
-      customerDoorPhotoUrl: photoUrl,
-      customerDoorPhotoUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
-    },
-  });
+  try {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: isSecond ? {
+        secondCustomerDoorPhotoUrl: photoUrl,
+        secondCustomerDoorPhotoUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      } : {
+        customerDoorPhotoUrl: photoUrl,
+        customerDoorPhotoUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      },
+    });
 
-  if (isSecond) {
-    await syncSecondPhoneProfileFromOrder(order.id);
-  } else {
-    await syncPhoneProfileFromOrder(order.id);
+    if (!isSecond && order.customerId) {
+      try {
+        await prisma.customer.update({
+          where: { id: order.customerId },
+          data: { customerDoorPhotoUrl: photoUrl },
+        });
+      } catch (custErr) {
+        console.error("Non-critical customer update error:", custErr);
+      }
+    }
+  } catch (dbErr: any) {
+    console.error("Failed to update order with customer door photo:", dbErr);
+    return { error: "تعذّر حفظ الصورة في بيانات الطلب" };
   }
 
-  // ملاحظة: لا نستدعي revalidatePath هنا لأن المستخدم قد يكون في صفحة التعديل
-  // ويريد متابعة إدخال البيانات دون انتظار لحاقة الصفحة. سيتم التحديث عند حفظ الطلب.
-  return { ok: true };
+  try {
+    if (isSecond) {
+      await syncSecondPhoneProfileFromOrder(order.id);
+    } else {
+      await syncPhoneProfileFromOrder(order.id);
+    }
+  } catch (syncErr) {
+    console.error("Non-critical profile sync error:", syncErr);
+  }
+
+  try {
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`);
+    revalidatePath(`/mandoub/order/${order.id}`);
+    revalidatePath("/mandoub");
+  } catch {
+    /* ignore revalidation errors */
+  }
+
+  return { ok: true, photoUrl };
 }
 
 function parseUploadError(e: unknown): string {

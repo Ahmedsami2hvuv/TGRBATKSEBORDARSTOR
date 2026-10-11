@@ -705,7 +705,11 @@ export async function uploadMandoubCustomerDoorPhoto(
     }
   }
 
-  await syncPhoneProfileFromOrder(orderId);
+  try {
+    await syncPhoneProfileFromOrder(orderId);
+  } catch (syncErr) {
+    console.error("Non-critical syncPhoneProfileFromOrder error for mandoub:", syncErr);
+  }
   revalidateMandoubPaths(nextRaw, orderId);
   redirect(buildKeepOrderReturnUrl(nextRaw, orderId));
 }

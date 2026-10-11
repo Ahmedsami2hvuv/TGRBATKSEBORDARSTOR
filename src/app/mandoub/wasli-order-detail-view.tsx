@@ -123,22 +123,33 @@ export function WasliOrderDetailView({
         const fd = new FormData();
         fd.append("shopDoorPhoto", compressed);
         fd.append("target", "shop");
-        await uploadShopDoorPhotoFromView(order.id, {}, fd);
+        const res = await uploadShopDoorPhotoFromView(order.id, {}, fd);
+        if (res?.error) {
+          showToast(res.error);
+          return;
+        }
         showToast("تم حفظ صورة المحل بنجاح");
       } else if (type === "customer") {
         setCustDoorPhoto(objectUrl);
         const fd = new FormData();
         fd.append("customerDoorPhoto", compressed);
         fd.append("target", "first");
-        await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
+        const res = await uploadCustomerDoorPhotoFromView(order.id, {}, fd);
+        if (res?.error) {
+          showToast(res.error);
+          return;
+        }
+        if (res?.photoUrl) {
+          setCustDoorPhoto(res.photoUrl);
+        }
         showToast("تم حفظ صورة باب الزبون بنجاح");
       } else {
         setOrderGoodsPhoto(objectUrl);
         showToast("تم تحديث صورة الطلب");
       }
-    } catch (err) {
-      console.error(err);
-      showToast("فشل رفع الصورة، يرجى المحاولة ثانية");
+    } catch (err: any) {
+      console.error("handleImagePicked error:", err);
+      showToast(err?.message || "فشل رفع الصورة، يرجى المحاولة ثانية");
     }
   };
 
@@ -895,17 +906,25 @@ export function WasliOrderDetailView({
                   <input
                     ref={custGalleryInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/*"
                     hidden
-                    onChange={(e) => handleImagePicked(e.target.files?.[0] || null, "customer")}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] || null;
+                      if (f) void handleImagePicked(f, "customer");
+                      e.target.value = "";
+                    }}
                   />
                   <input
                     ref={custCameraInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/*"
                     capture="environment"
                     hidden
-                    onChange={(e) => handleImagePicked(e.target.files?.[0] || null, "customer")}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] || null;
+                      if (f) void handleImagePicked(f, "customer");
+                      e.target.value = "";
+                    }}
                   />
                 </div>
               </div>
