@@ -382,7 +382,7 @@ export function MandoubOrderMoneyFlow({
         {/* زري استلام وتسليم (أعطيت وأخذت) بهوية وصلي مع عرض المبالغ المالية */}
         {orderId && (
           <div className="flex items-center justify-center gap-3 sm:gap-4 py-1">
-            {/* زر استلام (صادر / أعطيت للمحل) مع المبلغ */}
+            {/* زر أعطيت (استلام وصادر) */}
             <button
               type="button"
               onClick={() => {
@@ -390,16 +390,12 @@ export function MandoubOrderMoneyFlow({
                 setPickupOpen(true);
                 setDeliveryOpen(false);
               }}
-              className="group relative flex-1 max-w-[210px] h-[66px] sm:h-[72px] rounded-[18px] bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] border-2 border-[#FFC107] text-white flex items-center justify-between px-3.5 sm:px-4 py-1.5 shadow-[0_4px_16px_rgba(11,46,140,0.25)] hover:shadow-[0_6px_22px_rgba(11,46,140,0.35)] active:scale-95 transition-all cursor-pointer overflow-hidden"
-              title="استلام الطلب وتسجيل الصادر (أعطيت للمحل)"
+              className="group relative flex-1 max-w-[210px] h-[58px] sm:h-[62px] rounded-[18px] bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] border-2 border-[#FFC107] text-white flex items-center justify-between px-4 sm:px-5 shadow-[0_4px_16px_rgba(11,46,140,0.25)] hover:shadow-[0_6px_22px_rgba(11,46,140,0.35)] active:scale-95 transition-all cursor-pointer overflow-hidden"
+              title="تسجيل الصادر (أعطيت)"
             >
-              <div className="flex flex-col items-start leading-tight">
-                <span className="text-[11.5px] font-bold text-[#FFC107] tracking-tight">استلام (صادر)</span>
-                <span className="text-[16px] sm:text-[18px] font-black text-white font-mono leading-tight my-0.5">
-                  {pickupDisplayAlf} ألف
-                </span>
-                <span className="text-[9.5px] font-medium text-white/75">تسجيل مدفوع المحل</span>
-              </div>
+              <span className="text-[18px] sm:text-[20px] font-black text-white tracking-wide">
+                أعطيت
+              </span>
               <div className="w-8 h-8 rounded-full bg-[#FFC107] text-[#0B2E8C] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -407,7 +403,7 @@ export function MandoubOrderMoneyFlow({
               </div>
             </button>
 
-            {/* زر تسليم (وارد / أخذت من الزبون) مع المبلغ */}
+            {/* زر أخذت (تسليم ووارد) */}
             <button
               type="button"
               onClick={() => {
@@ -415,16 +411,12 @@ export function MandoubOrderMoneyFlow({
                 setDeliveryOpen(true);
                 setPickupOpen(false);
               }}
-              className="group relative flex-1 max-w-[210px] h-[66px] sm:h-[72px] rounded-[18px] bg-gradient-to-r from-[#FFA000] via-[#FFB300] to-[#FFC107] border-2 border-white text-[#0B2E8C] flex items-center justify-between px-3.5 sm:px-4 py-1.5 shadow-[0_4px_16px_rgba(255,193,7,0.3)] hover:shadow-[0_6px_22px_rgba(255,193,7,0.4)] active:scale-95 transition-all cursor-pointer overflow-hidden"
-              title="تسليم الطلب وتسجيل الوارد (أخذت من الزبون)"
+              className="group relative flex-1 max-w-[210px] h-[58px] sm:h-[62px] rounded-[18px] bg-gradient-to-r from-[#FFA000] via-[#FFB300] to-[#FFC107] border-2 border-white text-[#0B2E8C] flex items-center justify-between px-4 sm:px-5 shadow-[0_4px_16px_rgba(255,193,7,0.3)] hover:shadow-[0_6px_22px_rgba(255,193,7,0.4)] active:scale-95 transition-all cursor-pointer overflow-hidden"
+              title="تسجيل الوارد (أخذت)"
             >
-              <div className="flex flex-col items-start leading-tight">
-                <span className="text-[11.5px] font-bold text-[#0B2E8C] tracking-tight">تسليم (وارد)</span>
-                <span className="text-[16px] sm:text-[18px] font-black text-[#0B2E8C] font-mono leading-tight my-0.5">
-                  {deliveryDisplayAlf} ألف
-                </span>
-                <span className="text-[9.5px] font-medium text-[#0B2E8C]/75">تسجيل مقبوض الزبون</span>
-              </div>
+              <span className="text-[18px] sm:text-[20px] font-black text-[#0B2E8C] tracking-wide">
+                أخذت
+              </span>
               <div className="w-8 h-8 rounded-full bg-[#0B2E8C] text-[#FFC107] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6L9 17l-5-5" />
@@ -442,13 +434,13 @@ export function MandoubOrderMoneyFlow({
         </div>
 
         {/* قائمة المعاملات */}
-        {moneyEvents.length === 0 ? (
+        {localEvents.length === 0 ? (
           <div className="text-center text-[#0B2E8C] py-4 bg-[#F8FAFF] rounded-[16px] border border-dashed border-[#D0DDFB] text-xs font-bold">
             لا توجد معاملات نقد مسجّلة لهذا الطلب حتى الآن.
           </div>
         ) : (
           <div className="space-y-2.5">
-            {moneyEvents.map((ev) => {
+            {localEvents.map((ev) => {
               const isSader = ev.kind === MONEY_KIND_PICKUP;
               const timeInfo = formatBaghdadMoneyRecordedAt(ev.recordedAt);
               const noteText = [ev.mismatchReason, ev.mismatchNote].filter(Boolean).join(" - ");

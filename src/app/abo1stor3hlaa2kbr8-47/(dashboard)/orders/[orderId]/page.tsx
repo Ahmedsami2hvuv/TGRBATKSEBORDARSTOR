@@ -240,6 +240,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       };
     });
 
+    (view as any).moneyEvents = adminMoneyEvents;
+
     const adminCustomWaButtons = (waButtonSettings || []).flatMap((r: any) => {
       // 1. فحص الصلاحية (هل يظهر للإدارة؟)
       const scopes = (r.visibilityScope || "all")
