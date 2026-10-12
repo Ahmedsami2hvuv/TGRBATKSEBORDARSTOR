@@ -759,9 +759,23 @@ export function WasliThemeBoard({
                           strokeWidth={2.5}
                         />
                         <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
-                          <span className="font-black shrink-0">{r.shopName || "المحل"}</span>
-                          <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
-                          <span className="font-black truncate">{r.regionLine || "الوجهة"}</span>
+                          {r.routeMode === "double" || Boolean(r.secondCustomerPhone) || Boolean(r.secondCustomerRegionName) ? (
+                            <>
+                              <span className="font-black shrink-0">
+                                {r.shopName?.startsWith("من ") ? r.shopName : `من ${r.shopName || "المرسل"}`}
+                              </span>
+                              <span className="opacity-70 text-[12px] shrink-0 font-bold">إلى</span>
+                              <span className="font-black truncate">
+                                {r.secondCustomerRegionName || r.regionLine || "المستلم"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-black shrink-0">{r.shopName || "المحل"}</span>
+                              <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
+                              <span className="font-black truncate">{r.regionLine || "الوجهة"}</span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>

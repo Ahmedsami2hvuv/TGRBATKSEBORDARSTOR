@@ -844,8 +844,12 @@ export default async function MandoubPage({ searchParams }: Props) {
         }
         return o.shop.name;
       })(),
-      shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
-      regionLine: o.customerRegion?.name?.trim() || "—",
+      regionLine: (() => {
+        if (o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionId) {
+          return o.secondCustomerRegion?.name?.trim() || "—";
+        }
+        return o.customerRegion?.name?.trim() || "—";
+      })(),
       landmarkLine,
       smartHintLine,
       secondSmartHintLine,

@@ -836,9 +836,9 @@ export function WasliOrderDetailView({
           )}
 
           {/* ========================================================================= */}
-          {/* كارت المحل (المرسل) — يتم إخفاؤه في طلبات الوجهتين النظامية (بين زبونين) */}
+          {/* كارت المحل (المرسل) — يتم إخفاؤه نهائياً في أي طلبية وجهتين (بين زبونين فقط) */}
           {/* ========================================================================= */}
-          {!isSystemDoubleRouteShop && (
+          {!isDoubleRoute && (
           <section className="overflow-hidden rounded-[24px] border-[1.5px] border-[#D0DDFB] bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)]">
             {/* الترويسة */}
             <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">

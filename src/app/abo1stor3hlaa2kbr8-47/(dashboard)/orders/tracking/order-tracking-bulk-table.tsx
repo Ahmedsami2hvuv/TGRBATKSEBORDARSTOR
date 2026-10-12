@@ -985,10 +985,15 @@ function TrackingCardsView({
                   ? o.summary
                   : o.orderType || "—";
 
-                const isDoubleRouteOrder = o.routeModeLabel === "وجهتين" && Boolean(o.secondCustomerRegionName);
+                const isDoubleRouteOrder = Boolean(
+                  o.routeModeLabel === "وجهتين" ||
+                  o.routeMode === "double" ||
+                  o.secondCustomerRegionName ||
+                  (o as any).secondCustomerPhone
+                );
 
                 const headerTextStr = isDoubleRouteOrder
-                  ? `${o.regionName || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
+                  ? `من ${o.regionName || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
                   : `${o.shopCustomerLabel || "المحل"} إلى ${o.regionName || "المنطقة"}`;
 
                 const hasAssignedCourier = Boolean(o.courierName && o.courierName !== "—" && o.courierName.trim() !== "");
@@ -1045,9 +1050,19 @@ function TrackingCardsView({
                           strokeWidth={2.5}
                         />
                         <span className="flex-1 min-w-0 tracking-wide flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis">
-                          <span className="font-black shrink-0">{o.shopCustomerLabel || "المحل"}</span>
-                          <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
-                          <span className="font-black truncate">{o.regionName || "المنطقة"}</span>
+                          {isDoubleRouteOrder ? (
+                            <>
+                              <span className="font-black shrink-0">من {o.regionName || "المرسل"}</span>
+                              <span className="opacity-70 text-[12px] shrink-0 font-bold">إلى</span>
+                              <span className="font-black truncate">{o.secondCustomerRegionName || "المستلم"}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-black shrink-0">{o.shopCustomerLabel || "المحل"}</span>
+                              <span className="opacity-70 text-[12px] shrink-0 font-bold">←</span>
+                              <span className="font-black truncate">{o.regionName || "المنطقة"}</span>
+                            </>
+                          )}
                         </span>
                       </div>
 
@@ -1341,17 +1356,6 @@ function TrackingCardsView({
                           />
                         )}
 
-                        {/* زر وجهتين */}
-                        {isDoubleRoute && (
-                          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                            <div
-                              className="h-[26px] px-2 rounded-full bg-[#0B2E8C] text-[#FFC107] text-[10px] font-black flex items-center justify-center shadow-xs"
-                              title="طلب وجهتين"
-                            >
-                              وجهتين
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
