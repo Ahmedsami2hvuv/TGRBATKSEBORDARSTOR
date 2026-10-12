@@ -1872,19 +1872,6 @@ export function WasliOrderDetailView({
                       </svg>
                       <span>قائمة المواد والملاحظات</span>
                     </span>
-
-                    {isPreparedOrder && (
-                      <a
-                        href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
-                        className="flex items-center gap-1 rounded-full border border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1 text-[11px] font-extrabold text-[#FDE047] shadow-xs transition hover:brightness-110 active:scale-95 cursor-pointer"
-                      >
-                        <svg className="w-3 h-3 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                          <line x1="7" y1="7" x2="7.01" y2="7" />
-                        </svg>
-                        <span>تعديل التسعير والمواد</span>
-                      </a>
-                    )}
                   </div>
 
                   <ClickableNotesCard
