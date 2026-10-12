@@ -108,11 +108,21 @@ export function WasliOrderDetailView({
   const goodsGalleryInputRef = useRef<HTMLInputElement | null>(null);
   const goodsCameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  // أقرب نقطة دالة قابلة للتعديل
+  // أقرب نقطة دالة قابلة للتعديل والقراءة بخط ضخم (الزبون الأول)
   const initialLandmark = (order.customerLandmark || phoneProfile?.landmark || "").trim();
   const [landmarkVal, setLandmarkVal] = useState(initialLandmark);
-  const [isEditingLandmark, setIsEditingLandmark] = useState(false);
+  const [isLandmarkBigModalOpen, setIsLandmarkBigModalOpen] = useState(false);
+  const [isEditingLandmarkModalOpen, setIsEditingLandmarkModalOpen] = useState(false);
+  const [editLandmarkDraft, setEditLandmarkDraft] = useState(initialLandmark);
   const [landmarkSaving, setLandmarkSaving] = useState(false);
+
+  // نقطة دالة المستلم (الزبون الثاني)
+  const initialSecondLandmark = ((order as any).secondCustomerLandmark || secondPhoneProfile?.landmark || "").trim();
+  const [secondLandmarkVal, setSecondLandmarkVal] = useState(initialSecondLandmark);
+  const [isSecondLandmarkBigModalOpen, setIsSecondLandmarkBigModalOpen] = useState(false);
+  const [isEditingSecondLandmarkModalOpen, setIsEditingSecondLandmarkModalOpen] = useState(false);
+  const [editSecondLandmarkDraft, setEditSecondLandmarkDraft] = useState(initialSecondLandmark);
+  const [secondLandmarkSaving, setSecondLandmarkSaving] = useState(false);
 
   // حالة التفاؤل لحالة الطلب
   const [optimisticStatus, setOptimisticStatus] = useState(order.status);
@@ -221,21 +231,41 @@ export function WasliOrderDetailView({
     }
   };
 
-  // حفظ النقطة الدالة
+  // حفظ النقطة الدالة للزبون الأول
   const handleSaveLandmark = async () => {
     setLandmarkSaving(true);
     try {
-      const res = await updateOrderLandmarkAction(order.id, landmarkVal);
-      if (res.ok) {
-        setIsEditingLandmark(false);
+      const res = await updateOrderLandmarkAction(order.id, editLandmarkDraft.trim(), false);
+      if (res?.ok || !res?.error) {
+        setLandmarkVal(editLandmarkDraft.trim());
+        setIsEditingLandmarkModalOpen(false);
         showToast("تم حفظ النقطة الدالة بنجاح");
       } else {
-        showToast("فشل حفظ النقطة الدالة");
+        showToast(res?.error || "فشل حفظ النقطة الدالة");
       }
     } catch {
       showToast("حدث خطأ أثناء الحفظ");
     } finally {
       setLandmarkSaving(false);
+    }
+  };
+
+  // حفظ النقطة الدالة للزبون الثاني
+  const handleSaveSecondLandmark = async () => {
+    setSecondLandmarkSaving(true);
+    try {
+      const res = await updateOrderLandmarkAction(order.id, editSecondLandmarkDraft.trim(), true);
+      if (res?.ok || !res?.error) {
+        setSecondLandmarkVal(editSecondLandmarkDraft.trim());
+        setIsEditingSecondLandmarkModalOpen(false);
+        showToast("تم حفظ نقطة دالة الزبون الثاني بنجاح");
+      } else {
+        showToast(res?.error || "فشل حفظ النقطة الدالة");
+      }
+    } catch {
+      showToast("حدث خطأ أثناء الحفظ");
+    } finally {
+      setSecondLandmarkSaving(false);
     }
   };
 
@@ -736,21 +766,37 @@ export function WasliOrderDetailView({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
-              }}
-              className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D0DDFB] bg-white px-3 py-1.5 text-[11px] font-bold text-[#0B2E8C] transition hover:bg-[#F8FAFF] active:scale-[0.97] cursor-pointer shadow-xs"
-            >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF]">
-                <svg className="w-3 h-3 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-              </span>
-              تعديل الطلب
-            </button>
+            <div className="flex items-center gap-1.5">
+              <a
+                href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
+                className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1.5 text-[11px] font-black text-[#FDE047] transition hover:brightness-110 active:scale-[0.97] cursor-pointer shadow-xs"
+                title="تعديل التسعير والمواد"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[#FDE047]">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                  </svg>
+                </span>
+                <span>تعديل التسعير</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
+                }}
+                className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D0DDFB] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#0B2E8C] transition hover:bg-[#F8FAFF] active:scale-[0.97] cursor-pointer shadow-xs"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF]">
+                  <svg className="w-3 h-3 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </span>
+                <span>تعديل</span>
+              </button>
+            </div>
           </div>
 
           {/* تنبيه كلشي واصل إن وجد */}
@@ -1056,50 +1102,49 @@ export function WasliOrderDetailView({
                     </div>
                   )}
 
-                  {/* بلوك أقرب نقطة دالة */}
-                  <div className="mt-1 rounded-[14px] border border-[#D0DDFB] bg-[#F8FAFF] p-2.5 shadow-xs">
+                  {/* بلوك أقرب نقطة دالة — خط كبير + النقر لفتح نافذة القراءة بخط ضخم مع زر تعديل */}
+                  <div
+                    onClick={() => {
+                      if (landmarkVal.trim()) {
+                        setIsLandmarkBigModalOpen(true);
+                      } else {
+                        setEditLandmarkDraft(landmarkVal);
+                        setIsEditingLandmarkModalOpen(true);
+                      }
+                    }}
+                    className="mt-1 flex flex-col gap-1 rounded-[16px] border-[1.5px] border-[#FFE082] bg-gradient-to-r from-[#FFFBEB] to-[#FFF8E1] p-2.5 shadow-xs transition hover:border-[#FFC107] hover:shadow-md cursor-pointer active:scale-[0.99]"
+                    title="انقر لقراءة النقطة الدالة بخط ضخم"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF] text-[#0B2E8C]">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0B2E8C] text-[#FFC107]">
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <circle cx="12" cy="10" r="3" />
                           </svg>
                         </span>
-                        <span className="text-[10px] font-bold text-[#7A90C0]">ن داله</span>
+                        <span className="text-[11px] font-black text-[#0B2E8C]">أقرب نقطة دالة</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setIsEditingLandmark((v) => !v)}
-                        className="text-[10px] font-bold text-[#1E4DB7] hover:underline cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditLandmarkDraft(landmarkVal);
+                          setIsEditingLandmarkModalOpen(true);
+                        }}
+                        className="flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-[#0B2E8C] shadow-xs border border-[#FFE082] hover:bg-[#FFF3C4] transition cursor-pointer"
                       >
-                        {isEditingLandmark ? "إلغاء" : "تعديل"}
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                        <span>تعديل</span>
                       </button>
                     </div>
 
-                    {isEditingLandmark ? (
-                      <div className="mt-1.5 flex flex-col gap-1.5">
-                        <input
-                          type="text"
-                          value={landmarkVal}
-                          onChange={(e) => setLandmarkVal(e.target.value)}
-                          placeholder="اكتب النقطة الدالة..."
-                          className="w-full rounded-lg border border-[#D0DDFB] bg-white p-1.5 text-xs text-[#0B2E8C] outline-none focus:border-[#0B2E8C]"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveLandmark}
-                          disabled={landmarkSaving}
-                          className="self-end rounded-lg bg-[#0B2E8C] px-3 py-1 text-[11px] font-bold text-white shadow-xs active:scale-95"
-                        >
-                          {landmarkSaving ? "جارٍ الحفظ..." : "حفظ"}
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="mt-1.5 text-[12px] font-extrabold leading-snug text-[#0B2E8C]">
-                        {landmarkVal || "لم تسجل نقطة دالة بعد (انقر للتعديل)"}
-                      </p>
-                    )}
+                    <p className="mt-1 text-[15px] sm:text-[16px] font-black leading-snug text-[#0B2E8C] break-words">
+                      {landmarkVal || "لم تسجل نقطة دالة بعد (انقر للإضافة)"}
+                    </p>
                   </div>
                 </div>
 
@@ -1382,15 +1427,50 @@ export function WasliOrderDetailView({
                       </div>
                     )}
 
-                    {/* النقطة الدالة للمستلم */}
-                    {((order as any).secondCustomerLandmark || secondPhoneProfile?.landmark) && (
-                      <div className="mt-1 rounded-[14px] border border-[#38BDF8]/40 bg-[#F0F9FF] p-2.5 shadow-xs">
-                        <span className="text-[10px] font-bold text-[#0284C7]">ن داله المستلم</span>
-                        <p className="mt-1 text-[12px] font-extrabold leading-snug text-[#0369A1]">
-                          {(order as any).secondCustomerLandmark || secondPhoneProfile?.landmark}
-                        </p>
+                    {/* النقطة الدالة للمستلم — خط كبير + النقر لفتح نافذة القراءة بخط ضخم مع زر تعديل */}
+                    <div
+                      onClick={() => {
+                        if (secondLandmarkVal.trim()) {
+                          setIsSecondLandmarkBigModalOpen(true);
+                        } else {
+                          setEditSecondLandmarkDraft(secondLandmarkVal);
+                          setIsEditingSecondLandmarkModalOpen(true);
+                        }
+                      }}
+                      className="mt-1 flex flex-col gap-1 rounded-[16px] border-[1.5px] border-[#38BDF8]/60 bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] p-2.5 shadow-xs transition hover:border-[#0284C7] hover:shadow-md cursor-pointer active:scale-[0.99]"
+                      title="انقر لقراءة النقطة الدالة بخط ضخم"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0284C7] text-[#FDE047]">
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                          </span>
+                          <span className="text-[11px] font-black text-[#0369A1]">ن داله المستلم</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditSecondLandmarkDraft(secondLandmarkVal);
+                            setIsEditingSecondLandmarkModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-[#0369A1] shadow-xs border border-[#38BDF8]/40 hover:bg-[#E0F2FE] transition cursor-pointer"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                          </svg>
+                          <span>تعديل</span>
+                        </button>
                       </div>
-                    )}
+
+                      <p className="mt-1 text-[15px] sm:text-[16px] font-black leading-snug text-[#0369A1] break-words">
+                        {secondLandmarkVal || "لم تسجل نقطة دالة بعد (انقر للإضافة)"}
+                      </p>
+                    </div>
                   </div>
 
                   {/* صورة باب المستلم (الوجهة الثانية) */}
@@ -1741,22 +1821,37 @@ export function WasliOrderDetailView({
                 </div>
               </div>
 
-              {/* ملاحظات الطلب إن وجدت */}
+              {/* ملاحظات وقائمة مواد الطلب مع النقر للنسخ وزر تعديل التسعير والمواد */}
               {order.summary && (
-                <div className="mt-3 rounded-[16px] border border-[#D0DDFB] bg-[#F8FAFF] p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-black text-[#1E4DB7] mb-1">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
-                    <span>ملاحظات وقائمة المواد:</span>
+                <div className="mt-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-[12px] font-black text-[#1E4DB7]">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                      </svg>
+                      <span>قائمة المواد والملاحظات</span>
+                    </span>
+
+                    <a
+                      href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
+                      className="flex items-center gap-1 rounded-full border border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1 text-[11px] font-extrabold text-[#FDE047] shadow-xs transition hover:brightness-110 active:scale-95 cursor-pointer"
+                    >
+                      <svg className="w-3 h-3 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                      </svg>
+                      <span>تعديل التسعير والمواد</span>
+                    </a>
                   </div>
-                  <p className="text-xs font-bold text-[#0B2E8C] leading-relaxed whitespace-pre-wrap">
-                    {normalizeOrderSummaryText(order.summary)}
-                  </p>
+
+                  <ClickableNotesCard
+                    text={order.summary}
+                    className="group relative cursor-pointer select-none rounded-[18px] border-2 border-[#D0DDFB] bg-[#F8FAFF] p-3 text-xs font-bold text-[#0B2E8C] transition hover:border-[#1E4DB7] hover:bg-[#F0F4FF] hover:shadow-sm active:scale-[0.99]"
+                  />
                 </div>
               )}
             </div>
@@ -1919,6 +2014,284 @@ export function WasliOrderDetailView({
                 className="flex h-[44px] px-4 items-center justify-center rounded-[16px] bg-slate-100 text-[12px] font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
               >
                 إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة قراءة أقرب نقطة دالة بخط ضخم (الزبون الأول) */}
+      {isLandmarkBigModalOpen && (
+        <div
+          className="fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5 bg-[#0B2E8C]/70 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => setIsLandmarkBigModalOpen(false)}
+          dir="rtl"
+        >
+          <div
+            className="w-full max-w-2xl bg-white rounded-[28px] p-5 sm:p-7 shadow-2xl border-2 border-[#FFE082] flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-[#F0F4FF] pb-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0B2E8C] text-[#FFC107]">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#0B2E8C]">أقرب نقطة دالة</h3>
+                  <p className="text-xs font-bold text-[#7A90C0]">انقر على تعديل إذا أردت تغيير النص</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLandmarkBigModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+                title="إغلاق"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto py-6 sm:py-8 flex-1">
+              <div className="rounded-[22px] bg-gradient-to-r from-[#FFFBEB] to-[#FFF8E1] border-2 border-[#FFE082] px-5 py-6 sm:px-7 sm:py-8 shadow-inner">
+                <p className="text-2xl sm:text-4xl md:text-5xl font-black leading-[1.7] text-[#0B2E8C] break-words whitespace-pre-wrap text-center">
+                  {landmarkVal}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#F0F4FF] pt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsLandmarkBigModalOpen(false)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[14px] text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLandmarkBigModalOpen(false);
+                  setEditLandmarkDraft(landmarkVal);
+                  setIsEditingLandmarkModalOpen(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] hover:brightness-110 active:scale-95 text-[#FFC107] rounded-[14px] text-xs sm:text-sm font-black shadow-md transition cursor-pointer flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                <span>تعديل النقطة الدالة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تعديل أقرب نقطة دالة (الزبون الأول) */}
+      {isEditingLandmarkModalOpen && (
+        <div
+          className="fixed inset-0 z-[260] flex items-center justify-center p-3 sm:p-4 bg-[#0B2E8C]/70 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => {
+            if (!landmarkSaving) setIsEditingLandmarkModalOpen(false);
+          }}
+          dir="rtl"
+        >
+          <div
+            className="w-full max-w-lg bg-white rounded-[26px] p-5 sm:p-6 shadow-2xl border-2 border-[#D0DDFB] flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#F0F4FF] pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0B2E8C] text-[#FFC107]">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-[#0B2E8C]">تعديل أقرب نقطة دالة</h3>
+                  <p className="text-[11px] font-bold text-[#7A90C0]">أدخل وصف النقطة الدالة للزبون الأول</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!landmarkSaving) setIsEditingLandmarkModalOpen(false);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="py-3 flex-1 space-y-2">
+              <textarea
+                rows={3}
+                value={editLandmarkDraft}
+                onChange={(e) => setEditLandmarkDraft(e.target.value)}
+                placeholder="اكتب أقرب نقطة دالة هنا..."
+                className="w-full bg-[#F0F4FF] border-2 border-[#D0DDFB] focus:border-[#0B2E8C] rounded-[18px] p-3 text-sm sm:text-base font-bold text-[#0B2E8C] outline-none resize-none transition shadow-inner leading-relaxed"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#F0F4FF] pt-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditingLandmarkModalOpen(false)}
+                disabled={landmarkSaving}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[12px] text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveLandmark}
+                disabled={landmarkSaving}
+                className="px-5 py-2 bg-[#0B2E8C] hover:bg-[#1E4DB7] text-[#FFC107] rounded-[12px] text-xs sm:text-sm font-black shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer min-w-[100px]"
+              >
+                {landmarkSaving ? "جارٍ الحفظ..." : "حفظ النقطة الدالة"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة قراءة نقطة دالة المستلم بخط ضخم (الزبون الثاني) */}
+      {isSecondLandmarkBigModalOpen && (
+        <div
+          className="fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5 bg-[#0369A1]/70 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => setIsSecondLandmarkBigModalOpen(false)}
+          dir="rtl"
+        >
+          <div
+            className="w-full max-w-2xl bg-white rounded-[28px] p-5 sm:p-7 shadow-2xl border-2 border-[#38BDF8] flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-[#F0F9FF] pb-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0284C7] text-[#FDE047]">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#0369A1]">نقطة دالة المستلم</h3>
+                  <p className="text-xs font-bold text-[#7A90C0]">انقر على تعديل إذا أردت تغيير النص</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSecondLandmarkBigModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+                title="إغلاق"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto py-6 sm:py-8 flex-1">
+              <div className="rounded-[22px] bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border-2 border-[#38BDF8] px-5 py-6 sm:px-7 sm:py-8 shadow-inner">
+                <p className="text-2xl sm:text-4xl md:text-5xl font-black leading-[1.7] text-[#0369A1] break-words whitespace-pre-wrap text-center">
+                  {secondLandmarkVal}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#F0F9FF] pt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsSecondLandmarkBigModalOpen(false)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[14px] text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSecondLandmarkBigModalOpen(false);
+                  setEditSecondLandmarkDraft(secondLandmarkVal);
+                  setIsEditingSecondLandmarkModalOpen(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0284C7] to-[#0369A1] hover:brightness-110 active:scale-95 text-[#FDE047] rounded-[14px] text-xs sm:text-sm font-black shadow-md transition cursor-pointer flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                <span>تعديل النقطة الدالة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تعديل نقطة دالة المستلم (الزبون الثاني) */}
+      {isEditingSecondLandmarkModalOpen && (
+        <div
+          className="fixed inset-0 z-[260] flex items-center justify-center p-3 sm:p-4 bg-[#0369A1]/70 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          onClick={() => {
+            if (!secondLandmarkSaving) setIsEditingSecondLandmarkModalOpen(false);
+          }}
+          dir="rtl"
+        >
+          <div
+            className="w-full max-w-lg bg-white rounded-[26px] p-5 sm:p-6 shadow-2xl border-2 border-[#38BDF8] flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#F0F9FF] pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0284C7] text-[#FDE047]">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-[#0369A1]">تعديل نقطة دالة المستلم</h3>
+                  <p className="text-[11px] font-bold text-[#7A90C0]">أدخل وصف النقطة الدالة للزبون الثاني</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!secondLandmarkSaving) setIsEditingSecondLandmarkModalOpen(false);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="py-3 flex-1 space-y-2">
+              <textarea
+                rows={3}
+                value={editSecondLandmarkDraft}
+                onChange={(e) => setEditSecondLandmarkDraft(e.target.value)}
+                placeholder="اكتب نقطة دالة المستلم هنا..."
+                className="w-full bg-[#F0F9FF] border-2 border-[#38BDF8] focus:border-[#0284C7] rounded-[18px] p-3 text-sm sm:text-base font-bold text-[#0369A1] outline-none resize-none transition shadow-inner leading-relaxed"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[#F0F4FF] pt-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditingSecondLandmarkModalOpen(false)}
+                disabled={secondLandmarkSaving}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[12px] text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSecondLandmark}
+                disabled={secondLandmarkSaving}
+                className="px-5 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-[#FDE047] rounded-[12px] text-xs sm:text-sm font-black shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer min-w-[100px]"
+              >
+                {secondLandmarkSaving ? "جارٍ الحفظ..." : "حفظ النقطة الدالة"}
               </button>
             </div>
           </div>

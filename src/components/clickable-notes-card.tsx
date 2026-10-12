@@ -54,13 +54,16 @@ export function ClickableNotesCard({
       {/* شريط الإشعار أو التلميح السريع عند النسخ */}
       <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 transition-all">
         {copied ? (
-          <span className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white shadow-md animate-in fade-in zoom-in duration-200">
-            ✓ تم نسخ الفاتورة 📋
+          <span className="flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white shadow-md animate-in fade-in zoom-in duration-200">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>تم نسخ الفاتورة</span>
           </span>
         ) : (
           showTitleNotice && (
             <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800 opacity-70 group-hover:opacity-100 transition-opacity">
-              👆 انقر في أي مكان للنسخ
+              انقر في أي مكان للنسخ
             </span>
           )
         )}
