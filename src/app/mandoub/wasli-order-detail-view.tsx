@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { telHref, whatsappMeUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
+import { telHref, whatsappMeUrl, whatsappAppUrl, openUrlFromUserGesture } from "@/lib/whatsapp";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { MandoubCustomerEditForm } from "./mandoub-customer-edit-form";
@@ -262,6 +262,15 @@ export function WasliOrderDetailView({
   const shopPhone = order.shop?.phone || order.submittedBy?.phone || "";
   const shopLocation = order.shop?.locationUrl || order.shopLocationUrl || "";
 
+  // تحديد ما إذا كان الطلب بين زبونين (طلبية وجهتين) ومحله هو حساب النظام
+  const isDoubleRoute = order.routeMode === "double" || Boolean((order as any).secondCustomerPhone);
+  const isSystemDoubleRouteShop = isDoubleRoute && (
+    shopName.includes("طلبات الوجهتين") ||
+    shopName.includes("وجهتين") ||
+    shopName.startsWith("نظام -") ||
+    Boolean(order.shop?.name && order.shop.name.includes("طلبات الوجهتين"))
+  );
+
   // بيانات الزبون - مع الشرط الصارم لعدم ظهور اسم العميل في كارت الزبون:
   const rawCustomerName = (order.customerName || order.customer?.name || "").trim();
   const isClientName =
@@ -286,10 +295,26 @@ export function WasliOrderDetailView({
   const [currentCustLocation, setCurrentCustLocation] = useState(initialCustLocation);
   const customerLocation = currentCustLocation;
 
+  const initialSecondCustLocation = (
+    (order as any).secondCustomerLocationUrl ||
+    secondPhoneProfile?.locationUrl ||
+    ""
+  ).trim();
+  const [currentSecondCustLocation, setCurrentSecondCustLocation] = useState(initialSecondCustLocation);
+
   useEffect(() => {
     const loc = (order.customerLocationUrl || order.customer?.customerLocationUrl || phoneProfile?.locationUrl || "").trim();
     if (loc) setCurrentCustLocation(loc);
   }, [order.customerLocationUrl, order.customer?.customerLocationUrl, phoneProfile?.locationUrl]);
+
+  useEffect(() => {
+    const loc2 = (
+      (order as any).secondCustomerLocationUrl ||
+      secondPhoneProfile?.locationUrl ||
+      ""
+    ).trim();
+    if (loc2) setCurrentSecondCustLocation(loc2);
+  }, [(order as any).secondCustomerLocationUrl, secondPhoneProfile?.locationUrl]);
 
   // إدارة أزرار الواتساب المخصصة من قاعدة البيانات
   const [waButtons, setWaButtons] = useState<any[]>(customWaButtons || []);
@@ -315,7 +340,10 @@ export function WasliOrderDetailView({
   // حالات الرفع والجلب واللصق والمودالات
   const [isLocatingGps, setIsLocatingGps] = useState(false);
   const [isSavingGps, setIsSavingGps] = useState(false);
+  const [isLocatingSecondGps, setIsLocatingSecondGps] = useState(false);
+  const [isSavingSecondGps, setIsSavingSecondGps] = useState(false);
   const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pasteTarget, setPasteTarget] = useState<"first" | "second">("first");
   const [pastedUrlInput, setPastedUrlInput] = useState("");
   const [isPastingSaving, setIsPastingSaving] = useState(false);
   const [activePhoneModal, setActivePhoneModal] = useState<{
@@ -528,39 +556,61 @@ export function WasliOrderDetailView({
   };
 
   // دالة رفع لوكيشن عبر GPS
-  const handleUploadGpsLocation = () => {
+  const handleUploadGpsLocation = (target: "first" | "second" = "first") => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       showToast("المتصفح لا يدعم تحديد الموقع");
       return;
     }
-    setIsLocatingGps(true);
+    if (target === "second") {
+      setIsLocatingSecondGps(true);
+    } else {
+      setIsLocatingGps(true);
+    }
     showToast("جارٍ تحديد الموقع عبر GPS...");
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        setIsLocatingGps(false);
-        setIsSavingGps(true);
+        if (target === "second") {
+          setIsLocatingSecondGps(false);
+          setIsSavingSecondGps(true);
+        } else {
+          setIsLocatingGps(false);
+          setIsSavingGps(true);
+        }
         try {
           const fd = new FormData();
           fd.append("lat", String(latitude));
           fd.append("lng", String(longitude));
-          fd.append("target", "first");
+          fd.append("target", target);
           const res = await uploadCustomerLocationFromView(order.id, {}, fd);
           if (res?.ok) {
-            setCurrentCustLocation(mapsUrl);
-            showToast("تم رفع وحفظ لوكيشن الزبون بنجاح");
+            if (target === "second") {
+              setCurrentSecondCustLocation(mapsUrl);
+              showToast("تم رفع وحفظ لوكيشن الزبون الثاني بنجاح");
+            } else {
+              setCurrentCustLocation(mapsUrl);
+              showToast("تم رفع وحفظ لوكيشن الزبون بنجاح");
+            }
           } else {
             showToast(res?.error || "فشل حفظ الموقع");
           }
         } catch {
           showToast("حدث خطأ أثناء حفظ الموقع");
         } finally {
-          setIsSavingGps(false);
+          if (target === "second") {
+            setIsSavingSecondGps(false);
+          } else {
+            setIsSavingGps(false);
+          }
         }
       },
       () => {
-        setIsLocatingGps(false);
+        if (target === "second") {
+          setIsLocatingSecondGps(false);
+        } else {
+          setIsLocatingGps(false);
+        }
         showToast("يرجى تفعيل إذن الوصول للموقع في الهاتف ثم المحاولة ثانية");
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -577,13 +627,18 @@ export function WasliOrderDetailView({
     try {
       const fd = new FormData();
       fd.append("locationUrl", pastedUrlInput.trim());
-      fd.append("target", "first");
+      fd.append("target", pasteTarget);
       const res = await pasteCustomerLocationFromView(order.id, {}, fd);
       if (res?.ok) {
-        setCurrentCustLocation(pastedUrlInput.trim());
+        if (pasteTarget === "second") {
+          setCurrentSecondCustLocation(pastedUrlInput.trim());
+          showToast("تم حفظ لوكيشن الزبون الثاني بنجاح");
+        } else {
+          setCurrentCustLocation(pastedUrlInput.trim());
+          showToast("تم حفظ لوكيشن الزبون بنجاح");
+        }
         setShowPasteModal(false);
         setPastedUrlInput("");
-        showToast("تم حفظ لوكيشن الزبون بنجاح");
       } else {
         showToast(res?.error || "فشل حفظ الرابط");
       }
@@ -591,6 +646,45 @@ export function WasliOrderDetailView({
       showToast("حدث خطأ أثناء حفظ الرابط");
     } finally {
       setIsPastingSaving(false);
+    }
+  };
+
+  // دالة إرسال رسالة الواتساب للمستلم الثاني (الوجهة الثانية)
+  const handleSendSecondCustomerWa = (rawTemplate: string, fallbackText: string) => {
+    const p1 = String((order as any).secondCustomerPhone || "");
+    if (!p1) {
+      showToast("لا يوجد رقم هاتف للمستلم الثاني!");
+      return;
+    }
+
+    const tpl = rawTemplate || fallbackText;
+    const variants = splitMandoubWaTemplateVariants(tpl);
+    const chosenTemplate = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)] : tpl;
+
+    const vars = {
+      order_number: String(order.orderNumber || order.id || ""),
+      clientshop: shopName || "المحل",
+      city: (order as any).secondCustomerRegion?.name || "—",
+      total_price: formatDinarAsAlfWithUnit(totalAmount) || String(totalAmount),
+      total: formatDinarAsAlfWithUnit(totalAmount) || String(totalAmount),
+      delivery: courierName || "المندوب",
+      courier: courierName || "المندوب",
+      courierName: courierName || "المندوب",
+      customer_phone: p1,
+      customer_phone2: "",
+      shop_phone: shopPhone || "",
+      location_url: currentSecondCustLocation || "",
+      landmark: (order as any).secondCustomerLandmark || secondPhoneProfile?.landmark || "",
+      driver_review_url: `https://aboakbr.com/rate-driver?order=${order.orderNumber || order.id}`,
+    };
+
+    const text = applyMandoubWaTemplate(chosenTemplate, vars);
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile ? whatsappAppUrl(p1, text) : whatsappMeUrl(p1, text);
+    if (url && url !== "#") {
+      openUrlFromUserGesture(url);
+    } else {
+      showToast("تعذر فتح الواتساب");
     }
   };
 
@@ -696,8 +790,9 @@ export function WasliOrderDetailView({
           )}
 
           {/* ========================================================================= */}
-          {/* كارت المحل (المرسل) */}
+          {/* كارت المحل (المرسل) — يتم إخفاؤه في طلبات الوجهتين النظامية (بين زبونين) */}
           {/* ========================================================================= */}
+          {!isSystemDoubleRouteShop && (
           <section className="overflow-hidden rounded-[24px] border-[1.5px] border-[#D0DDFB] bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)]">
             {/* الترويسة */}
             <div className="flex items-center justify-between bg-[#F8FAFF] px-4 py-3 border-b border-[#D0DDFB]/50">
@@ -883,9 +978,10 @@ export function WasliOrderDetailView({
               )}
             </div>
           </section>
+          )}
 
           {/* ========================================================================= */}
-          {/* كارت الزبون (المستلم) */}
+          {/* كارت الزبون الأول (المرسل في الوجهتين أو المستلم في العادي) */}
           {/* ========================================================================= */}
           <section className="relative overflow-visible rounded-[24px] border-[1.5px] border-[#FFD54F]/60 bg-white shadow-[0_4px_20px_rgba(11,46,140,0.06)]">
 
@@ -898,9 +994,16 @@ export function WasliOrderDetailView({
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </span>
-                <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">الزبون (المستلم)</h2>
+                <h2 className="text-[14px] font-extrabold text-[#0B2E8C]">
+                  {isDoubleRoute ? "الزبون الأول (المرسل)" : "الزبون (المستلم)"}
+                </h2>
               </div>
               <div className="flex items-center gap-2">
+                {isDoubleRoute && (
+                  <span className="text-[11px] font-bold text-[#0B2E8C] bg-[#FFF3C4] px-2 py-0.5 rounded-full border border-[#FFE082]">
+                    الوجهة 1 (المرسل)
+                  </span>
+                )}
                 <OtherRegionsCustomerDetails
                   phone={order.customerPhone}
                   currentRegionId={order.customerRegionId}
@@ -1115,7 +1218,7 @@ export function WasliOrderDetailView({
                   {/* الزر 1: رفع لوكيشن (GPS) على اليمين */}
                   <button
                     type="button"
-                    onClick={handleUploadGpsLocation}
+                    onClick={() => handleUploadGpsLocation("first")}
                     disabled={isLocatingGps || isSavingGps}
                     className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0B2E8C] text-[12px] font-extrabold text-white shadow-[0_4px_12px_rgba(11,46,140,0.2)] transition hover:bg-[#1E4DB7] active:scale-[0.98] cursor-pointer min-w-0"
                   >
@@ -1131,6 +1234,7 @@ export function WasliOrderDetailView({
                   <button
                     type="button"
                     onClick={() => {
+                      setPasteTarget("first");
                       setShowPasteModal(true);
                       setPastedUrlInput("");
                     }}
@@ -1209,7 +1313,7 @@ export function WasliOrderDetailView({
           </section>
 
           {/* ========================================================================= */}
-          {/* كارت الوجهة الثانية (المستلم) — لطلبات الوجهتين */}
+          {/* كارت الزبون الثاني (المستلم) — لطلبات الوجهتين */}
           {/* ========================================================================= */}
           {(order.routeMode === "double" || Boolean((order as any).secondCustomerPhone)) && (
             <section className="relative overflow-visible rounded-[24px] border-[1.5px] border-[#38BDF8]/60 bg-white shadow-[0_4px_20px_rgba(2,132,199,0.08)]">
@@ -1222,11 +1326,11 @@ export function WasliOrderDetailView({
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   </span>
-                  <h2 className="text-[14px] font-extrabold text-[#0369A1]">المستلم (الوجهة الثانية)</h2>
+                  <h2 className="text-[14px] font-extrabold text-[#0369A1]">الزبون الثاني (المستلم)</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-[#0284C7] bg-white px-2 py-0.5 rounded-full border border-[#38BDF8]/40">
-                    الوجهة 2
+                    الوجهة 2 (المستلم)
                   </span>
                   <OtherRegionsCustomerDetails
                     phone={(order as any).secondCustomerPhone}
@@ -1366,9 +1470,92 @@ export function WasliOrderDetailView({
                   </div>
                 </div>
 
-                {/* أزرار الاتصال والواتساب للمستلم الثاني */}
+                {/* أزرار اللوكيشن والتبليغ للمستلم الثاني */}
+                {currentSecondCustLocation && currentSecondCustLocation !== "—" ? (
+                  /* الحالة 1: يوجد لوكيشن للزبون الثاني -> فتح لوكيشن المستلم على اليمين وتبليغ المستلم على اليسار */
+                  <div className="mt-4 flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentSecondCustLocation) openUrlFromUserGesture(currentSecondCustLocation);
+                        else showToast("لا يوجد لوكيشن مسجل للزبون الثاني");
+                      }}
+                      className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(2,132,199,0.2)] transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7]">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                      </span>
+                      <span>فتح لوكيشن المستلم</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSendSecondCustomerWa(notifyCustomerBtn.templateText, "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.")}
+                      className="flex h-[46px] w-[124px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FDE047] text-[12px] font-extrabold text-[#0369A1] shadow-[0_4px_12px_rgba(253,224,71,0.35)] transition hover:bg-[#facc15] active:scale-[0.98] cursor-pointer px-2"
+                    >
+                      <svg className="w-3.5 h-3.5 text-[#0369A1] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                      </svg>
+                      <span className="truncate">{notifyCustomerBtn.label || "تبليغ الزبون"}</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* الحالة 2: لا يوجد لوكيشن للزبون الثاني -> رفع لوكيشن على اليمين، بجانبه لصق لوكيشن، بجانبه طلب لكيشن */
+                  <div className="mt-4 flex gap-2">
+                    {/* الزر 1: رفع لوكيشن (GPS) على اليمين */}
+                    <button
+                      type="button"
+                      onClick={() => handleUploadGpsLocation("second")}
+                      disabled={isLocatingSecondGps || isSavingSecondGps}
+                      className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[12px] font-extrabold text-white shadow-[0_4px_12px_rgba(2,132,199,0.2)] transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer min-w-0"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7] shrink-0">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                        </svg>
+                      </span>
+                      <span className="truncate">{isLocatingSecondGps ? "جارٍ التحديد…" : isSavingSecondGps ? "جارٍ الحفظ…" : "رفع لوكيشن"}</span>
+                    </button>
+
+                    {/* الزر 2: لصق لوكيشن في الوسط */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasteTarget("second");
+                        setShowPasteModal(true);
+                        setPastedUrlInput("");
+                      }}
+                      className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[12px] font-extrabold text-white shadow-[0_4px_12px_rgba(2,132,199,0.2)] transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer min-w-0"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[#FDE047] shrink-0">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                          <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                        </svg>
+                      </span>
+                      <span className="truncate">لصق لوكيشن</span>
+                    </button>
+
+                    {/* الزر 3: طلب لكيشن على اليسار (من أزرار الواتساب المعتمدة) */}
+                    <button
+                      type="button"
+                      onClick={() => handleSendSecondCustomerWa(requestLocationBtn.templateText, "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍")}
+                      className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FDE047] text-[12px] font-extrabold text-[#0369A1] shadow-[0_4px_12px_rgba(253,224,71,0.35)] transition hover:bg-[#facc15] active:scale-[0.98] cursor-pointer px-1 min-w-0"
+                    >
+                      <svg className="w-3.5 h-3.5 text-[#0369A1] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                      </svg>
+                      <span className="truncate">{requestLocationBtn.label || "طلب لكيشن"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* أزرار الواتساب والاتصال مع المستلم الثاني (الواتساب على اليمين والاتصال على اليسار) */}
                 {(order as any).secondCustomerPhone && (
-                  <div className="mt-3 flex gap-2.5">
+                  <div className="mt-2.5 flex gap-2.5">
                     <button
                       type="button"
                       onClick={() => {
@@ -1380,44 +1567,29 @@ export function WasliOrderDetailView({
                       <svg className="w-4 h-4 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                       </svg>
-                      <span>واتساب المستلم</span>
+                      <span>واتساب</span>
                     </button>
                     <a
                       href={telHref((order as any).secondCustomerPhone)}
-                      className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-white shadow-xs transition hover:bg-[#0369A1] active:scale-[0.98]"
+                      className="flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-[#FDE047] shadow-xs transition hover:bg-[#0369A1] active:scale-[0.98]"
                     >
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <svg className="w-4 h-4 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
-                      <span>اتصال المستلم</span>
+                      <span>اتصال</span>
                     </a>
                   </div>
                 )}
-
-                {/* لوكيشن المستلم الثاني */}
-                {(order as any).secondCustomerLocationUrl && String((order as any).secondCustomerLocationUrl).trim() ? (
-                  <div className="mt-3 flex gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => openUrlFromUserGesture((order as any).secondCustomerLocationUrl)}
-                      className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[16px] bg-[#0284C7] text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(2,132,199,0.2)] transition hover:bg-[#0369A1] active:scale-[0.98] cursor-pointer"
-                    >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7]">
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                      </span>
-                      <span>فتح لوكيشن المستلم</span>
-                    </button>
-                  </div>
-                ) : null}
 
                 {/* استدلال ذكي للوجهة الثانية */}
                 {secondSmartHintLine && secondSmartHintLine !== "—" && (
                   <div className="mt-3 flex gap-3 rounded-[18px] bg-gradient-to-r from-[#0284C7] to-[#0369A1] p-3 shadow-md text-white">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDE047] text-[#0284C7] shadow-xs">
-                      💡
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 18h6" />
+                        <path d="M10 22h4" />
+                        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" />
+                      </svg>
                     </span>
                     <div className="flex flex-col gap-1 min-w-0">
                       <span className="text-[12px] font-extrabold text-[#FDE047]">الاستدلال الذكي (المستلم)</span>
@@ -1693,7 +1865,9 @@ export function WasliOrderDetailView({
                   </svg>
                 </span>
                 <div>
-                  <h3 className="text-[14px] font-black text-[#0B2E8C]">لصق لوكيشن الزبون</h3>
+                  <h3 className="text-[14px] font-black text-[#0B2E8C]">
+                    {pasteTarget === "second" ? "لصق لوكيشن الزبون الثاني" : "لصق لوكيشن الزبون"}
+                  </h3>
                   <p className="text-[11px] font-medium text-[#7A90C0]">الصق رابط خرائط قوقل ماب</p>
                 </div>
               </div>
