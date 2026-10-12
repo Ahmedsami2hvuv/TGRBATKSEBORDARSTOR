@@ -22,9 +22,39 @@ import { updateOrderLandmarkAction } from "@/app/actions/update-landmark";
 import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
-import { toast } from "sonner";
+import Link from "next/link";
+import { ShoppingBag, Pencil, X } from "lucide-react";
 import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
 import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
+
+function hasValidPreparerShoppingList(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (Array.isArray(raw)) return raw.length > 0;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.products)) return obj.products.length > 0;
+    if (Array.isArray(obj.items)) return obj.items.length > 0;
+    return Object.keys(obj).length > 0;
+  }
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t || t === "{}" || t === "[]" || t === "null" || t.length <= 2) return false;
+    try {
+      const v = JSON.parse(t) as unknown;
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === "object" && v !== null) {
+        const obj = v as Record<string, unknown>;
+        if (Array.isArray(obj.products)) return obj.products.length > 0;
+        if (Array.isArray(obj.items)) return obj.items.length > 0;
+        return Object.keys(obj).length > 0;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 
 type Props = {
   order: any;
@@ -299,6 +329,13 @@ export function WasliOrderDetailView({
     shopName.includes("وجهتين") ||
     shopName.startsWith("نظام -") ||
     Boolean(order.shop?.name && order.shop.name.includes("طلبات الوجهتين"))
+  );
+
+  // تحديد ما إذا كان الطلب من الطلبات التي جهزت
+  const isPreparedOrder = Boolean(
+    (order as any).submittedByCompanyPreparerId ||
+    order.submissionSource === "company_preparer" ||
+    hasValidPreparerShoppingList((order as any).preparerShoppingJson)
   );
 
   // بيانات الزبون - مع الشرط الصارم لعدم ظهور اسم العميل في كارت الزبون:
@@ -767,34 +804,34 @@ export function WasliOrderDetailView({
             </div>
 
             <div className="flex items-center gap-1.5">
-              <a
-                href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
-                className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1.5 text-[11px] font-black text-[#FDE047] transition hover:brightness-110 active:scale-[0.97] cursor-pointer shadow-xs"
-                title="تعديل التسعير والمواد"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[#FDE047]">
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                    <line x1="7" y1="7" x2="7.01" y2="7" />
-                  </svg>
-                </span>
-                <span>تعديل التسعير</span>
-              </a>
+              {/* زر تعديل أسعار التجهيز (يظهر فقط في الطلبات التي جهزت) بنفس أيقونة وحجم الزر خارج الطلب */}
+              {isPreparedOrder && (
+                <Link
+                  href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
+                  className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                  title="تعديل تفاصيل وأسعار التجهيز"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                </Link>
+              )}
 
+              {/* زر تعديل الطلب (نفسه الموجود خارج الطلب لفتح تعديل الطلب الأصلي) */}
+              <Link
+                href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/edit`}
+                className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                title="تعديل الطلب"
+              >
+                <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
+              </Link>
+
+              {/* زر إغلاق الطلب (إكس أحمر) */}
               <button
                 type="button"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId: order.id } }));
-                }}
-                className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D0DDFB] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#0B2E8C] transition hover:bg-[#F8FAFF] active:scale-[0.97] cursor-pointer shadow-xs"
+                onClick={handleClose}
+                className="w-7 h-7 rounded-full bg-rose-50 border border-rose-300 flex items-center justify-center text-rose-600 shadow-xs active:scale-90 transition-transform hover:bg-rose-100 cursor-pointer shrink-0"
+                title="إغلاق"
               >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EEFF]">
-                  <svg className="w-3 h-3 text-[#0B2E8C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                  </svg>
-                </span>
-                <span>تعديل</span>
+                <X className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
             </div>
           </div>
@@ -1836,16 +1873,18 @@ export function WasliOrderDetailView({
                       <span>قائمة المواد والملاحظات</span>
                     </span>
 
-                    <a
-                      href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
-                      className="flex items-center gap-1 rounded-full border border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1 text-[11px] font-extrabold text-[#FDE047] shadow-xs transition hover:brightness-110 active:scale-95 cursor-pointer"
-                    >
-                      <svg className="w-3 h-3 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                        <line x1="7" y1="7" x2="7.01" y2="7" />
-                      </svg>
-                      <span>تعديل التسعير والمواد</span>
-                    </a>
+                    {isPreparedOrder && (
+                      <a
+                        href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
+                        className="flex items-center gap-1 rounded-full border border-[#38BDF8] bg-gradient-to-r from-[#0284C7] to-[#0369A1] px-2.5 py-1 text-[11px] font-extrabold text-[#FDE047] shadow-xs transition hover:brightness-110 active:scale-95 cursor-pointer"
+                      >
+                        <svg className="w-3 h-3 text-[#FDE047]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                          <line x1="7" y1="7" x2="7.01" y2="7" />
+                        </svg>
+                        <span>تعديل التسعير والمواد</span>
+                      </a>
+                    )}
                   </div>
 
                   <ClickableNotesCard
