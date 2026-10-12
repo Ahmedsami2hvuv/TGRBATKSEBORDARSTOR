@@ -847,8 +847,8 @@ export function WasliOrderDetailView({
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-black text-[#FDE047]">الطلب واصل - استلم أجور التوصيل فقط!</p>
-                <p className="text-xs font-bold text-sky-100 mt-0.5">لا تقبض سعر البضاعة من العميل، فقط أجور التوصيل.</p>
+                <p className="text-sm font-black text-[#FDE047]">الطلب واصل كلشي</p>
+                <p className="text-xs font-bold text-sky-100 mt-0.5">لا تاخذ أي مبلغ من الزبون</p>
               </div>
             </div>
           )}
@@ -1781,11 +1781,19 @@ export function WasliOrderDetailView({
 
                   {/* بلوك المجموع العملاق */}
                   <div className="mt-1 flex h-[64px] w-full items-center justify-center gap-2 rounded-[20px] bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] shadow-[0_8px_20px_rgba(11,46,140,0.25)] text-white">
-                    <span className="text-[13px] font-bold text-[#A8BFFF]">المجموع</span>
-                    <span className="text-[32px] font-extrabold leading-none text-white font-mono">
-                      {formatDinarAsAlf(totalAmount)}
-                    </span>
-                    <span className="text-[12px] font-bold text-[#FFC107]">ألف</span>
+                    {order.prepaidAll ? (
+                      <span className="text-[22px] sm:text-[24px] font-black text-[#FFC107] tracking-wide">
+                        كلشي واصل
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-[13px] font-bold text-[#A8BFFF]">المجموع</span>
+                        <span className="text-[32px] font-extrabold leading-none text-white font-mono">
+                          {formatDinarAsAlf(totalAmount)}
+                        </span>
+                        <span className="text-[12px] font-bold text-[#FFC107]">ألف</span>
+                      </>
+                    )}
                   </div>
                 </div>
 

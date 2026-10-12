@@ -65,6 +65,11 @@ type WasliThemeBoardProps = {
 
 // دالة ذكية وشاملة لاستخراج السعر الكلي الحقيقي للطلب بالألف دون أن يظهر 0
 function extractCardDisplayPrice(r: MandoubRow): string {
+  // 0. إذا كان الطلب واصلاً بالكامل
+  if (r.prepaidAll) {
+    return "كلشي واصل";
+  }
+
   // 1. إذا كان إجمالي المبلغ متوفراً في totalAmountDinar
   if (r.totalAmountDinar != null && !isNaN(Number(r.totalAmountDinar))) {
     const val = Number(r.totalAmountDinar);
@@ -898,9 +903,20 @@ export function WasliThemeBoard({
                         }
                       >
                         <div className="w-[66px] h-[66px] rounded-full bg-[#0B2E8C] border-[3px] border-[#FFC107] flex items-center justify-center shadow-[0_4px_12px_rgba(11,46,140,0.22)] group-hover/price:shadow-[0_6px_16px_rgba(11,46,140,0.3)]">
-                          <span className="font-mono font-black text-[#FFC107] text-[30px] leading-none tracking-tight">
-                            {displayPriceValue}
-                          </span>
+                          {r.prepaidAll || displayPriceValue === "كلشي واصل" ? (
+                            <div className="flex flex-col items-center justify-center leading-[1.05] select-none text-center px-1">
+                              <span className="text-[12px] sm:text-[13px] font-black tracking-tight text-[#FFC107]">
+                                كلشي
+                              </span>
+                              <span className="text-[11px] sm:text-[12px] font-black tracking-tight text-[#FFC107]">
+                                واصل
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="font-mono font-black text-[#FFC107] text-[30px] leading-none tracking-tight">
+                              {displayPriceValue}
+                            </span>
+                          )}
                         </div>
                       </button>
                     </div>
