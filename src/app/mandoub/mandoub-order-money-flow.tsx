@@ -13,11 +13,21 @@ import {
   dinarDecimalToAlfInputString,
   formatDinarAsAlfWithUnit,
   parseAlfInputToDinarDecimalRequired,
+  normalizeNumerals,
 } from "@/lib/money-alf";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { formatBaghdadMoneyRecordedAt } from "@/lib/baghdad-time";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 import { Banknote, Check, Package, X, Zap } from "lucide-react";
+
+export function cleanDecimalAlfInput(raw: string): string {
+  let v = normalizeNumerals(raw).replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  const parts = v.split(".");
+  if (parts.length > 2) {
+    v = parts[0] + "." + parts.slice(1).join("");
+  }
+  return v;
+}
 
 const initialCash: MandoubCashState = {};
 
@@ -609,11 +619,15 @@ function MandoubPickupModal({
   const [selectedBox, setSelectedBox] = useState<"num" | "zero" | null>(null);
   const [note, setNote] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const enteredNum = parseFloat(amountAlf.trim());
+  const defaultNum = parseFloat(defaultAlf.trim());
   const isMismatch =
     amountAlf.trim() !== "" &&
-    amountAlf.trim() !== defaultAlf &&
+    selectedBox !== "zero" &&
     amountAlf.trim() !== "0" &&
-    selectedBox !== "zero";
+    (Number.isNaN(enteredNum) || Number.isNaN(defaultNum)
+      ? amountAlf.trim() !== defaultAlf
+      : Math.abs(enteredNum - defaultNum) > 0.001);
 
   return (
     <div
@@ -728,22 +742,38 @@ function MandoubPickupModal({
           <input type="hidden" name="advanceStatus" value={advanceStatus} />
           <input type="hidden" name="mandoubMoneySubmitMode" value="" />
 
-          {/* خانة كتابة السعر: تبقى فارغة بدون أي كتابة مسبقة إلا إذا أراد المندوب */}
+          {/* خانة كتابة السعر: تدعم الكسور والنقطة العشرية مثل 10.25 أو .25 */}
           <div className="relative">
             <input
               name="amountAlf"
-              inputMode="numeric"
+              type="text"
+              inputMode="decimal"
               value={amountAlf}
               onChange={(e) => {
-                const v = e.target.value.replace(/[^0-9]/g, "");
+                const v = cleanDecimalAlfInput(e.target.value);
                 setAmountAlf(v);
                 if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                 else if (v === "0") setSelectedBox("zero");
                 else setSelectedBox(null);
               }}
               placeholder={defaultAlf || "0"}
-              className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all"
+              className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all px-12"
             />
+            {/* زر نقطة مساعد سريع لإضافة النقطة العشرية بنقرة واحدة */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!amountAlf.includes(".")) {
+                  const nextVal = (amountAlf || "0") + ".";
+                  setAmountAlf(nextVal);
+                  setSelectedBox(null);
+                }
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[12px] bg-[#E8EEFF] hover:bg-[#D0DDFB] active:scale-95 text-[#0B2E8C] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#D0DDFB]"
+              title="إضافة نقطة عشرية"
+            >
+              .
+            </button>
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#4AA3FF] bg-[#F0F4FF] px-2 py-1 rounded-full border border-[#D0DDFB]">
               ألف د.ع
             </span>
@@ -833,11 +863,15 @@ function MandoubDeliveryModal({
   const lngRef = useRef<HTMLInputElement>(null);
   const locationPromptDoneRef = useRef(false);
 
+  const enteredNum = parseFloat(amountAlf.trim());
+  const defaultNum = parseFloat(defaultAlf.trim());
   const isMismatch =
     amountAlf.trim() !== "" &&
-    amountAlf.trim() !== defaultAlf &&
+    selectedBox !== "zero" &&
     amountAlf.trim() !== "0" &&
-    selectedBox !== "zero";
+    (Number.isNaN(enteredNum) || Number.isNaN(defaultNum)
+      ? amountAlf.trim() !== defaultAlf
+      : Math.abs(enteredNum - defaultNum) > 0.001);
 
   function submitAfterLocation(latVal?: string, lngVal?: string) {
     setLocationModalOpen(false);
@@ -998,22 +1032,38 @@ function MandoubDeliveryModal({
           <input ref={latRef} type="hidden" name="lat" value="" />
           <input ref={lngRef} type="hidden" name="lng" value="" />
 
-          {/* خانة كتابة السعر الحارة: فارغة تماماً بالبداية */}
+          {/* خانة كتابة السعر الحارة: تدعم الكسور والنقطة العشرية مثل 10.25 أو .25 */}
           <div className="relative">
             <input
               name="amountAlf"
-              inputMode="numeric"
+              type="text"
+              inputMode="decimal"
               value={amountAlf}
               onChange={(e) => {
-                const v = e.target.value.replace(/[^0-9]/g, "");
+                const v = cleanDecimalAlfInput(e.target.value);
                 setAmountAlf(v);
                 if (v === defaultAlf && defaultAlf !== "" && defaultAlf !== "0") setSelectedBox("num");
                 else if (v === "0") setSelectedBox("zero");
                 else setSelectedBox(null);
               }}
               placeholder={defaultAlf || "0"}
-              className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all"
+              className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all px-12"
             />
+            {/* زر نقطة مساعد سريع لإضافة النقطة العشرية بنقرة واحدة */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!amountAlf.includes(".")) {
+                  const nextVal = (amountAlf || "0") + ".";
+                  setAmountAlf(nextVal);
+                  setSelectedBox(null);
+                }
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[12px] bg-[#FFF8E1] hover:bg-[#FFE082] active:scale-95 text-[#BF5D00] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#FFE082]"
+              title="إضافة نقطة عشرية"
+            >
+              .
+            </button>
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#FF8C00] bg-[#FFF8E1] px-2 py-1 rounded-full border border-[#FFE082]">
               ألف د.ع
             </span>
@@ -1423,23 +1473,39 @@ export function PickupMoneyForm({
         />
         <input type="hidden" name="mismatchReason" value="" />
 
-        {/* خانة كتابة السعر: تبقى فارغة بدون أي كتابة مسبقة إلا إذا أراد المندوب الكتابة فيها */}
+        {/* خانة كتابة السعر: تبقى فارغة بدون أي كتابة مسبقة إلا إذا أراد المندوب الكتابة فيها وتدعم الكسور */}
         <div className="relative">
           <input
             ref={amountRef}
             name="amountAlf"
-            inputMode="numeric"
+            type="text"
+            inputMode="decimal"
             value={amount}
             onChange={(e) => {
-              const v = e.target.value.replace(/[^0-9]/g, "");
+              const v = cleanDecimalAlfInput(e.target.value);
               setAmount(v);
               if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all"
+            className="w-full h-[52px] bg-white border-[2px] border-[#4AA3FF] rounded-[20px] text-center text-[#0B2E8C] font-black text-[20px] placeholder:text-[#0B2E8C]/20 focus:outline-none focus:border-[#0B2E8C] focus:ring-4 focus:ring-[#E8EEFF] transition-all px-12"
           />
+          {/* زر نقطة مساعد سريع */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!amount.includes(".")) {
+                const nextVal = (amount || "0") + ".";
+                setAmount(nextVal);
+                setSelectedBox(null);
+              }
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[12px] bg-[#E8EEFF] hover:bg-[#D0DDFB] active:scale-95 text-[#0B2E8C] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#D0DDFB]"
+            title="إضافة نقطة عشرية"
+          >
+            .
+          </button>
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#4AA3FF] bg-[#F0F4FF] px-2 py-1 rounded-full border border-[#D0DDFB]">
             ألف د.ع
           </span>
@@ -1767,23 +1833,39 @@ export function DeliveryMoneyForm({
         <input ref={latRef} type="hidden" name="lat" value="" />
         <input ref={lngRef} type="hidden" name="lng" value="" />
 
-        {/* خانة كتابة السعر الحارة: فارغة تماماً بالبداية ولا يُكتب فيها إلا إذا كتب المندوب */}
+        {/* خانة كتابة السعر الحارة: فارغة تماماً بالبداية وتدعم الكسور والنقطة العشرية */}
         <div className="relative">
           <input
             ref={amountRef}
             name="amountAlf"
-            inputMode="numeric"
+            type="text"
+            inputMode="decimal"
             value={amount}
             onChange={(e) => {
-              const v = e.target.value.replace(/[^0-9]/g, "");
+              const v = cleanDecimalAlfInput(e.target.value);
               setAmount(v);
               if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
               else if (v === "0") setSelectedBox("zero");
               else setSelectedBox(null);
             }}
             placeholder={targetValue || "0"}
-            className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all"
+            className="w-full h-[52px] bg-white border-[2px] border-[#FF8C00] rounded-[20px] text-center text-[#BF5D00] font-black text-[20px] placeholder:text-[#BF5D00]/20 focus:outline-none focus:border-[#FF6F00] focus:ring-4 focus:ring-[#FFF8E1] transition-all px-12"
           />
+          {/* زر نقطة مساعد سريع */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!amount.includes(".")) {
+                const nextVal = (amount || "0") + ".";
+                setAmount(nextVal);
+                setSelectedBox(null);
+              }
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[12px] bg-[#FFF8E1] hover:bg-[#FFE082] active:scale-95 text-[#BF5D00] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#FFE082]"
+            title="إضافة نقطة عشرية"
+          >
+            .
+          </button>
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[#FF8C00] bg-[#FFF8E1] px-2 py-1 rounded-full border border-[#FFE082]">
             ألف د.ع
           </span>

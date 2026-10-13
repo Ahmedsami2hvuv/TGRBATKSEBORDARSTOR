@@ -14,7 +14,7 @@ import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
 import { formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
-import { formatDinarAsAlf, dinarDecimalToAlfInputString, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { formatDinarAsAlf, dinarDecimalToAlfInputString, formatDinarAsAlfWithUnit, normalizeNumerals } from "@/lib/money-alf";
 import { LuxuryReverseOrderButton } from "@/components/luxury-reverse-order-button";
 import {
   submitAdminPickupMoney,
@@ -451,22 +451,40 @@ function AdminDeliveryFormModal({
         />
       </div>
 
-      {/* حقل إدخال المبلغ */}
-      <div>
+      {/* حقل إدخال المبلغ: يدعم الكسور والنقطة العشرية */}
+      <div className="relative">
         <input
           name="amountAlf"
-          inputMode="numeric"
+          type="text"
+          inputMode="decimal"
           value={amountAlf}
           onChange={(e) => {
-            const v = e.target.value;
+            let v = normalizeNumerals(e.target.value).replace(/,/g, ".").replace(/[^0-9.]/g, "");
+            const parts = v.split(".");
+            if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
             setAmountAlf(v);
             if (v === targetAlf && targetAlf !== "" && targetAlf !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}
           placeholder={targetAlf || "0"}
-          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40"
+          className="w-full h-[56px] rounded-[16px] border-[1.5px] border-[#C9A86A] bg-white text-center text-[26px] font-black text-[#8B2E1A] placeholder:text-[#8B2E1A]/30 focus:outline-none focus:ring-2 focus:ring-[#C9A86A]/40 px-10"
         />
+        {/* زر نقطة مساعد سريع */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!amountAlf.includes(".")) {
+              const nextVal = (amountAlf || "0") + ".";
+              setAmountAlf(nextVal);
+              setSelectedBox(null);
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[10px] bg-[#FFF8E1] hover:bg-[#FFE082] text-[#8B2E1A] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#C9A86A]"
+          title="إضافة نقطة عشرية"
+        >
+          .
+        </button>
       </div>
 
       {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}

@@ -13,6 +13,7 @@ import {
   formatDinarAsAlfWithUnit,
   parseAlfInputToDinarDecimalRequired,
 } from "@/lib/money-alf";
+import { cleanDecimalAlfInput } from "@/app/mandoub/mandoub-order-money-flow";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import {
   moneyLedgerAmountClass,
@@ -607,23 +608,39 @@ export function PickupMoneyForm(props: {
         />
       </div>
 
-      {/* حقل إدخال المبلغ */}
-      <div>
+      {/* حقل إدخال المبلغ: يدعم الكسور والنقطة العشرية */}
+      <div className="relative">
         <input
           ref={amountRef}
           name="amountAlf"
-          inputMode="numeric"
+          type="text"
+          inputMode="decimal"
           value={amountAlf}
           onChange={(e) => {
-            const v = e.target.value;
+            const v = cleanDecimalAlfInput(e.target.value);
             setAmountAlf(v);
             if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
+          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition px-10"
         />
+        {/* زر نقطة مساعد سريع */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!amountAlf.includes(".")) {
+              const nextVal = (amountAlf || "0") + ".";
+              setAmountAlf(nextVal);
+              setSelectedBox(null);
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[10px] bg-[#E8EEFF] hover:bg-[#D0DDFB] text-[#0B2E8C] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#D0DDFB]"
+          title="إضافة نقطة عشرية"
+        >
+          .
+        </button>
       </div>
 
       {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
@@ -776,23 +793,39 @@ export function DeliveryMoneyForm(props: {
         />
       </div>
 
-      {/* حقل إدخال المبلغ */}
-      <div>
+      {/* حقل إدخال المبلغ: يدعم الكسور والنقطة العشرية */}
+      <div className="relative">
         <input
           ref={amountRef}
           name="amountAlf"
-          inputMode="numeric"
+          type="text"
+          inputMode="decimal"
           value={amountAlf}
           onChange={(e) => {
-            const v = e.target.value;
+            const v = cleanDecimalAlfInput(e.target.value);
             setAmountAlf(v);
             if (v === targetValue && targetValue !== "" && targetValue !== "0") setSelectedBox("num");
             else if (v === "0") setSelectedBox("zero");
             else setSelectedBox(null);
           }}
           placeholder={targetValue || "0"}
-          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition"
+          className="w-full h-[54px] rounded-[18px] border-2 border-[#D0DDFB] bg-white text-center text-[26px] font-black text-[#0B2E8C] placeholder:text-[#0B2E8C]/30 focus:outline-none focus:border-[#0B2E8C] focus:ring-2 focus:ring-[#0B2E8C]/20 transition px-10"
         />
+        {/* زر نقطة مساعد سريع */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!amountAlf.includes(".")) {
+              const nextVal = (amountAlf || "0") + ".";
+              setAmountAlf(nextVal);
+              setSelectedBox(null);
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-[10px] bg-[#E8EEFF] hover:bg-[#D0DDFB] text-[#0B2E8C] font-black text-[18px] flex items-center justify-center transition-all cursor-pointer border border-[#D0DDFB]"
+          title="إضافة نقطة عشرية"
+        >
+          .
+        </button>
       </div>
 
       {/* حقل سبب اختلاف المبلغ: يظهر فقط إذا كتب المستخدم سعراً مختلفاً عن المتوقع */}
