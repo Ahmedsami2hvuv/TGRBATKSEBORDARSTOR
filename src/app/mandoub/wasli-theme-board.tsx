@@ -151,7 +151,7 @@ function MandoubCardSaderBadge({ r }: { r: MandoubRow }) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
     badgeStyle = "bg-[#EFF6FF] border border-[#60A5FA] text-[#1E40AF]"; // صادر الإدارة أزرق
-  } else if (r.saderMismatchType === "excess") {
+  } else if ((r.orderStatus === "delivering" || r.orderStatus === "delivered" || r.orderStatus === "archived") && r.saderMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالصادر";
     badgeStyle = "bg-[#FFFBEB] border border-amber-400 text-amber-800";
@@ -188,7 +188,7 @@ function MandoubCardWardBadge({ r }: { r: MandoubRow }) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
     badgeStyle = "bg-[#F5F3FF] border border-[#A78BFA] text-[#5B21B6]"; // وارد المجهز بنفسجي
-  } else if (r.wardMismatchType === "deficit") {
+  } else if ((r.orderStatus === "delivered" || r.orderStatus === "archived") && r.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
     badgeStyle = "bg-[#FEF2F2] border border-rose-500 text-rose-700";
@@ -196,7 +196,7 @@ function MandoubCardWardBadge({ r }: { r: MandoubRow }) {
     text = "زيادة";
     tooltip = "زيادة بالوارد";
     badgeStyle = "bg-[#ECFDF5] border border-emerald-500 text-emerald-700";
-  } else if (r.noWardRecorded && r.orderStatus === "delivered") {
+  } else if ((r.orderStatus === "delivered" || r.orderStatus === "archived") && (r.noWardRecorded || r.deliverySumDinar === 0 || r.deliverySumDinar == null)) {
     text = "بدون";
     tooltip = "بدون وارد مسجل";
     badgeStyle = "bg-slate-100 border border-slate-300 text-slate-700";
@@ -826,10 +826,10 @@ export function WasliThemeBoard({
                         {r.orderType || r.landmarkLine || "طلب توصيل"}
                       </div>
 
-                      {/* بلوكات حالات الوارد المرتبة داخل الطلب */}
+                      {/* بلوكات حالات الوارد والصادر المرتبة داخل الطلب */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* 1. بلوك نقص بالوارد: سهم أحمر متجه للأسفل */}
-                        {r.wardMismatchType === "deficit" && (
+                        {/* 1. بلوك نقص بالوارد: سهم أحمر متجه للأسفل (فقط إذا كان الطلب مسلماً أو مؤرشفاً) */}
+                        {(r.orderStatus === "delivered" || r.orderStatus === "archived") && r.wardMismatchType === "deficit" && (
                           <div
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-rose-50 border-[1.5px] border-rose-500 text-rose-700 shadow-xs animate-pulse select-none shrink-0"
                             title="نقص بالوارد"
@@ -854,8 +854,8 @@ export function WasliThemeBoard({
                           </div>
                         )}
 
-                        {/* 3. بلوك بدون وارد: تصميم أسود أنيق */}
-                        {(r.noWardRecorded || (r.orderStatus === "delivered" && (r.deliverySumDinar === 0 || r.deliverySumDinar == null))) && (
+                        {/* 3. بلوك بدون وارد: تصميم أسود أنيق (فقط إذا كان الطلب مسلماً أو مؤرشفاً) */}
+                        {(r.orderStatus === "delivered" || r.orderStatus === "archived") && (r.noWardRecorded || (r.deliverySumDinar === 0 || r.deliverySumDinar == null)) && (
                           <div
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-black border border-slate-700 text-white shadow-xs select-none shrink-0"
                             title="بدون وارد مسجل"
@@ -864,6 +864,16 @@ export function WasliThemeBoard({
                               <span className="text-[8px] font-black text-white leading-none">✕</span>
                             </div>
                             <span className="text-[11px] font-black leading-none">بدون وارد</span>
+                          </div>
+                        )}
+
+                        {/* 4. بلوك زيادة بالصادر: (إذا كانت الطلبية مستلمة من المندوب أو مسلمة أو مؤرشفة) */}
+                        {(r.orderStatus === "delivering" || r.orderStatus === "delivered" || r.orderStatus === "archived") && r.saderMismatchType === "excess" && (
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-amber-50 border-[1.5px] border-amber-500 text-amber-700 shadow-xs select-none shrink-0"
+                            title="زيادة بالصادر"
+                          >
+                            <span className="text-[11px] font-black leading-none">زيادة بالصادر</span>
                           </div>
                         )}
                       </div>

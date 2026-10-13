@@ -578,7 +578,7 @@ function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
     text = formatDinarAsAlf(adminPickup);
     tooltip = `صادر الإدارة: ${text}`;
     badgeStyle = "bg-[#EFF6FF] border border-[#60A5FA] text-[#1E40AF]"; // صادر الإدارة أزرق
-  } else if (o.saderMismatchType === "excess") {
+  } else if ((o.orderStatus === "delivering" || o.orderStatus === "delivered" || o.orderStatus === "archived") && o.saderMismatchType === "excess") {
     text = "زيادة";
     tooltip = "زيادة بالصادر";
     badgeStyle = "bg-[#FFFBEB] border border-amber-400 text-amber-800";
@@ -615,7 +615,7 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
     text = formatDinarAsAlf(preparerDelivery);
     tooltip = `وارد المجهز: ${text}`;
     badgeStyle = "bg-[#F5F3FF] border border-[#A78BFA] text-[#5B21B6]"; // وارد المجهز بنفسجي
-  } else if (o.wardMismatchType === "deficit") {
+  } else if ((o.orderStatus === "delivered" || o.orderStatus === "archived") && o.wardMismatchType === "deficit") {
     text = "نقص";
     tooltip = "نقص بالوارد";
     badgeStyle = "bg-[#FEF2F2] border border-rose-500 text-rose-700";
@@ -623,7 +623,7 @@ function OrderWardSideBadge({ o }: { o: TrackingTableRow }) {
     text = "زيادة";
     tooltip = "زيادة بالوارد";
     badgeStyle = "bg-[#ECFDF5] border border-emerald-500 text-emerald-700";
-  } else if (o.noWardRecorded && o.orderStatus === "delivered") {
+  } else if ((o.orderStatus === "delivered" || o.orderStatus === "archived") && (o.noWardRecorded || o.deliverySumDinar === 0 || o.deliverySumDinar == null)) {
     text = "بدون";
     tooltip = "بدون وارد مسجل";
     badgeStyle = "bg-slate-100 border border-slate-300 text-slate-700";
@@ -1094,10 +1094,10 @@ function TrackingCardsView({
                           {displayGoodsType}
                         </div>
 
-                        {/* بلوكات حالات الوارد المرتبة داخل الطلب (نفس حساب المندوب تماماً) */}
+                        {/* بلوكات حالات الوارد والصادر المرتبة داخل الطلب (نفس حساب المندوب تماماً) */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* 1. بلوك نقص بالوارد */}
-                          {o.wardMismatchType === "deficit" && (
+                          {/* 1. بلوك نقص بالوارد: يظهر فقط إذا كان الطلب مسلماً أو مؤرشفاً */}
+                          {(o.orderStatus === "delivered" || o.orderStatus === "archived") && o.wardMismatchType === "deficit" && (
                             <div
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-rose-50 border-[1.5px] border-rose-500 text-rose-700 shadow-xs select-none shrink-0"
                               title="نقص بالوارد"
@@ -1122,8 +1122,8 @@ function TrackingCardsView({
                             </div>
                           )}
 
-                          {/* 3. بلوك بدون وارد */}
-                          {(o.noWardRecorded || (o.orderStatus === "delivered" && (o.deliverySumDinar === 0 || o.deliverySumDinar == null))) && (
+                          {/* 3. بلوك بدون وارد: يظهر فقط إذا كان الطلب مسلماً أو مؤرشفاً */}
+                          {(o.orderStatus === "delivered" || o.orderStatus === "archived") && (o.noWardRecorded || (o.deliverySumDinar === 0 || o.deliverySumDinar == null)) && (
                             <div
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-black border border-slate-700 text-white shadow-xs select-none shrink-0"
                               title="بدون وارد مسجل"
@@ -1135,8 +1135,8 @@ function TrackingCardsView({
                             </div>
                           )}
 
-                          {/* 4. زيادة بالصادر */}
-                          {o.saderMismatchType === "excess" && (
+                          {/* 4. زيادة بالصادر: تظهر إذا كانت الطلبية مستلمة من المندوب أو مسلمة أو مؤرشفة */}
+                          {(o.orderStatus === "delivering" || o.orderStatus === "delivered" || o.orderStatus === "archived") && o.saderMismatchType === "excess" && (
                             <div
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[12px] bg-amber-50 border-[1.5px] border-amber-500 text-amber-700 shadow-xs select-none shrink-0"
                               title="زيادة بالصادر"

@@ -96,10 +96,11 @@ export function isWardMismatch(
   const actualNum = typeof actual === 'object' && 'toNumber' in actual ? actual.toNumber() : Number(actual);
   const totalNum = typeof totalAmount === 'object' && 'toNumber' in totalAmount ? totalAmount.toNumber() : Number(totalAmount);
   
-  if (Number.isNaN(actualNum) || Number.isNaN(totalNum)) return { hasMismatch: false, type: null };
+  // نقص بالوارد يظهر فقط إذا كان الطلب مسلماً للزبون أو مؤرشفاً
+  if (diff < 0 && status !== "delivered" && status !== "archived") {
+    return { hasMismatch: false, type: null };
+  }
 
-  const diff = actualNum - totalNum;
-  if (Math.abs(diff) < 0.01) return { hasMismatch: false, type: null };
   return {
     hasMismatch: true,
     type: diff > 0 ? "excess" : "deficit"
@@ -124,6 +125,12 @@ export function isSaderMismatch(
 
   const diff = actualNum - subtotalNum;
   if (Math.abs(diff) < 0.01) return { hasMismatch: false, type: null };
+
+  // زيادة بالصادر تظهر فقط إذا كانت الطلبية مستلمة من المندوب (delivering) أو مسلمة للزبون (delivered) أو مؤرشفة (archived)
+  if (diff > 0 && status !== "delivering" && status !== "delivered" && status !== "archived") {
+    return { hasMismatch: false, type: null };
+  }
+
   return {
     hasMismatch: true,
     type: diff > 0 ? "excess" : "deficit"
