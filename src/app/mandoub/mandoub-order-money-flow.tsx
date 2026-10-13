@@ -279,11 +279,25 @@ export function MandoubOrderMoneyFlow({
 
   useEffect(() => {
     if (deleteState.ok) {
-      setToastMsg({ text: "تم مسح الحركة بنجاح.", type: "success" });
+      setToastMsg({ text: "تم مسح المعاملة بنجاح.", type: "success" });
+      if (deleteState.deletedEventId) {
+        setLocalEvents((prev) =>
+          prev.map((e) =>
+            e.id === deleteState.deletedEventId
+              ? {
+                  ...e,
+                  deletedAt: new Date().toISOString(),
+                  deletedReason: "manual_courier",
+                }
+              : e
+          )
+        );
+      }
       router.refresh();
       setTimeout(() => setToastMsg(null), 4000);
     } else if (deleteState.error) {
       setToastMsg({ text: deleteState.error, type: "error" });
+      setTimeout(() => setToastMsg(null), 5000);
     }
   }, [deleteState, router]);
 

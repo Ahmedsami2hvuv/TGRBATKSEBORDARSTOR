@@ -579,90 +579,103 @@ export async function softDeleteMandoubMiscWalletEntry(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const c = String(formData.get("c") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
-  const entryId = String(formData.get("miscEntryId") ?? "").trim();
-  const nextRaw = String(formData.get("next") ?? "/mandoub");
+  try {
+    const c = String(formData.get("c") ?? "");
+    const exp = String(formData.get("exp") ?? "");
+    const s = String(formData.get("s") ?? "");
+    const entryId = String(formData.get("miscEntryId") ?? "").trim();
+    const nextRaw = String(formData.get("next") ?? "/mandoub");
+    const doRedirect = String(formData.get("redirect") ?? "").trim() === "1";
 
-  const v = verifyDelegatePortalQuery(c, exp, s);
-  if (!v.ok) {
-    return { error: "الرابط غير صالح." };
+    const v = verifyDelegatePortalQuery(c, exp, s);
+    if (!v.ok) {
+      return { error: "الرابط غير صالح." };
+    }
+    if (await isCourierPortalBlocked(v.courierId)) {
+      return { error: "هذا الحساب محظور ولا يمكن تنفيذ العملية." };
+    }
+    if (!entryId) {
+      return { error: "معرّف المعاملة مفقود." };
+    }
+
+    const row = await prisma.courierWalletMiscEntry.findFirst({
+      where: { id: entryId, courierId: v.courierId, deletedAt: null },
+    });
+    if (!row) {
+      return { error: "المعاملة غير موجودة أو تم مسحها مسبقاً." };
+    }
+
+    const courierRow = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { name: true },
+    });
+    const deletedBy = courierRow?.name?.trim() || "مندوب";
+
+    await prisma.courierWalletMiscEntry.update({
+      where: { id: entryId },
+      data: {
+        deletedAt: new Date(),
+        deletedReason: "manual_courier",
+        deletedByDisplayName: deletedBy,
+      },
+    });
+
+    revalidateMandoubPaths(nextRaw);
+    if (doRedirect) {
+      redirect(safeMandoubReturn(nextRaw));
+    }
+    return { ok: true, deletedEventId: entryId, deletedMode: "soft" };
+  } catch (error: any) {
+    if (error?.message?.includes("NEXT_REDIRECT")) {
+      throw error;
+    }
+    console.error("[softDeleteMandoubMiscWalletEntry] error:", error);
+    return { error: error?.message || "حدث خطأ أثناء مسح الحركة من المحفظة." };
   }
-  if (await isCourierPortalBlocked(v.courierId)) {
-    return { error: "هذا الحساب محظور ولا يمكن تنفيذ العملية." };
-  }
-  if (!entryId) {
-    return { error: "معرّف المعاملة مفقود." };
-  }
-
-  const row = await prisma.courierWalletMiscEntry.findFirst({
-    where: { id: entryId, courierId: v.courierId, deletedAt: null },
-  });
-  if (!row) {
-    return { error: "المعاملة غير موجودة." };
-  }
-
-  const courierRow = await prisma.courier.findUnique({
-    where: { id: v.courierId },
-    select: { name: true },
-  });
-  const deletedBy = courierRow?.name?.trim() || "مندوب";
-
-  await prisma.courierWalletMiscEntry.update({
-    where: { id: entryId },
-    data: {
-      deletedAt: new Date(),
-      deletedReason: "manual_courier",
-      deletedByDisplayName: deletedBy,
-    },
-  });
-
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
 }
 
 export async function softDeleteMandoubMoneyEvent(
   _prev: MandoubCashState,
   formData: FormData,
 ): Promise<MandoubCashState> {
-  const c = String(formData.get("c") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
-  const eventId = String(formData.get("eventId") ?? "").trim();
-  const nextRaw = String(formData.get("next") ?? "/mandoub");
+  try {
+    const c = String(formData.get("c") ?? "");
+    const exp = String(formData.get("exp") ?? "");
+    const s = String(formData.get("s") ?? "");
+    const eventId = String(formData.get("eventId") ?? "").trim();
+    const nextRaw = String(formData.get("next") ?? "/mandoub");
+    const doRedirect = String(formData.get("redirect") ?? "").trim() === "1";
 
-  const v = verifyDelegatePortalQuery(c, exp, s);
-  if (!v.ok) {
-    return { error: "الرابط غير صالح." };
-  }
-  if (await isCourierPortalBlocked(v.courierId)) {
-    return { error: "هذا الحساب محظور ولا يمكن تنفيذ العملية." };
-  }
-  if (!eventId) {
-    return { error: "معرّف المعاملة مفقود." };
-  }
+    const v = verifyDelegatePortalQuery(c, exp, s);
+    if (!v.ok) {
+      return { error: "الرابط غير صالح." };
+    }
+    if (await isCourierPortalBlocked(v.courierId)) {
+      return { error: "هذا الحساب محظور ولا يمكن تنفيذ العملية." };
+    }
+    if (!eventId) {
+      return { error: "معرّف المعاملة مفقود." };
+    }
 
-  const ev = await prisma.orderCourierMoneyEvent.findFirst({
-    where: { id: eventId, courierId: v.courierId, deletedAt: null },
-    include: { order: true },
-  });
-  if (!ev) {
-    return { error: "المعاملة غير موجودة." };
-  }
-  if (ev.recordedByCompanyPreparerId != null) {
-    return { error: "لا يمكن حذف معاملة سجّلها المجهز من لوحة المندوب." };
-  }
+    const ev = await prisma.orderCourierMoneyEvent.findFirst({
+      where: { id: eventId, courierId: v.courierId, deletedAt: null },
+      include: { order: true },
+    });
+    if (!ev) {
+      return { error: "المعاملة غير موجودة أو تم مسحها مسبقاً." };
+    }
+    if (ev.recordedByCompanyPreparerId != null) {
+      return { error: "لا يمكن حذف معاملة سجّلها المجهز من لوحة المندوب." };
+    }
 
-  const courierRow = await prisma.courier.findUnique({
-    where: { id: v.courierId },
-    select: { name: true },
-  });
-  const deletedBy =
-    courierRow?.name?.trim() || "مندوب";
+    const courierRow = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { name: true },
+    });
+    const deletedBy =
+      courierRow?.name?.trim() || "مندوب";
 
-  await prisma.$transaction(async (tx) => {
-    await tx.orderCourierMoneyEvent.update({
+    await prisma.orderCourierMoneyEvent.update({
       where: { id: eventId },
       data: {
         deletedAt: new Date(),
@@ -670,15 +683,30 @@ export async function softDeleteMandoubMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
-    if (ev.order.status === "delivered") {
-      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
-      await handleOrderDelivered(ev.orderId, tx);
-    }
-  });
 
-  revalidatePath(`/mandoub/order/${ev.orderId}`);
-  revalidateMandoubPaths(nextRaw);
-  redirect(safeMandoubReturn(nextRaw));
+    if (ev.order.status === "delivered") {
+      try {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(ev.orderId);
+      } catch (hookErr) {
+        console.error("[softDeleteMandoubMoneyEvent] handleOrderDelivered error:", hookErr);
+      }
+    }
+
+    revalidatePath(`/mandoub/order/${ev.orderId}`);
+    revalidateMandoubPaths(nextRaw);
+
+    if (doRedirect) {
+      redirect(safeMandoubReturn(nextRaw));
+    }
+    return { ok: true, deletedEventId: eventId, deletedMode: "soft" };
+  } catch (error: any) {
+    if (error?.message?.includes("NEXT_REDIRECT")) {
+      throw error;
+    }
+    console.error("[softDeleteMandoubMoneyEvent] error:", error);
+    return { error: error?.message || "حدث خطأ أثناء مسح المعاملة." };
+  }
 }
 
 export async function softDeleteMandoubMoneyEventAdmin(
