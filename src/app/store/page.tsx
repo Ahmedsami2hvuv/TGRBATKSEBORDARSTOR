@@ -230,9 +230,6 @@ function deepSanitize(obj: any): any {
 
 export default async function StoreHomePage() {
   try {
-    const { ensureHidePricesColumns } = await import("@/lib/db-self-heal-hide-prices");
-    await ensureHidePricesColumns();
-
     const slidesRaw = await prisma.storeSlide.findMany({
       where: { active: true },
       orderBy: { sequence: "asc" }
