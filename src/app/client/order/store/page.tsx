@@ -118,20 +118,22 @@ export default async function ClientShopStorePage(props: Props) {
 
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800" dir="rtl">
-        {/* شريط ملاحة علوي للعودة لحساب العميل */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+        {/* شريط ملاحة علوي أنيق ومتناسق على الهواتف */}
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-2.5 shadow-xs">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
             <Link
               href={`/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition active:scale-95 border border-slate-200/60"
             >
-              <ArrowRight className="w-4 h-4" />
-              <span>العودة لرفع الطلبات</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>العودة لصفحة الطلبات</span>
             </Link>
 
-            <div className="text-right">
-              <span className="text-xs text-slate-500 font-medium">مرحباً</span>{" "}
-              <span className="text-xs font-bold text-slate-800">{employee.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-500">مرحباً،</span>
+              <span className="text-xs font-black text-[#0B2E8C] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                {employee.name}
+              </span>
             </div>
           </div>
         </div>

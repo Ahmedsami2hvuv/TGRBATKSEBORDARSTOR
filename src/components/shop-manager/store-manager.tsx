@@ -34,6 +34,7 @@ import {
   Tag,
   Eye,
   Megaphone,
+  Camera,
 } from "lucide-react";
 
 interface StoreManagerProps {
@@ -470,31 +471,43 @@ export function StoreManager({
 
                 {/* رفع صورة المنتج */}
                 <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4">
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    صورة المنتج (تُضغط بنسبة 90% بصيغة WebP لتوفير المساحة وسرعة التصفح)
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-bold text-slate-700">
+                      صورة المنتج
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                      تضغط 90% تلقائياً بصيغة WebP
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
                       {prodPhoto ? (
                         <img src={prodPhoto} alt="Product" className="w-full h-full object-cover" />
                       ) : (
                         <ImageIcon className="w-6 h-6 text-slate-300" />
                       )}
                     </div>
+
                     <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleFileUpload(f, "prod_photo");
-                        }}
-                        className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
-                      />
+                      <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
+                        <Camera className="w-4 h-4 text-[#0B2E8C]" />
+                        <span>{prodPhoto ? "تغيير صورة المنتج" : "اختيار صورة للمنتج"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileUpload(f, "prod_photo");
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+
                       {uploading === "prod_photo" && (
-                        <p className="text-xs text-blue-600 font-bold mt-1.5 flex items-center gap-1">
+                        <p className="text-xs text-blue-600 font-bold mt-2 flex items-center gap-1.5 animate-pulse">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>جاري رفع وضغط الصورة...</span>
+                          <span>جاري رفع وضغط الصورة بنجاح...</span>
                         </p>
                       )}
                     </div>
@@ -642,7 +655,7 @@ export function StoreManager({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">صورة القسم (اختياري)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة القسم (اختياري)</label>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                       {newCatPhoto ? (
@@ -652,17 +665,21 @@ export function StoreManager({
                       )}
                     </div>
                     <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleFileUpload(f, "cat_photo");
-                        }}
-                        className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
-                      />
+                      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
+                        <Camera className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                        <span>{newCatPhoto ? "تغيير صورة القسم" : "اختيار صورة"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileUpload(f, "cat_photo");
+                          }}
+                          className="hidden"
+                        />
+                      </label>
                       {uploading === "cat_photo" && (
-                        <p className="text-[11px] text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                        <p className="text-[11px] text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع والضغط...</p>
                       )}
                     </div>
                   </div>
@@ -741,7 +758,7 @@ export function StoreManager({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">صورة الفرع (اختياري)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة الفرع (اختياري)</label>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                         {newBranchPhoto ? (
@@ -751,17 +768,21 @@ export function StoreManager({
                         )}
                       </div>
                       <div className="flex-1">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleFileUpload(f, "branch_photo");
-                          }}
-                          className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
-                        />
+                        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
+                          <Camera className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                          <span>{newBranchPhoto ? "تغيير صورة الفرع" : "اختيار صورة"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleFileUpload(f, "branch_photo");
+                            }}
+                            className="hidden"
+                          />
+                        </label>
                         {uploading === "branch_photo" && (
-                          <p className="text-[11px] text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                          <p className="text-[11px] text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع والضغط...</p>
                         )}
                       </div>
                     </div>
@@ -904,17 +925,21 @@ export function StoreManager({
                     )}
                   </div>
                   <div className="flex-1">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleFileUpload(f, "slide_image");
-                      }}
-                      className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
-                    />
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
+                      <Camera className="w-4 h-4 text-[#0B2E8C]" />
+                      <span>{slideImage ? "تغيير صورة البانر" : "اختيار صورة الإعلان"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "slide_image");
+                        }}
+                        className="hidden"
+                      />
+                    </label>
                     {uploading === "slide_image" && (
-                      <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                      <p className="text-xs text-blue-600 font-bold mt-1.5 animate-pulse">جاري الرفع والضغط...</p>
                     )}
                   </div>
                 </div>
@@ -978,15 +1003,21 @@ export function StoreManager({
 
       {/* ===================== محتوى التبويب 4: هوية وشعار المتجر ===================== */}
       {activeTab === "profile" && (
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/90 shadow-sm max-w-2xl space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-[#0B2E8C]" />
-              هوية وشعار المتجر
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              خصص شعار متجرك الخاص وغلافه ونبذته الترحيبية للزبائن
-            </p>
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm max-w-2xl overflow-hidden">
+          {/* رأس البطاقة */}
+          <div className="p-5 md:p-6 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-[#0B2E8C]" />
+                هوية ومظهر المتجر
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                خصص صورة الغلاف والشعار والنبذة التي ستظهر لزبائنك
+              </p>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full">
+              معاينة حية
+            </span>
           </div>
 
           <form
@@ -1001,100 +1032,147 @@ export function StoreManager({
                 router.refresh();
                 alert("تم حفظ إعدادات وهوية المتجر بنجاح! ✅");
               } else {
-                alert(res.error || "حدث خطأ");
+                alert(res.error || "حدث خطأ أثناء الحفظ");
               }
             }}
-            className="space-y-5"
+            className="p-5 md:p-6 space-y-6"
           >
-            {/* شعار المتجر المستقل */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-              <div>
-                <label className="block text-xs font-black text-slate-900 mb-0.5">
-                  شعار / لوغو المتجر (يظهر للزبائن في أعلى متجرك)
-                </label>
-                <p className="text-[11px] text-slate-500">
-                  هذا الشعار خاص بمتجرك الإلكتروني وهو منفصل تماماً عن صورة باب المحل الأصلية.
-                </p>
-              </div>
+            {/* بطاقة المعاينة وتغيير الغلاف والشعار */}
+            <div className="bg-slate-50/80 rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+              {/* 1. مساحة الغلاف (Banner) */}
+              <div className="relative h-36 sm:h-44 bg-gradient-to-br from-[#0B2E8C] via-indigo-800 to-slate-900 flex items-center justify-center overflow-hidden">
+                {bannerUrl ? (
+                  <img src={bannerUrl} alt="Store Banner" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center text-white/50 p-4">
+                    <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-40" />
+                    <p className="text-xs font-medium">لم يتم تعيين صورة غلاف بعد</p>
+                  </div>
+                )}
 
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
-                  {storeLogoUrl ? (
-                    <img src={storeLogoUrl} alt="Store Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="w-8 h-8 text-slate-300" />
-                  )}
+                {/* تظليل سفلي ناعم */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+
+                {/* زر تغيير الغلاف العائم */}
+                <div className="absolute top-3 left-3 z-10">
+                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 hover:bg-black/70 backdrop-blur-md text-white border border-white/20 text-xs font-bold shadow-md active:scale-95 transition">
+                    <Camera className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{bannerUrl ? "تغيير الغلاف" : "إضافة غلاف"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFileUpload(f, "shop_banner");
+                      }}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
 
-                <div className="flex-1 min-w-[200px]">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "shop_logo");
-                    }}
-                    className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1.5">
-                    يتم تحويل الصورة تلقائياً لـ WebP وضغطها بنسبة 90% للحفاظ على المساحة وسرعة التصفح.
-                  </p>
-                  {uploading === "shop_logo" && (
-                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                  )}
+                {uploading === "shop_banner" && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center text-white text-xs font-black gap-2 z-20">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                    <span>جاري رفع وضغط الغلاف...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. قسم الشعار المتداخل واسم المحل */}
+              <div className="px-5 pb-5 pt-0 relative bg-white">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14 mb-4">
+                  {/* الشعار Avatar */}
+                  <div className="flex items-end gap-3.5">
+                    <div className="relative group shrink-0">
+                      <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-xl overflow-hidden flex items-center justify-center bg-slate-100">
+                        {storeLogoUrl ? (
+                          <img src={storeLogoUrl} alt="Store Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <Store className="w-10 h-10 text-slate-400" />
+                        )}
+                      </div>
+
+                      {/* زر كاميرا عائم للشعار */}
+                      <label className="absolute -bottom-1.5 -left-1.5 cursor-pointer w-8 h-8 rounded-full bg-[#0B2E8C] hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-white active:scale-90 transition">
+                        <Camera className="w-4 h-4" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileUpload(f, "shop_logo");
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="pb-1">
+                      <h4 className="text-base font-black text-slate-900 leading-tight">
+                        {shop.name}
+                      </h4>
+                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">
+                        شعار وهوية المتجر الإلكتروني
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* زر رفع اللوغو المخصص */}
+                  <div className="sm:pb-1">
+                    <label className="cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] border border-blue-200/80 text-xs font-black shadow-xs active:scale-95 transition">
+                      <Camera className="w-4 h-4" />
+                      <span>{storeLogoUrl ? "تغيير شعار المتجر" : "رفع شعار جديد"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "shop_logo");
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {uploading === "shop_logo" && (
+                      <p className="text-xs text-blue-600 font-bold mt-1.5 flex items-center gap-1 sm:justify-end animate-pulse">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>جاري رفع وضغط الشعار...</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* كرت الملاحظات الذكية */}
+                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 flex items-start gap-2.5 text-slate-600">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="text-[11px] leading-relaxed">
+                    <span className="font-black text-slate-800">ملاحظة مهمة:</span> شعار متجرك هنا يظهر للزبائن في أعلى صفحة المتجر وهو منفصل كلياً عن صورة باب المحل. يتم ضغط كل الصور تلقائياً بصيغة WebP بنسبة 90% للحفاظ على السرعة الفائقة.
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* صورة غلاف المتجر */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-              <label className="block text-xs font-black text-slate-900 mb-0.5">
-                صورة غلاف المتجر (بانر علوي اختياري)
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-32 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                  {bannerUrl ? (
-                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-slate-300" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "shop_banner");
-                    }}
-                    className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  {uploading === "shop_banner" && (
-                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* نبذة عن المتجر */}
+            {/* 3. حقل النبذة الترحيبية */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                نبذة ترحيبية بالزبائن (تظهر تحت اسم المتجر)
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                النبذة الترحيبية للزبائن (تظهر تحت اسم المتجر في الصفحة الرئيسية)
               </label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="مثال: مرحباً بكم في متجرنا، نوفر لكم أجود المنتجات بأفضل الأسعار وأسرع توصيل..."
+                placeholder="مثال: مرحباً بكم في متجرنا! نوفر لكم أفضل المنتجات بأعلى جودة وتوصيل سريع ومباشر..."
                 rows={3}
-                className="w-full text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl p-3 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
+                className="w-full text-xs sm:text-sm font-medium bg-slate-50/70 border border-slate-200 rounded-2xl p-3.5 text-right focus:bg-white focus:border-[#0B2E8C] focus:ring-2 focus:ring-blue-100 outline-none transition"
               />
             </div>
 
+            {/* زر الحفظ الرئيسي */}
             <button
               type="submit"
-              className="bg-[#0B2E8C] hover:bg-[#082269] text-white font-black text-sm px-8 py-3 rounded-2xl shadow-md shadow-blue-950/15 transition active:scale-95"
+              className="w-full bg-gradient-to-r from-[#0B2E8C] to-[#1e4fd8] hover:from-[#082269] hover:to-[#0B2E8C] text-white font-black text-sm sm:text-base py-3.5 rounded-2xl shadow-lg shadow-blue-950/20 active:scale-98 transition flex items-center justify-center gap-2"
             >
-              حفظ هوية المتجر
+              <Check className="w-5 h-5 stroke-[2.5]" />
+              <span>حفظ هوية ومظهر المتجر</span>
             </button>
           </form>
         </div>
