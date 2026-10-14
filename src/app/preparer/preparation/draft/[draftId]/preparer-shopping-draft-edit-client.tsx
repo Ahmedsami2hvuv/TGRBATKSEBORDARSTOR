@@ -1,5 +1,5 @@
 "use client";
-// v4-bulletproof-fix: ضمان الحفظ الفوري ومنع التضارب + الخروج التلقائي عند النجاح + دعم الملكية للمجهز
+// v5-clean-ui: تبسيط الواجهة وإزالة شريط البحث، مستوى الإنجاز، الفروع، السعر العائم، وتفاصيل الطلب
 
 import { useActionState, useMemo, useRef, useState, useTransition, useEffect, useCallback } from "react";
 import Link from "next/link";
