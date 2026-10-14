@@ -656,6 +656,12 @@ export async function submitPreparerShoppingDraft(
 
     revalidatePath("/preparer");
     void notifyTelegramNewPreparerShoppingOrder(order.id);
+    await recordPreparerWorkLog(v.preparerId, "submit_draft_order");
+    for (const inv of preparerInvoices) {
+      if (inv.preparerId && inv.preparerId !== v.preparerId) {
+        void recordPreparerWorkLog(inv.preparerId, "prepare_product").catch(console.error);
+      }
+    }
     return { ok: true, orderNumber: order.orderNumber };
   } catch (e) {
     console.error(e);
@@ -723,6 +729,7 @@ export async function createPreparerShoppingDraftFromAnalysis(
           isDraft: true,
         }).catch((e) => console.error("OneSignal notify error (create):", e));
 
+        await recordPreparerWorkLog(v.preparerId, "create_draft");
         return { ok: true, draftId: draft.id };
     } catch (e) {
         console.error(e);

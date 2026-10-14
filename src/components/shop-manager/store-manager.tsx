@@ -47,6 +47,7 @@ import {
   Package,
   Megaphone,
   Camera,
+  ArrowRight,
 } from "lucide-react";
 
 interface StoreManagerProps {
@@ -104,11 +105,8 @@ export function StoreManager({
   const [newModalBranchName, setNewModalBranchName] = useState("");
   const [newModalBranchPhoto, setNewModalBranchPhoto] = useState("");
 
-  // حالات فتح الأقسام والتعديل المباشر
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categories[0]?.id || null);
-  const [addingBranchForCatId, setAddingBranchForCatId] = useState<string | null>(null);
-  const [inlineBranchName, setInlineBranchName] = useState("");
-  const [inlineBranchPhoto, setInlineBranchPhoto] = useState("");
+  // حالة القسم المفتوح لعرض صفحته المستقلة
+  const [selectedCategoryDetailId, setSelectedCategoryDetailId] = useState<string | null>(null);
 
   // حالات النوافذ المنبثقة للتعديل
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; photoUrl: string } | null>(null);
@@ -132,11 +130,11 @@ export function StoreManager({
       if (!newBranchCatId || !categories.some((c) => c.id === newBranchCatId)) {
         setNewBranchCatId(categories[0].id);
       }
-      if (!selectedCategoryId || !categories.some((c) => c.id === selectedCategoryId)) {
-        setSelectedCategoryId(categories[0].id);
+      if (selectedCategoryDetailId && !categories.some((c) => c.id === selectedCategoryDetailId)) {
+        setSelectedCategoryDetailId(null);
       }
     }
-  }, [categories, prodCatId, newBranchCatId, selectedCategoryId]);
+  }, [categories, prodCatId, newBranchCatId, selectedCategoryDetailId]);
 
   // الرابط المباشر الجديد لمتجر المحل
   const targetToken = shop.storeToken || shop.id;
@@ -510,63 +508,54 @@ export function StoreManager({
       {/* ===================== محتوى التبويب 2: الأقسام والفروع ===================== */}
       {activeTab === "categories" && (
         <div className="space-y-6">
-          {/* قائمة الأقسام التفاعلية (النقر على القسم يفتحه ويفتح فروعه ومنتجاته) */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div>
-                <h3 className="text-base font-black text-slate-900">
-                  الأقسام المعروضة في متجرك ({categories.length})
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  اضغط على أي قسم لفتح تفاصيله وإدارة فروعه ومنتجاته
-                </p>
+          {!selectedCategoryDetailId ? (
+            /* 1. صفحة استعراض الأقسام الرئيسية فقط بدون أي تداخل */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    أقسام المتجر الرئيسية ({categories.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    اضغط على أي قسم للدخول إلى صفحته وإدارة فروعه ومنتجاته
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewCatName("");
+                    setNewCatPhoto("");
+                    setIsAddCategoryOpen(true);
+                  }}
+                  className="bg-[#0B2E8C] hover:bg-[#082269] text-white px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-blue-950/15 transition active:scale-95 shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة قسم جديد</span>
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setNewCatName("");
-                  setNewCatPhoto("");
-                  setIsAddCategoryOpen(true);
-                }}
-                className="bg-[#0B2E8C] hover:bg-[#082269] text-white px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-blue-950/15 transition active:scale-95 shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                <span>إضافة قسم جديد</span>
-              </button>
-            </div>
+              {categories.length === 0 ? (
+                <div className="bg-white rounded-3xl p-10 border border-slate-200/90 text-center text-slate-400 space-y-2">
+                  <FolderPlus className="w-12 h-12 mx-auto text-slate-300 stroke-[1.5]" />
+                  <p className="text-sm font-bold">لا توجد أقسام في متجرك بعد</p>
+                  <p className="text-xs">اضغط على "إضافة قسم جديد" بالأعلى لإنشاء أول قسم</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categories.map((cat) => {
+                    const catBranches = branches.filter((b) => b.categoryId === cat.id);
+                    const catProducts = products.filter((p) => p.categoryId === cat.id);
+                    const isCatVisible = cat.active !== false;
 
-            {categories.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 border border-slate-200/90 text-center text-slate-400 space-y-2">
-                <FolderPlus className="w-12 h-12 mx-auto text-slate-300 stroke-[1.5]" />
-                <p className="text-sm font-bold">لا توجد أقسام في متجرك بعد</p>
-                <p className="text-xs">أضف قسماً من النموذج أعلاه لبدء تنظيم المتجر</p>
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                {categories.map((cat) => {
-                  const isExpanded = selectedCategoryId === cat.id;
-                  const catBranches = branches.filter((b) => b.categoryId === cat.id);
-                  const catProducts = products.filter((p) => p.categoryId === cat.id);
-                  const isCatVisible = cat.active !== false;
-
-                  return (
-                    <div
-                      key={cat.id}
-                      className={`bg-white rounded-2xl md:rounded-3xl border transition-all overflow-hidden ${
-                        isExpanded
-                          ? "border-[#0B2E8C]/40 shadow-md ring-2 ring-blue-50"
-                          : "border-slate-200/90 hover:border-slate-300 shadow-xs"
-                      }`}
-                    >
-                      {/* رأس بطاقة القسم (قابل للنقر لفتح وإغلاق القسم) */}
+                    return (
                       <div
-                        onClick={() => setSelectedCategoryId(isExpanded ? null : cat.id)}
-                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer select-none bg-white hover:bg-slate-50/50 transition"
+                        key={cat.id}
+                        className="bg-white rounded-3xl border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition p-5 flex flex-col justify-between space-y-4"
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {/* صورة القسم */}
-                          <div className="w-13 h-13 rounded-2xl bg-slate-50 border border-slate-200/80 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                        {/* معلومات القسم الرئيسية */}
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200/80 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
                             {cat.photoUrl ? (
                               <img src={cat.photoUrl} alt={cat.name} className="w-full h-full object-cover" />
                             ) : (
@@ -574,8 +563,7 @@ export function StoreManager({
                             )}
                           </div>
 
-                          {/* معلومات القسم */}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-black text-base text-slate-900 truncate">{cat.name}</h4>
                               <span
@@ -585,42 +573,46 @@ export function StoreManager({
                                     : "bg-slate-100 text-slate-600 border border-slate-200"
                                 }`}
                               >
-                                {isCatVisible ? "معروض في المتجر" : "مخفي عن الزبائن"}
+                                {isCatVisible ? "معروض" : "مخفي"}
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                            <p className="text-xs text-slate-500 font-medium mt-1">
                               {catBranches.length} فرع • {catProducts.length} منتج
                             </p>
                           </div>
                         </div>
 
-                        {/* أزرار التحكم بالقسم وأيقونة الفتح */}
-                        <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 w-full sm:w-auto justify-between sm:justify-end">
-                          {/* زر تعديل القسم */}
+                        {/* زر الدخول لصفحة القسم وفروعه المستقلة */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategoryDetailId(cat.id)}
+                          className="w-full bg-blue-50/80 hover:bg-[#0B2E8C] text-[#0B2E8C] hover:text-white py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm transition flex items-center justify-between group active:scale-98"
+                        >
+                          <span>فتح صفحة القسم وإدارة تفاصيله</span>
+                          <ChevronLeft className="w-4 h-4 text-blue-600 group-hover:text-white transition-transform group-hover:-translate-x-1" />
+                        </button>
+
+                        {/* أزرار إدارة القسم: تعديل، إخفاء/إظهار، حذف */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCategory({ id: cat.id, name: cat.name, photoUrl: cat.photoUrl || "" });
-                            }}
-                            className="bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                            onClick={() => setEditingCategory({ id: cat.id, name: cat.name, photoUrl: cat.photoUrl || "" })}
+                            className="flex-1 bg-slate-50 hover:bg-blue-50 text-[#0B2E8C] py-1.5 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1"
                             title="تعديل اسم وصورة القسم"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                             <span>تعديل</span>
                           </button>
 
-                          {/* زر إخفاء وإظهار القسم */}
                           <button
                             type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
+                            onClick={async () => {
                               const res = await toggleShopStoreCategoryActive(cat.id, shop.id, !isCatVisible);
                               if (res.ok) router.refresh();
                               else alert(res.error || "فشل تغيير حالة القسم");
                             }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                            className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${
                               isCatVisible
                                 ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
                                 : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
@@ -631,11 +623,9 @@ export function StoreManager({
                             <span>{isCatVisible ? "إخفاء" : "إظهار"}</span>
                           </button>
 
-                          {/* زر حذف القسم */}
                           <button
                             type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
+                            onClick={async () => {
                               if (confirm(`هل أنت متأكد من حذف قسم "${cat.name}" وجميع فروعه ومنتجاته؟`)) {
                                 await deleteShopStoreCategory(cat.id, shop.id);
                                 router.refresh();
@@ -646,268 +636,390 @@ export function StoreManager({
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
-
-                          {/* مؤشر الفتح والإغلاق */}
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 mr-1">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* 2. صفحة القسم المستقلة المخصصة للفروع والمنتجات بدون أي هوسة */
+            (() => {
+              const currentCat = categories.find((c) => c.id === selectedCategoryDetailId);
+              if (!currentCat) {
+                return (
+                  <div className="bg-white rounded-3xl p-8 text-center space-y-3">
+                    <p className="text-sm font-bold text-slate-600">القسم غير موجود أو تم حذفه</p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryDetailId(null)}
+                      className="bg-[#0B2E8C] text-white px-4 py-2 rounded-xl font-bold text-xs"
+                    >
+                      العودة للأقسام
+                    </button>
+                  </div>
+                );
+              }
 
-                      {/* المحتوى الداخلي المنسدل للقسم (فروعه ومنتجاته) */}
-                      {isExpanded && (
-                        <div className="border-t border-slate-200/80 bg-slate-50/60 p-4 md:p-6 space-y-6">
-                          {/* 1. فروع القسم */}
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div>
-                                <h5 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                                  <Layers className="w-4 h-4 text-indigo-600" />
-                                  <span>فروع قسم {cat.name} ({catBranches.length})</span>
-                                </h5>
-                                <p className="text-[11px] text-slate-500">
-                                  الفروع الداخلية لتصنيف المنتجات داخل هذا القسم
-                                </p>
-                              </div>
+              const catBranches = branches.filter((b) => b.categoryId === currentCat.id);
+              const catProducts = products.filter((p) => p.categoryId === currentCat.id);
+              const isCatVisible = currentCat.active !== false;
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setNewModalBranchName("");
-                                  setNewModalBranchPhoto("");
-                                  setAddBranchTarget({ categoryId: cat.id, categoryName: cat.name });
-                                }}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>إضافة فرع جديد</span>
-                              </button>
-                            </div>
+              return (
+                <div className="space-y-6">
+                  {/* شريط التنقل العلوي وزر العودة لجميع الأقسام */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryDetailId(null)}
+                      className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 px-4 py-2 rounded-xl font-black text-xs sm:text-sm transition active:scale-95"
+                    >
+                      <ArrowRight className="w-4 h-4 text-[#0B2E8C]" />
+                      <span>العودة لجميع الأقسام</span>
+                    </button>
 
-                            {/* بطاقات الفروع الخاصة بالقسم */}
-                            {catBranches.length === 0 ? (
-                              <p className="text-xs text-slate-400 py-3 text-center bg-white/60 rounded-xl border border-slate-200/60">
-                                لا توجد فروع داخل هذا القسم بعد. يمكنك إضافة فروع لتصنيف المنتجات أو نشر المنتجات في القسم مباشرة.
-                              </p>
-                            ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                                {catBranches.map((b) => {
-                                  const isBranchVisible = b.active !== false;
-                                  const branchProducts = products.filter((p) => p.branchId === b.id);
-                                  return (
-                                    <div
-                                      key={b.id}
-                                      className={`p-3 rounded-2xl bg-white border transition-all flex items-center justify-between gap-2.5 shadow-2xs ${
-                                        isBranchVisible ? "border-slate-200" : "border-amber-200 bg-amber-50/20 opacity-80"
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                                          {b.photoUrl ? (
-                                            <img src={b.photoUrl} alt={b.name} className="w-full h-full object-cover" />
-                                          ) : (
-                                            <Layers className="w-4 h-4 text-indigo-500" />
-                                          )}
-                                        </div>
-                                        <div className="min-w-0">
-                                          <div className="font-black text-xs text-slate-900 truncate">{b.name}</div>
-                                          <div className="text-[10px] text-slate-500">
-                                            {branchProducts.length} منتج •{" "}
-                                            <span className={isBranchVisible ? "text-emerald-600 font-bold" : "text-slate-500"}>
-                                              {isBranchVisible ? "ظاهر" : "مخفي"}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* أزرار الفرع: تعديل، إخفاء/إظهار، مسح */}
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditingBranch({ id: b.id, name: b.name, photoUrl: b.photoUrl || "", categoryId: b.categoryId })}
-                                          className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] transition"
-                                          title="تعديل الفرع"
-                                        >
-                                          <Pencil className="w-3.5 h-3.5" />
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
-                                            const res = await toggleShopStoreBranchActive(b.id, shop.id, !isBranchVisible);
-                                            if (res.ok) router.refresh();
-                                            else alert(res.error || "فشل تغيير حالة الفرع");
-                                          }}
-                                          className={`p-1.5 rounded-lg transition ${
-                                            isBranchVisible
-                                              ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                                              : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
-                                          }`}
-                                          title={isBranchVisible ? "إخفاء الفرع عن الزبائن" : "إظهار الفرع للزبائن"}
-                                        >
-                                          {isBranchVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
-                                            if (confirm(`هل أنت متأكد من حذف فرع "${b.name}"؟`)) {
-                                              await deleteShopStoreBranch(b.id, shop.id);
-                                              router.refresh();
-                                            }
-                                          }}
-                                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
-                                          title="حذف الفرع"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 2. منتجات هذا القسم */}
-                          <div className="space-y-3 pt-3 border-t border-slate-200/80">
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div>
-                                <h5 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                                  <Package className="w-4 h-4 text-emerald-600" />
-                                  <span>منتجات قسم {cat.name} ({catProducts.length})</span>
-                                </h5>
-                                <p className="text-[11px] text-slate-500">
-                                  المنتجات المعروضة التابعة لهذا القسم وأفرعه
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProdCatId(cat.id);
-                                  setActiveTab("products");
-                                  window.scrollTo({ top: 0, behavior: "smooth" });
-                                }}
-                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>إضافة منتج لهذا القسم</span>
-                              </button>
-                            </div>
-
-                            {catProducts.length === 0 ? (
-                              <p className="text-xs text-slate-400 py-4 text-center bg-white/60 rounded-xl border border-slate-200/60">
-                                لا توجد منتجات منشورة داخل هذا القسم بعد. اضغط على "إضافة منتج لهذا القسم" لإضافة أول منتج.
-                              </p>
-                            ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                {catProducts.map((p) => {
-                                  const isProductVisible = p.active !== false;
-                                  const branchName = branches.find((b) => b.id === p.branchId)?.name;
-                                  return (
-                                    <div
-                                      key={p.id}
-                                      className={`p-3 rounded-2xl bg-white border transition-all flex flex-col justify-between shadow-xs ${
-                                        isProductVisible ? "border-slate-200" : "border-amber-200 bg-amber-50/20 opacity-80"
-                                      }`}
-                                    >
-                                      <div>
-                                        <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
-                                          {p.photoUrl ? (
-                                            <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
-                                          ) : (
-                                            <Package className="w-7 h-7 text-slate-300" />
-                                          )}
-                                          <span
-                                            className={`absolute top-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-md ${
-                                              isProductVisible ? "bg-emerald-600 text-white" : "bg-slate-700 text-white"
-                                            }`}
-                                          >
-                                            {isProductVisible ? "معروض" : "مخفي"}
-                                          </span>
-                                        </div>
-
-                                        <h6 className="font-black text-xs text-slate-900 line-clamp-1">{p.name}</h6>
-                                        <div className="text-emerald-700 font-black text-xs mt-0.5">
-                                          {Number(p.price).toLocaleString()} د.ع
-                                        </div>
-                                        {branchName && (
-                                          <div className="text-[10px] text-slate-500 font-bold truncate mt-0.5">
-                                            فرع: {branchName}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* أزرار المنتج: تعديل، إخفاء/إظهار، مسح */}
-                                      <div className="mt-3 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingProduct({
-                                              id: p.id,
-                                              name: p.name,
-                                              price: String(p.price),
-                                              description: p.description || "",
-                                              photoUrl: p.photoUrl || "",
-                                              categoryId: p.categoryId,
-                                              branchId: p.branchId || null,
-                                            });
-                                          }}
-                                          className="bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1"
-                                          title="تعديل المنتج"
-                                        >
-                                          <Pencil className="w-3 h-3" />
-                                          <span>تعديل</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
-                                            const res = await toggleShopStoreProductActive(p.id, shop.id, !isProductVisible);
-                                            if (res.ok) router.refresh();
-                                            else alert(res.error || "فشل تغيير حالة المنتج");
-                                          }}
-                                          className={`text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1 ${
-                                            isProductVisible
-                                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                                              : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
-                                          }`}
-                                          title={isProductVisible ? "إخفاء عن الزبائن" : "إظهار للزبائن"}
-                                        >
-                                          {isProductVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                          <span>{isProductVisible ? "إخفاء" : "إظهار"}</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
-                                            if (confirm(`هل أنت متأكد من حذف منتج "${p.name}"؟`)) {
-                                              await deleteShopStoreProduct(p.id, shop.id);
-                                              router.refresh();
-                                            }
-                                          }}
-                                          className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1"
-                                          title="حذف المنتج"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                          <span>حذف</span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-bold">صفحة إدارة قسم:</span>
+                      <span className="text-sm font-black text-[#0B2E8C] bg-blue-50 px-3 py-1 rounded-xl border border-blue-100">
+                        {currentCat.name}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  </div>
+
+                  {/* بطاقة معلومات القسم مع أزرار التحكم */}
+                  <div className="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                        {currentCat.photoUrl ? (
+                          <img src={currentCat.photoUrl} alt={currentCat.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <FolderPlus className="w-8 h-8 text-blue-600" />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h2 className="text-lg md:text-xl font-black text-slate-900">{currentCat.name}</h2>
+                          <span
+                            className={`text-xs font-black px-2.5 py-0.5 rounded-full ${
+                              isCatVisible
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {isCatVisible ? "معروض في متجرك" : "مخفي عن الزبائن"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium mt-1">
+                          يحتوي هذا القسم على {catBranches.length} فرع و {catProducts.length} منتج
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategory({ id: currentCat.id, name: currentCat.name, photoUrl: currentCat.photoUrl || "" })}
+                        className="bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>تعديل القسم</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await toggleShopStoreCategoryActive(currentCat.id, shop.id, !isCatVisible);
+                          if (res.ok) router.refresh();
+                          else alert(res.error || "فشل تغيير حالة القسم");
+                        }}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+                          isCatVisible
+                            ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                            : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {isCatVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <span>{isCatVisible ? "إخفاء القسم" : "إظهار القسم"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (confirm(`هل أنت متأكد من حذف قسم "${currentCat.name}"؟`)) {
+                            await deleteShopStoreCategory(currentCat.id, shop.id);
+                            setSelectedCategoryDetailId(null);
+                            router.refresh();
+                          }
+                        }}
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2.5 rounded-xl transition"
+                        title="حذف القسم"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 1. فروع القسم المستقلة */}
+                  <div className="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/90 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3 flex-wrap">
+                      <div>
+                        <h4 className="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-indigo-600" />
+                          <span>فروع قسم {currentCat.name} ({catBranches.length})</span>
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          الفروع لتصنيف وترتيب المنتجات داخل هذا القسم
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewModalBranchName("");
+                          setNewModalBranchPhoto("");
+                          setAddBranchTarget({ categoryId: currentCat.id, categoryName: currentCat.name });
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-xs shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>إضافة فرع جديد</span>
+                      </button>
+                    </div>
+
+                    {catBranches.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-slate-200/60 space-y-1">
+                        <Layers className="w-8 h-8 mx-auto text-slate-300 stroke-[1.5]" />
+                        <p className="text-xs font-bold text-slate-600">لا توجد فروع داخل هذا القسم بعد</p>
+                        <p className="text-[11px] text-slate-400">يمكنك إضافة فروع أو نشر المنتجات في القسم مباشرة</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {catBranches.map((b) => {
+                          const isBranchVisible = b.active !== false;
+                          const branchProducts = products.filter((p) => p.branchId === b.id);
+                          return (
+                            <div
+                              key={b.id}
+                              className={`p-3.5 rounded-2xl bg-white border transition-all flex items-center justify-between gap-2.5 shadow-2xs ${
+                                isBranchVisible ? "border-slate-200" : "border-amber-200 bg-amber-50/20 opacity-80"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                                  {b.photoUrl ? (
+                                    <img src={b.photoUrl} alt={b.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Layers className="w-4 h-4 text-indigo-500" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-black text-xs sm:text-sm text-slate-900 truncate">{b.name}</div>
+                                  <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                    {branchProducts.length} منتج •{" "}
+                                    <span className={isBranchVisible ? "text-emerald-600 font-bold" : "text-slate-500"}>
+                                      {isBranchVisible ? "معروض" : "مخفي"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingBranch({ id: b.id, name: b.name, photoUrl: b.photoUrl || "", categoryId: b.categoryId })}
+                                  className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] transition"
+                                  title="تعديل الفرع"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await toggleShopStoreBranchActive(b.id, shop.id, !isBranchVisible);
+                                    if (res.ok) router.refresh();
+                                    else alert(res.error || "فشل تغيير حالة الفرع");
+                                  }}
+                                  className={`p-1.5 rounded-lg transition ${
+                                    isBranchVisible
+                                      ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                                  }`}
+                                  title={isBranchVisible ? "إخفاء الفرع" : "إظهار الفرع"}
+                                >
+                                  {isBranchVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm(`هل أنت متأكد من حذف فرع "${b.name}"؟`)) {
+                                      await deleteShopStoreBranch(b.id, shop.id);
+                                      router.refresh();
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
+                                  title="حذف الفرع"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. منتجات القسم المستقلة */}
+                  <div className="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/90 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3 flex-wrap">
+                      <div>
+                        <h4 className="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                          <Package className="w-4 h-4 text-emerald-600" />
+                          <span>منتجات قسم {currentCat.name} ({catProducts.length})</span>
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          المنتجات المعروضة التابعة لهذا القسم
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProdCatId(currentCat.id);
+                          setProdBranchId("");
+                          setIsAddProductOpen(true);
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-xs shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>إضافة منتج لهذا القسم</span>
+                      </button>
+                    </div>
+
+                    {catProducts.length === 0 ? (
+                      <div className="py-10 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-slate-200/60 space-y-2">
+                        <Package className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
+                        <p className="text-sm font-bold text-slate-700">لا توجد منتجات منشورة في هذا القسم بعد</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProdCatId(currentCat.id);
+                            setProdBranchId("");
+                            setIsAddProductOpen(true);
+                          }}
+                          className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-emerald-700 transition"
+                        >
+                          إضافة أول منتج لهذا القسم
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                        {catProducts.map((p) => {
+                          const isProductVisible = p.active !== false;
+                          const branchName = branches.find((b) => b.id === p.branchId)?.name;
+                          return (
+                            <div
+                              key={p.id}
+                              className={`p-3 rounded-2xl bg-white border transition-all flex flex-col justify-between shadow-xs ${
+                                isProductVisible ? "border-slate-200" : "border-amber-200 bg-amber-50/20 opacity-80"
+                              }`}
+                            >
+                              <div>
+                                <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
+                                  {p.photoUrl ? (
+                                    <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Package className="w-7 h-7 text-slate-300" />
+                                  )}
+                                  <span
+                                    className={`absolute top-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-md ${
+                                      isProductVisible ? "bg-emerald-600 text-white" : "bg-slate-700 text-white"
+                                    }`}
+                                  >
+                                    {isProductVisible ? "معروض" : "مخفي"}
+                                  </span>
+                                </div>
+
+                                <h6 className="font-black text-xs sm:text-sm text-slate-900 line-clamp-1">{p.name}</h6>
+                                <div className="text-emerald-700 font-black text-xs mt-1">
+                                  {Number(p.price).toLocaleString()} د.ع
+                                </div>
+                                {branchName && (
+                                  <div className="text-[10px] text-slate-500 font-bold truncate mt-0.5">
+                                    فرع: {branchName}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* أزرار المنتج: تعديل، إخفاء/إظهار، حذف */}
+                              <div className="mt-3 pt-2.5 border-t border-slate-100 grid grid-cols-3 gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingProduct({
+                                      id: p.id,
+                                      name: p.name,
+                                      price: String(p.price),
+                                      description: p.description || "",
+                                      photoUrl: p.photoUrl || "",
+                                      categoryId: p.categoryId,
+                                      branchId: p.branchId || null,
+                                    });
+                                  }}
+                                  className="bg-blue-50 hover:bg-blue-100 text-[#0B2E8C] text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1"
+                                  title="تعديل المنتج"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  <span>تعديل</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await toggleShopStoreProductActive(p.id, shop.id, !isProductVisible);
+                                    if (res.ok) router.refresh();
+                                    else alert(res.error || "فشل تغيير حالة المنتج");
+                                  }}
+                                  className={`text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1 ${
+                                    isProductVisible
+                                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                                  }`}
+                                  title={isProductVisible ? "إخفاء المنتج" : "إظهار المنتج"}
+                                >
+                                  {isProductVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  <span>{isProductVisible ? "إخفاء" : "إظهار"}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm(`هل أنت متأكد من حذف منتج "${p.name}"؟`)) {
+                                      await deleteShopStoreProduct(p.id, shop.id);
+                                      router.refresh();
+                                    }
+                                  }}
+                                  className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1"
+                                  title="حذف المنتج"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>حذف</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          )}
         </div>
       )}
 
