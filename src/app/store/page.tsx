@@ -230,12 +230,17 @@ function deepSanitize(obj: any): any {
 
 export default async function StoreHomePage() {
   try {
-    const slidesRaw = await prisma.storeSlide.findMany({
-      where: { active: true },
-      orderBy: { sequence: "asc" }
-    });
-
-    const slides = deepSanitize(slidesRaw);
+    let slides: any[] = [];
+    try {
+      const slidesRaw = await prisma.storeSlide.findMany({
+        where: { active: true },
+        orderBy: { sequence: "asc" }
+      });
+      slides = deepSanitize(slidesRaw) || [];
+    } catch (slideError) {
+      console.warn("[StoreHomePage] Could not load slides, proceeding with fallback banner:", slideError);
+      slides = [];
+    }
 
     return (
       <div className="space-y-6">
@@ -316,7 +321,7 @@ export default async function StoreHomePage() {
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
         <h1 className="text-xl font-black mb-2 text-slate-800">عذراً، حدث خطأ تقني</h1>
         <p className="text-sm text-slate-500 mb-6">نعمل على إصلاح المشكلة الآن، يرجى تحديث الصفحة بعد قليل.</p>
-        <a href="" className="px-6 py-2 bg-green-500 text-white rounded-xl font-bold">تحديث الصفحة</a>
+        <a href="/store" className="px-6 py-2.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-xl font-bold shadow-md transition-all">تحديث الصفحة</a>
       </div>
     );
   }
