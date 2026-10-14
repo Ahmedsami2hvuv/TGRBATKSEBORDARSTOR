@@ -120,8 +120,8 @@ async function ActiveShopsRow() {
             >
               <div>
                 <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
-                  {s.photoUrl ? (
-                    <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {s.storeLogoUrl || s.photoUrl ? (
+                    <img src={s.storeLogoUrl || s.photoUrl} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <span className="text-4xl">🏪</span>
                   )}

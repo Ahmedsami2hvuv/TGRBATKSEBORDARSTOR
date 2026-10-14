@@ -201,21 +201,26 @@ export function ShopStoreView({
             >
               ←
             </Link>
-            <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
-              {shop.photoUrl ? (
-                <img src={shop.photoUrl} alt={shop.name} className="w-full h-full object-cover" />
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+              {shop.storeLogoUrl ? (
+                <img src={shop.storeLogoUrl} alt={shop.name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xl">🏪</span>
+                <span className="text-2xl">🏪</span>
               )}
             </div>
             <div>
               <h1 className="text-base md:text-lg font-black text-slate-900 leading-tight">
                 متجر {shop.name}
               </h1>
-              <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                <span>📍 {shop.region?.name || "البصرة"}</span>
-                {shop.storeBio && <span>• {shop.storeBio}</span>}
-              </p>
+              {shop.storeBio ? (
+                <p className="text-[12px] text-slate-500 line-clamp-1 mt-0.5">
+                  {shop.storeBio}
+                </p>
+              ) : (
+                <p className="text-[11px] text-emerald-600 font-bold mt-0.5">
+                  متجر رسمي معتمد
+                </p>
+              )}
             </div>
           </div>
 

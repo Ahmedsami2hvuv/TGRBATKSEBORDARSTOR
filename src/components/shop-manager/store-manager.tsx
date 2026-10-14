@@ -14,6 +14,27 @@ import {
   addShopStoreSlide,
   deleteShopStoreSlide,
 } from "@/app/actions/shop-store-actions";
+import {
+  Store,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Share2,
+  Copy,
+  Check,
+  Image as ImageIcon,
+  FolderPlus,
+  PackagePlus,
+  Layers,
+  Settings,
+  Sparkles,
+  UploadCloud,
+  Loader2,
+  ChevronLeft,
+  Tag,
+  Eye,
+  Megaphone,
+} from "lucide-react";
 
 interface StoreManagerProps {
   shop: any;
@@ -25,32 +46,32 @@ interface StoreManagerProps {
 
 export function StoreManager({
   shop,
-  categories,
-  branches,
-  products,
-  slides,
+  categories = [],
+  branches = [],
+  products = [],
+  slides = [],
 }: StoreManagerProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"info" | "categories" | "products" | "banners">("info");
+  const [activeTab, setActiveTab] = useState<"products" | "categories" | "banners" | "profile">("products");
   const [uploading, setUploading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // حقول معلومات المتجر
+  // حقول بيانات وهوية المتجر
   const [storeLogoUrl, setStoreLogoUrl] = useState(shop.storeLogoUrl || "");
   const [bannerUrl, setBannerUrl] = useState(shop.storeBannerUrl || "");
-  const [phone, setPhone] = useState(shop.phone || "");
   const [bio, setBio] = useState(shop.storeBio || "");
 
   // حقول إضافة قسم جديد
   const [newCatName, setNewCatName] = useState("");
   const [newCatPhoto, setNewCatPhoto] = useState("");
 
-  // حقول إضافة فرع داخل قسم
+  // حقول إضافة فرع
   const [newBranchCatId, setNewBranchCatId] = useState(categories[0]?.id || "");
   const [newBranchName, setNewBranchName] = useState("");
   const [newBranchPhoto, setNewBranchPhoto] = useState("");
 
-  // حقول إضافة منتج
+  // حقول إضافة منتج جديد
   const [prodName, setProdName] = useState("");
   const [prodPrice, setProdPrice] = useState("");
   const [prodDesc, setProdDesc] = useState("");
@@ -58,7 +79,11 @@ export function StoreManager({
   const [prodCatId, setProdCatId] = useState(categories[0]?.id || "");
   const [prodBranchId, setProdBranchId] = useState("");
 
-  // مزامنة تلقائية لاختيار أول قسم متاح في حال إضافة أقسام أو فتح النموذج
+  // حقول إضافة بانر
+  const [slideImage, setSlideImage] = useState("");
+  const [slideTitle, setSlideTitle] = useState("");
+
+  // مزامنة تلقائية لاختيار القسم الفعال
   useEffect(() => {
     if (categories && categories.length > 0) {
       if (!prodCatId || !categories.some((c) => c.id === prodCatId)) {
@@ -70,11 +95,7 @@ export function StoreManager({
     }
   }, [categories, prodCatId, newBranchCatId]);
 
-  // حقول إضافة بانر
-  const [slideImage, setSlideImage] = useState("");
-  const [slideTitle, setSlideTitle] = useState("");
-
-  // رابط المتجر النظيف والمشفر للزبائن بدون أي شفرة إدارة
+  // الرابط المباشر الجديد لمتجر المحل
   const targetToken = shop.storeToken || shop.id;
   const storeUrl = typeof window !== "undefined"
     ? `${window.location.origin}/shop/${targetToken}`
@@ -82,7 +103,7 @@ export function StoreManager({
 
   const shareText = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
 
-  // دالة رفع الصور مع الضغط التلقائي بنسبة 90% بصيغة WebP لحفظ مساحة R2
+  // دالة رفع الصور مع الضغط التلقائي
   async function handleFileUpload(file: File, type: string) {
     setUploading(type);
     try {
@@ -97,7 +118,7 @@ export function StoreManager({
 
       const data = await res.json();
       if (data.success && data.url) {
-        if (type === "shop_photo" || type === "shop_logo") setStoreLogoUrl(data.url);
+        if (type === "shop_logo") setStoreLogoUrl(data.url);
         if (type === "shop_banner") setBannerUrl(data.url);
         if (type === "cat_photo") setNewCatPhoto(data.url);
         if (type === "branch_photo") setNewBranchPhoto(data.url);
@@ -113,7 +134,7 @@ export function StoreManager({
     }
   }
 
-  // مشاركة المتجر
+  // نسخ رسالة المشاركة
   function copyShareMessage() {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText);
@@ -130,428 +151,643 @@ export function StoreManager({
   }
 
   return (
-    <div className="space-y-6 pb-20 font-sans" dir="rtl">
-      {/* الشريط العلوي للوحة تحكم متجر المحل */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-blue-100 text-xs font-bold mb-2">
-              منصة متاجر المحلات المعتمدة
+    <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-800" dir="rtl">
+      {/* 1. البطاقة الترحيبية والهيدر القيادي الفاخر */}
+      <div className="bg-gradient-to-br from-[#0B2E8C] via-[#0E3AA8] to-[#1E40AF] text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-blue-950/15 relative overflow-hidden">
+        {/* زخرفة خفيفة في الخلفية */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 bg-amber-400/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shrink-0 shadow-lg">
+              {storeLogoUrl ? (
+                <img src={storeLogoUrl} alt={shop.name} className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <Store className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-black flex items-center gap-2">
-              🏪 إعدادات متجر {shop.name}
-            </h1>
-            <p className="text-blue-100 text-sm mt-1">
-              إدارة الأقسام والمنتجات والإعلانات الخاصة بمتجرك
-            </p>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  متجرك الإلكتروني مفعّل ونشط
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black tracking-tight">
+                إدارة متجر {shop.name}
+              </h1>
+              <p className="text-blue-100/80 text-xs md:text-sm mt-0.5 max-w-md line-clamp-1">
+                {bio || "تحكم بأقسامك ومنتجاتك وعروضك وشارك رابط متجرك مع زبائنك بسهولة"}
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* أزرار الإجراءات السريعة */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <Link
               href={`/shop/${targetToken}`}
               target="_blank"
-              className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black shadow-md transition flex items-center gap-2"
+              className="bg-white/15 hover:bg-white/25 text-white border border-white/25 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shadow-sm active:scale-95"
             >
-              <span>🌐</span>
-              معاينة المتجر للزبائن
+              <Eye className="w-4 h-4 text-amber-300" />
+              <span>معاينة متجر الزبائن</span>
             </Link>
 
             <button
               onClick={shareOnWhatsApp}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black shadow-md transition flex items-center gap-2"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shadow-md shadow-emerald-900/20 active:scale-95"
             >
-              <span>📲</span>
-              مشاركة عبر واتساب
+              <Share2 className="w-4 h-4" />
+              <span>مشاركة واتساب</span>
             </button>
           </div>
         </div>
 
-        {/* زر ورسالة المشاركة السريعة المعتمدة */}
-        <div className="mt-5 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm">
-          <div className="flex-1 min-w-[200px]">
-            <span className="font-bold text-blue-200">رسالة المشاركة: </span>
-            <span className="text-white font-medium select-all">
-              &quot;مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه {storeUrl}&quot;
+        {/* شريط نسخ الرابط المباشر */}
+        <div className="mt-6 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-blue-200 font-bold shrink-0">رابط متجرك المباشر:</span>
+            <span className="bg-black/25 px-3 py-1.5 rounded-xl text-white font-mono text-[11px] md:text-xs truncate select-all border border-white/10">
+              {storeUrl}
             </span>
           </div>
+
           <button
             onClick={copyShareMessage}
-            className="bg-white text-slate-800 hover:bg-blue-50 px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 transition"
+            className="bg-white text-[#0B2E8C] hover:bg-blue-50 px-4 py-2 rounded-xl font-black flex items-center justify-center gap-1.5 transition shadow-sm shrink-0 active:scale-95"
           >
-            <span>📋</span>
-            {copied ? "تم النسخ بنجاح! ✔️" : "مشاركة متجرك"}
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                <span className="text-emerald-700">تم نسخ الرابط بنجاح!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                <span>نسخ رسالة ورابط المتجر</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* شريط التبويبات */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto hide-scrollbar">
+      {/* 2. كروت الإحصائيات السريعة */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <Tag className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-slate-900 leading-none">{products.length}</div>
+            <div className="text-[11px] font-bold text-slate-500 mt-1">المنتجات المعروضة</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <FolderPlus className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-slate-900 leading-none">{categories.length}</div>
+            <div className="text-[11px] font-bold text-slate-500 mt-1">الأقسام الرئيسية</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-slate-900 leading-none">{branches.length}</div>
+            <div className="text-[11px] font-bold text-slate-500 mt-1">الفروع التابعة</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <Megaphone className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-slate-900 leading-none">{slides.length}</div>
+            <div className="text-[11px] font-bold text-slate-500 mt-1">إعلانات البانر</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. شريط التبويبات الفخم */}
+      <div className="bg-slate-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar border border-slate-200/70">
         <button
-          onClick={() => setActiveTab("info")}
-          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
-            activeTab === "info"
-              ? "bg-blue-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+          onClick={() => setActiveTab("products")}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+            activeTab === "products"
+              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
-          <span>⚙️</span>
-          بيانات وصورة المتجر
+          <PackagePlus className="w-4 h-4" />
+          <span>المنتجات ({products.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("categories")}
-          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
+          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
             activeTab === "categories"
-              ? "bg-blue-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
-          <span>📁</span>
-          الأقسام والفروع ({categories.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab("products")}
-          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
-            activeTab === "products"
-              ? "bg-blue-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>📦</span>
-          المنتجات ({products.length})
+          <FolderPlus className="w-4 h-4" />
+          <span>الأقسام والفروع ({categories.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("banners")}
-          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
+          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
             activeTab === "banners"
-              ? "bg-blue-600 text-white shadow-md"
-              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
-          <span>🖼️</span>
-          إعلانات بانر ({slides.length})
+          <Megaphone className="w-4 h-4" />
+          <span>إعلانات البانر ({slides.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("profile")}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+            activeTab === "profile"
+              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>هوية وشعار المتجر</span>
         </button>
       </div>
 
-      {/* ===================== التبويب 1: بيانات وصورة المتجر ===================== */}
-      {activeTab === "info" && (
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-2xl space-y-5">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <span>🏪</span>
-            إعدادات متجر خاص باسم {shop.name}
-          </h2>
-
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const fd = new FormData();
-              fd.append("storeLogoUrl", storeLogoUrl);
-              fd.append("storeBannerUrl", bannerUrl);
-              fd.append("phone", phone);
-              fd.append("bio", bio);
-              const res = await updateShopStoreProfile(shop.id, fd);
-              if (res.ok) alert("تم حفظ إعدادات المتجر بنجاح! ✅");
-              else alert(res.error || "حدث خطأ");
-            }}
-            className="space-y-4"
-          >
-            {/* صورة المتجر / الشعار */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+      {/* ===================== محتوى التبويب 1: المنتجات ===================== */}
+      {activeTab === "products" && (
+        <div className="space-y-6">
+          {/* بطاقة إضافة منتج جديد */}
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
               <div>
-                <label className="block text-xs font-black text-slate-800 mb-1">
-                  شعار / لوغو المتجر (يظهر للزبائن كشعار خاص بمتجرك)
-                </label>
-                <p className="text-[11px] text-slate-500">
-                  يمكنك وضع لوغو علامتك التجارية هنا، وهو منفصل تماماً عن صورة باب المحل.
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                    ✨
+                  </span>
+                  نشر منتج جديد في المتجر
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  أدخل تفاصيل وسعر المنتج والصورة ليظهر للزبائن فوراً في متجرك
                 </p>
               </div>
-
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
-                  {storeLogoUrl ? (
-                    <img src={storeLogoUrl} alt="Store Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl">🏪</span>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-[200px]">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "shop_logo");
-                    }}
-                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    يتم ضغط الصورة تلقائياً بنسبة 90% بصيغة WebP لتوفير المساحة وسرعة التصفح.
-                  </p>
-                  {uploading === "shop_logo" && (
-                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                  )}
-                </div>
-
-                {/* عرض صورة باب المحل الأصلية كمرجع ثابت */}
-                {shop.photoUrl && (
-                  <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
-                    <img src={shop.photoUrl} alt="Door Photo" className="w-14 h-14 rounded-xl object-cover border border-slate-200 opacity-80" />
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 block">صورة باب المحل</span>
-                      <span className="text-[9px] text-slate-400 block">محفوظة للمندوبين ولا تتأثر</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* صورة الغلاف / البانر العلوي للمتجر */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                صورة غلاف المتجر (بانر علوي اختياري)
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-32 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                  {bannerUrl ? (
-                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs text-slate-400">لا يوجد غلاف</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "shop_banner");
-                    }}
-                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  {uploading === "shop_banner" && (
-                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                  )}
-                </div>
+            {categories.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-3">
+                <p className="text-sm font-bold text-amber-800">
+                  ⚠️ لا يمكنك نشر منتجات حالياً لأنه لا يوجد أقسام مضافة في متجرك بعد.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("categories")}
+                  className="bg-amber-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-amber-700 transition"
+                >
+                  الذهاب لإضافة أول قسم الآن ←
+                </button>
               </div>
-            </div>
-
-            {/* رقم هاتف الواتساب */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                رقم هاتف الواتساب لتلقي طلبات المتجر
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="مثال: 07733921468"
-                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-[11px] text-slate-400 mt-1">
-                الطلبات المرسلة من الزبائن ستصل مباشرة إلى هذا الرقم على الواتساب.
-              </p>
-            </div>
-
-            {/* نبذة عن المتجر */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                نبذة أو وصف قصير للمتجر
-              </label>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="أهلاً بكم في متجرنا! تجدون لدينا أفضل المنتجات والأسعار..."
-                rows={3}
-                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-2xl shadow-md transition"
-            >
-              حفظ إعدادات المتجر
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* ===================== التبويب 2: الأقسام والفروع ===================== */}
-      {activeTab === "categories" && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
-            <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
-              <span>➕</span>
-              إضافة قسم جديد
-            </h3>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!newCatName.trim()) return alert("يرجى كتابة اسم القسم");
-                const fd = new FormData();
-                fd.append("name", newCatName);
-                fd.append("photoUrl", newCatPhoto);
-                const res = await addShopStoreCategory(shop.id, fd);
-                if (res.ok) {
-                  setNewCatName("");
-                  setNewCatPhoto("");
-                  router.refresh();
-                  alert("تمت إضافة القسم بنجاح! ✅");
-                } else {
-                  alert(res.error || "فشل إضافة القسم");
-                }
-              }}
-              className="space-y-3"
-            >
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم القسم
-                </label>
-                <input
-                  type="text"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="مثال: مشروبات، ألبان، معلبات، مجمدات..."
-                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  صورة القسم
-                </label>
-                <div className="flex items-center gap-3">
-                  {newCatPhoto && (
-                    <img src={newCatPhoto} alt="Cat" className="w-12 h-12 rounded-xl object-cover border" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "cat_photo");
-                    }}
-                    className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 font-bold"
-                  />
-                </div>
-                {uploading === "cat_photo" && (
-                  <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2.5 rounded-xl text-sm transition"
-              >
-                حفظ وإضافة القسم
-              </button>
-            </form>
-          </div>
-
-          {/* إضافة فرع داخل قسم */}
-          {categories.length > 0 && (
-            <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
-              <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
-                <span>🌿</span>
-                إضافة فرع (قسم فرعي) داخل القسم
-              </h3>
+            ) : (
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  if (!newBranchName.trim()) return alert("يرجى كتابة اسم الفرع");
-                  const targetBranchCatId = newBranchCatId || categories[0]?.id || "";
-                  if (!targetBranchCatId) return alert("يرجى اختيار القسم الرئيسي أولاً");
+                  if (!prodName.trim()) return alert("يرجى كتابة اسم المنتج");
+                  if (!prodPrice.trim()) return alert("يرجى إدخال سعر المنتج");
 
+                  const targetCatId = prodCatId || categories[0]?.id || "";
+                  if (!targetCatId) return alert("يرجى اختيار القسم أولاً");
+
+                  setSubmitting(true);
+                  try {
+                    const fd = new FormData();
+                    fd.append("name", prodName);
+                    fd.append("price", prodPrice);
+                    fd.append("description", prodDesc);
+                    fd.append("photoUrl", prodPhoto);
+                    fd.append("categoryId", targetCatId);
+                    fd.append("branchId", prodBranchId);
+
+                    const res = await addShopStoreProduct(shop.id, fd);
+                    if (res.ok) {
+                      setProdName("");
+                      setProdPrice("");
+                      setProdDesc("");
+                      setProdPhoto("");
+                      router.refresh();
+                      alert("تم نشر المنتج في المتجر بنجاح! ✅");
+                    } else {
+                      alert(res.error || "فشل نشر المنتج");
+                    }
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      اسم المنتج *
+                    </label>
+                    <input
+                      type="text"
+                      value={prodName}
+                      onChange={(e) => setProdName(e.target.value)}
+                      placeholder="مثال: بطل ماء، شاي، حليب..."
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] focus:ring-2 focus:ring-blue-100 outline-none transition"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      السعر (بالدينار العراقي) *
+                    </label>
+                    <input
+                      type="number"
+                      value={prodPrice}
+                      onChange={(e) => setProdPrice(e.target.value)}
+                      placeholder="مثال: 5000"
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] focus:ring-2 focus:ring-blue-100 outline-none transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      القسم التابع له المنتج *
+                    </label>
+                    <select
+                      value={prodCatId || categories[0]?.id || ""}
+                      onChange={(e) => {
+                        setProdCatId(e.target.value);
+                        setProdBranchId("");
+                      }}
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition cursor-pointer"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          قسم: {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      الفرع داخل القسم (اختياري)
+                    </label>
+                    <select
+                      value={prodBranchId}
+                      onChange={(e) => setProdBranchId(e.target.value)}
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition cursor-pointer"
+                    >
+                      <option value="">بدون فرع (داخل القسم مباشرة)</option>
+                      {branches
+                        .filter((b) => b.categoryId === (prodCatId || categories[0]?.id))
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            فرع: {b.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* رفع صورة المنتج */}
+                <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4">
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
+                    صورة المنتج (تُضغط بنسبة 90% بصيغة WebP لتوفير المساحة وسرعة التصفح)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                      {prodPhoto ? (
+                        <img src={prodPhoto} alt="Product" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-slate-300" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "prod_photo");
+                        }}
+                        className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
+                      />
+                      {uploading === "prod_photo" && (
+                        <p className="text-xs text-blue-600 font-bold mt-1.5 flex items-center gap-1">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>جاري رفع وضغط الصورة...</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* وصف المنتج */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    وصف أو تفاصيل إضافية عن المنتج (اختياري)
+                  </label>
+                  <textarea
+                    value={prodDesc}
+                    onChange={(e) => setProdDesc(e.target.value)}
+                    placeholder="مواصفات، وزن، أو تفاصيل خاصة بالمنتج..."
+                    rows={2}
+                    className="w-full text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl p-3 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-8 py-3 rounded-2xl shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>نشر المنتج الآن في المتجر</span>
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* قائمة المنتجات الحالية */}
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  قائمة المنتجات الحالية في متجرك ({products.length})
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  تصفح المنتجات المنشورة أو احذف أي منتج غير متوفر
+                </p>
+              </div>
+            </div>
+
+            {products.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 space-y-2">
+                <Store className="w-12 h-12 mx-auto text-slate-300 stroke-[1.5]" />
+                <p className="text-sm font-bold">لا توجد منتجات منشورة في متجرك بعد</p>
+                <p className="text-xs">استخدم النموذج أعلاه لنشر أول منتج الآن</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                {products.map((p) => {
+                  const catName = categories.find((c) => c.id === p.categoryId)?.name || "قسم";
+                  const branchName = branches.find((b) => b.id === p.branchId)?.name;
+                  return (
+                    <div
+                      key={p.id}
+                      className="border border-slate-200/90 rounded-2xl p-2.5 bg-white hover:border-blue-300 transition-all shadow-xs flex flex-col justify-between group"
+                    >
+                      <div>
+                        <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
+                          {p.photoUrl ? (
+                            <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                          ) : (
+                            <span className="text-2xl">📦</span>
+                          )}
+                        </div>
+                        <h4 className="font-black text-xs text-slate-900 line-clamp-1">{p.name}</h4>
+                        <div className="text-emerald-700 font-black text-xs mt-1">
+                          {Number(p.price).toLocaleString()} د.ع
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+                          {catName} {branchName ? `• ${branchName}` : ""}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (confirm(`هل أنت متأكد من حذف منتج "${p.name}"؟`)) {
+                            await deleteShopStoreProduct(p.id, shop.id);
+                            router.refresh();
+                          }
+                        }}
+                        className="mt-2.5 w-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== محتوى التبويب 2: الأقسام والفروع ===================== */}
+      {activeTab === "categories" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* إضافة قسم جديد */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <FolderPlus className="w-5 h-5 text-blue-600" />
+                  إضافة قسم رئيسي جديد
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  مثل: مياه، منظفات، معلبات، حلويات...
+                </p>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newCatName.trim()) return alert("يرجى كتابة اسم القسم");
                   const fd = new FormData();
-                  fd.append("categoryId", targetBranchCatId);
-                  fd.append("name", newBranchName);
-                  fd.append("photoUrl", newBranchPhoto);
-                  const res = await addShopStoreBranch(shop.id, fd);
+                  fd.append("name", newCatName);
+                  fd.append("photoUrl", newCatPhoto);
+                  const res = await addShopStoreCategory(shop.id, fd);
                   if (res.ok) {
-                    setNewBranchName("");
-                    setNewBranchPhoto("");
+                    setNewCatName("");
+                    setNewCatPhoto("");
                     router.refresh();
-                    alert("تمت إضافة الفرع بنجاح! ✅");
+                    alert("تمت إضافة القسم بنجاح! ✅");
                   } else {
-                    alert(res.error || "فشل إضافة الفرع");
+                    alert(res.error || "فشل إضافة القسم");
                   }
                 }}
                 className="space-y-3"
               >
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    اختر القسم الرئيسي
-                  </label>
-                  <select
-                    value={newBranchCatId}
-                    onChange={(e) => setNewBranchCatId(e.target.value)}
-                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    اسم الفرع
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">اسم القسم *</label>
                   <input
                     type="text"
-                    value={newBranchName}
-                    onChange={(e) => setNewBranchName(e.target.value)}
-                    placeholder="مثال: مياه وعصائر، مشروبات غازية..."
-                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="مثال: مشروبات وعصائر"
+                    className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    صورة الفرع (اختياري)
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">صورة القسم (اختياري)</label>
                   <div className="flex items-center gap-3">
-                    {newBranchPhoto && (
-                      <img src={newBranchPhoto} alt="Branch" className="w-12 h-12 rounded-xl object-cover border" />
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleFileUpload(f, "branch_photo");
-                      }}
-                      className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 font-bold"
-                    />
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                      {newCatPhoto ? (
+                        <img src={newCatPhoto} alt="Category" className="w-full h-full object-cover" />
+                      ) : (
+                        <FolderPlus className="w-5 h-5 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "cat_photo");
+                        }}
+                        className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
+                      />
+                      {uploading === "cat_photo" && (
+                        <p className="text-[11px] text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-2.5 rounded-xl text-sm transition"
+                  className="w-full bg-[#0B2E8C] hover:bg-[#082269] text-white font-bold text-xs py-2.5 rounded-xl transition shadow-sm active:scale-95"
                 >
-                  إضافة الفرع داخل القسم
+                  حفظ وإضافة القسم
                 </button>
               </form>
             </div>
-          )}
+
+            {/* إضافة فرع داخل قسم */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-indigo-600" />
+                  إضافة فرع داخل قسم
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  لتنظيم المنتجات في فروع داخلية (اختياري)
+                </p>
+              </div>
+
+              {categories.length === 0 ? (
+                <p className="text-xs text-slate-400 py-6 text-center">أضف قسماً أولاً لتتمكن من إنشاء فروع بداخله</p>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newBranchName.trim()) return alert("يرجى كتابة اسم الفرع");
+                    const targetBranchCatId = newBranchCatId || categories[0]?.id || "";
+                    const fd = new FormData();
+                    fd.append("categoryId", targetBranchCatId);
+                    fd.append("name", newBranchName);
+                    fd.append("photoUrl", newBranchPhoto);
+                    const res = await addShopStoreBranch(shop.id, fd);
+                    if (res.ok) {
+                      setNewBranchName("");
+                      setNewBranchPhoto("");
+                      router.refresh();
+                      alert("تمت إضافة الفرع بنجاح! ✅");
+                    } else {
+                      alert(res.error || "فشل إضافة الفرع");
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">القسم الرئيسي *</label>
+                    <select
+                      value={newBranchCatId || categories[0]?.id || ""}
+                      onChange={(e) => setNewBranchCatId(e.target.value)}
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition cursor-pointer"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          قسم: {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">اسم الفرع *</label>
+                    <input
+                      type="text"
+                      value={newBranchName}
+                      onChange={(e) => setNewBranchName(e.target.value)}
+                      placeholder="مثال: مياه غازية، عصائر طبيعية..."
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">صورة الفرع (اختياري)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                        {newBranchPhoto ? (
+                          <img src={newBranchPhoto} alt="Branch" className="w-full h-full object-cover" />
+                        ) : (
+                          <Layers className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileUpload(f, "branch_photo");
+                          }}
+                          className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
+                        />
+                        {uploading === "branch_photo" && (
+                          <p className="text-[11px] text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-sm active:scale-95"
+                  >
+                    إضافة الفرع داخل القسم
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
 
           {/* قائمة الأقسام والفروع الحالية */}
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
-            <h3 className="text-base font-black text-slate-800 mb-4">
-              الأقسام والفروع الحالية ({categories.length})
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
+            <h3 className="text-base font-black text-slate-900 mb-4">
+              الأقسام والفروع المعروضة في متجرك ({categories.length})
             </h3>
+
             {categories.length === 0 ? (
-              <p className="text-sm text-slate-400">لا توجد أقسام بعد. قم بإضافة أول قسم أعلاه.</p>
+              <p className="text-xs text-slate-400 py-6 text-center">لا توجد أقسام بعد</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {categories.map((cat) => {
                   const catBranches = branches.filter((b) => b.categoryId === cat.id);
                   const catProducts = products.filter((p) => p.categoryId === cat.id);
@@ -559,17 +795,17 @@ export function StoreManager({
                     <div key={cat.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {cat.photoUrl ? (
-                            <img src={cat.photoUrl} alt={cat.name} className="w-12 h-12 rounded-xl object-cover border" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                              📁
-                            </div>
-                          )}
+                          <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                            {cat.photoUrl ? (
+                              <img src={cat.photoUrl} alt={cat.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <FolderPlus className="w-6 h-6 text-blue-500" />
+                            )}
+                          </div>
                           <div>
-                            <h4 className="font-black text-slate-800 text-sm">{cat.name}</h4>
+                            <h4 className="font-black text-slate-900 text-sm">{cat.name}</h4>
                             <p className="text-[11px] text-slate-500">
-                              {catProducts.length} منتج | {catBranches.length} فرع
+                              {catProducts.length} منتج • {catBranches.length} فرع
                             </p>
                           </div>
                         </div>
@@ -581,21 +817,22 @@ export function StoreManager({
                               router.refresh();
                             }
                           }}
-                          className="text-xs text-red-600 hover:text-red-700 font-bold p-1"
+                          className="text-xs text-rose-600 hover:text-rose-700 font-bold p-1"
+                          title="حذف القسم"
                         >
-                          حذف 🗑️
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
                       {/* فروع القسم */}
                       {catBranches.length > 0 && (
-                        <div className="border-t border-slate-200 pt-2 space-y-1">
-                          <p className="text-[11px] font-bold text-slate-600">الفروع التابعة:</p>
+                        <div className="border-t border-slate-200/80 pt-2 space-y-1.5">
+                          <p className="text-[11px] font-bold text-slate-500">الفروع التابعة:</p>
                           <div className="flex flex-wrap gap-1.5">
                             {catBranches.map((b) => (
                               <span
                                 key={b.id}
-                                className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700"
+                                className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 shadow-2xs"
                               >
                                 {b.name}
                                 <button
@@ -605,7 +842,7 @@ export function StoreManager({
                                       router.refresh();
                                     }
                                   }}
-                                  className="text-red-500 hover:text-red-700 text-[10px]"
+                                  className="text-rose-500 hover:text-rose-700"
                                 >
                                   ✕
                                 </button>
@@ -623,239 +860,27 @@ export function StoreManager({
         </div>
       )}
 
-      {/* ===================== التبويب 3: المنتجات ===================== */}
-      {activeTab === "products" && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-2xl">
-            <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
-              <span>➕</span>
-              نشر منتج جديد في المتجر
-            </h3>
-            {categories.length === 0 ? (
-              <p className="text-sm text-amber-600 font-bold bg-amber-50 p-3 rounded-2xl border border-amber-200">
-                يرجى إضافة قسم أولاً من تبويب &quot;الأقسام والفروع&quot; لتتمكن من نشر المنتجات داخلها.
-              </p>
-            ) : (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const targetCatId = prodCatId || categories[0]?.id || "";
-                  if (!targetCatId) return alert("يرجى اختيار أو إضافة قسم أولاً من تبويب الأقسام والفروع");
-
-                  const fd = new FormData();
-                  fd.append("name", prodName);
-                  fd.append("price", prodPrice);
-                  fd.append("description", prodDesc);
-                  fd.append("photoUrl", prodPhoto);
-                  fd.append("categoryId", targetCatId);
-                  fd.append("branchId", prodBranchId);
-
-                  const res = await addShopStoreProduct(shop.id, fd);
-                  if (res.ok) {
-                    setProdName("");
-                    setProdPrice("");
-                    setProdDesc("");
-                    setProdPhoto("");
-                    router.refresh();
-                    alert("تم نشر المنتج في المتجر بنجاح! ✅");
-                  } else {
-                    alert(res.error || "فشل نشر المنتج");
-                  }
-                }}
-                className="space-y-4"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      اسم المنتج
-                    </label>
-                    <input
-                      type="text"
-                      value={prodName}
-                      onChange={(e) => setProdName(e.target.value)}
-                      placeholder="مثال: شاي الوزة 400 غرام"
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      السعر (بالدينار العراقي)
-                    </label>
-                    <input
-                      type="number"
-                      value={prodPrice}
-                      onChange={(e) => setProdPrice(e.target.value)}
-                      placeholder="مثال: 3500"
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      القسم التابع له المنتج
-                    </label>
-                    <select
-                      value={prodCatId || categories[0]?.id || ""}
-                      onChange={(e) => {
-                        setProdCatId(e.target.value);
-                        setProdBranchId("");
-                      }}
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right font-bold text-slate-800"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      الفرع التابع له (اختياري - يمكنك النشر بالقسم مباشرة)
-                    </label>
-                    <select
-                      value={prodBranchId}
-                      onChange={(e) => setProdBranchId(e.target.value)}
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right font-medium text-slate-800"
-                    >
-                      <option value="">بدون فرع (داخل القسم مباشرة)</option>
-                      {branches
-                        .filter((b) => b.categoryId === (prodCatId || categories[0]?.id))
-                        .map((b) => (
-                          <option key={b.id} value={b.id}>
-                            فرع: {b.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    صورة المنتج
-                  </label>
-                  <div className="flex items-center gap-3">
-                    {prodPhoto ? (
-                      <img src={prodPhoto} alt="Product" className="w-14 h-14 rounded-xl object-cover border" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-xl">
-                        📦
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleFileUpload(f, "prod_photo");
-                      }}
-                      className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 font-bold"
-                    />
-                  </div>
-                  {uploading === "prod_photo" && (
-                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    وصف المنتج (اختياري)
-                  </label>
-                  <textarea
-                    value={prodDesc}
-                    onChange={(e) => setProdDesc(e.target.value)}
-                    placeholder="مواصفات، وزن، أو تفاصيل المنتج..."
-                    rows={2}
-                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-3 rounded-2xl text-sm shadow-md transition"
-                >
-                  نشر المنتج الآن
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* قائمة المنتجات المنشورة */}
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
-            <h3 className="text-base font-black text-slate-800 mb-4">
-              المنتجات المعروضة في المتجر ({products.length})
-            </h3>
-            {products.length === 0 ? (
-              <p className="text-sm text-slate-400">لا توجد منتجات منشورة بعد.</p>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {products.map((p) => (
-                  <div key={p.id} className="border border-slate-200 rounded-2xl p-3 bg-white hover:shadow-md transition flex flex-col justify-between">
-                    <div>
-                      <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2 relative">
-                        {p.photoUrl ? (
-                          <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-3xl">
-                            📦
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="font-black text-slate-800 text-xs line-clamp-2">{p.name}</h4>
-                      <p className="text-blue-600 font-black text-xs mt-1">
-                        {Number(p.price).toLocaleString()} د.ع
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        {categories.find((c) => c.id === p.categoryId)?.name || "قسم"}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={async () => {
-                        if (confirm(`حذف منتج "${p.name}"؟`)) {
-                          await deleteShopStoreProduct(p.id, shop.id);
-                          router.refresh();
-                        }
-                      }}
-                      className="mt-3 w-full bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-1.5 rounded-xl transition"
-                    >
-                      حذف
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ===================== التبويب 4: إعلانات بانر ===================== */}
+      {/* ===================== محتوى التبويب 3: إعلانات البانر ===================== */}
       {activeTab === "banners" && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
-            <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
-              <span>🖼️</span>
-              إعلانات بانر (سلايدر العروض)
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              يمكنك إضافة صور إعلانات وعروض ترويجية تظهر أعلى المتجر للزبائن بشكل سلايدر متحرك.
-            </p>
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm max-w-xl">
+            <div className="border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-purple-600" />
+                إضافة إعلان بانر ترويجي لمتجرك
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                تظهر إعلانات البانر في أعلى متجرك لتسليط الضوء على العروض والخصومات
+              </p>
+            </div>
 
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!slideImage) return alert("يرجى اختيار صورة الإعلان");
-
                 const fd = new FormData();
                 fd.append("imageUrl", slideImage);
                 fd.append("title", slideTitle);
-
                 const res = await addShopStoreSlide(shop.id, fd);
                 if (res.ok) {
                   setSlideImage("");
@@ -866,47 +891,49 @@ export function StoreManager({
                   alert(res.error || "فشل إضافة الإعلان");
                 }
               }}
-              className="space-y-3"
+              className="space-y-4"
             >
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  صورة الإعلان
-                </label>
-                <div className="flex items-center gap-3">
-                  {slideImage && (
-                    <img src={slideImage} alt="Banner" className="w-24 h-14 rounded-xl object-cover border" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "slide_image");
-                    }}
-                    className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-blue-700 font-bold"
-                  />
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة الإعلان *</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-14 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {slideImage ? (
+                      <img src={slideImage} alt="Banner" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFileUpload(f, "slide_image");
+                      }}
+                      className="text-xs text-slate-500 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold cursor-pointer"
+                    />
+                    {uploading === "slide_image" && (
+                      <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                    )}
+                  </div>
                 </div>
-                {uploading === "slide_image" && (
-                  <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
-                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  عنوان الإعلان (اختياري)
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">عنوان أو نص الإعلان (اختياري)</label>
                 <input
                   type="text"
                   value={slideTitle}
                   onChange={(e) => setSlideTitle(e.target.value)}
-                  placeholder="مثال: خصم 20% على جميع المنظفات بمناسبة العيد"
-                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
+                  placeholder="مثال: خصم 15% على جميع المشروبات هذا الأسبوع"
+                  className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
                 />
               </div>
 
               <button
                 type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-md transition"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-sm transition active:scale-95"
               >
                 إضافة إعلان البانر
               </button>
@@ -914,19 +941,19 @@ export function StoreManager({
           </div>
 
           {/* البانرات الحالية */}
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
-            <h3 className="text-base font-black text-slate-800 mb-4">
-              إعلانات البانر المعروضة ({slides.length})
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
+            <h3 className="text-base font-black text-slate-900 mb-4">
+              إعلانات البانر المعروضة حالياً ({slides.length})
             </h3>
             {slides.length === 0 ? (
-              <p className="text-sm text-slate-400">لا توجد إعلانات بانر مضافة بعد.</p>
+              <p className="text-xs text-slate-400 py-6 text-center">لا توجد إعلانات بانر مضافة بعد</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {slides.map((slide) => (
-                  <div key={slide.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative group">
+                  <div key={slide.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative group shadow-xs">
                     <img src={slide.imageUrl} alt="Banner" className="w-full h-36 object-cover" />
                     {slide.title && (
-                      <div className="p-2.5 text-xs font-bold text-slate-800 text-center bg-white border-t">
+                      <div className="p-2.5 text-xs font-bold text-slate-800 text-center bg-white border-t border-slate-100">
                         {slide.title}
                       </div>
                     )}
@@ -937,7 +964,7 @@ export function StoreManager({
                           router.refresh();
                         }
                       }}
-                      className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-xl text-xs font-bold shadow-md hover:bg-red-700 transition"
+                      className="absolute top-2 left-2 bg-rose-600 text-white px-3 py-1 rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition"
                     >
                       حذف 🗑️
                     </button>
@@ -946,6 +973,130 @@ export function StoreManager({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ===================== محتوى التبويب 4: هوية وشعار المتجر ===================== */}
+      {activeTab === "profile" && (
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/90 shadow-sm max-w-2xl space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-[#0B2E8C]" />
+              هوية وشعار المتجر
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              خصص شعار متجرك الخاص وغلافه ونبذته الترحيبية للزبائن
+            </p>
+          </div>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const fd = new FormData();
+              fd.append("storeLogoUrl", storeLogoUrl);
+              fd.append("storeBannerUrl", bannerUrl);
+              fd.append("bio", bio);
+              const res = await updateShopStoreProfile(shop.id, fd);
+              if (res.ok) {
+                router.refresh();
+                alert("تم حفظ إعدادات وهوية المتجر بنجاح! ✅");
+              } else {
+                alert(res.error || "حدث خطأ");
+              }
+            }}
+            className="space-y-5"
+          >
+            {/* شعار المتجر المستقل */}
+            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-black text-slate-900 mb-0.5">
+                  شعار / لوغو المتجر (يظهر للزبائن في أعلى متجرك)
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  هذا الشعار خاص بمتجرك الإلكتروني وهو منفصل تماماً عن صورة باب المحل الأصلية.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                  {storeLogoUrl ? (
+                    <img src={storeLogoUrl} alt="Store Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <Store className="w-8 h-8 text-slate-300" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-[200px]">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleFileUpload(f, "shop_logo");
+                    }}
+                    className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1.5">
+                    يتم تحويل الصورة تلقائياً لـ WebP وضغطها بنسبة 90% للحفاظ على المساحة وسرعة التصفح.
+                  </p>
+                  {uploading === "shop_logo" && (
+                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* صورة غلاف المتجر */}
+            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <label className="block text-xs font-black text-slate-900 mb-0.5">
+                صورة غلاف المتجر (بانر علوي اختياري)
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="w-32 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  {bannerUrl ? (
+                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleFileUpload(f, "shop_banner");
+                    }}
+                    className="text-xs text-slate-500 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-blue-50 file:text-[#0B2E8C] file:font-bold hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  {uploading === "shop_banner" && (
+                    <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* نبذة عن المتجر */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                نبذة ترحيبية بالزبائن (تظهر تحت اسم المتجر)
+              </label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="مثال: مرحباً بكم في متجرنا، نوفر لكم أجود المنتجات بأفضل الأسعار وأسرع توصيل..."
+                rows={3}
+                className="w-full text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl p-3 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="bg-[#0B2E8C] hover:bg-[#082269] text-white font-black text-sm px-8 py-3 rounded-2xl shadow-md shadow-blue-950/15 transition active:scale-95"
+            >
+              حفظ هوية المتجر
+            </button>
+          </form>
         </div>
       )}
     </div>
