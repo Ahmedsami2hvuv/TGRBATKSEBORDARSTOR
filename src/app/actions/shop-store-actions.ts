@@ -215,3 +215,137 @@ export async function deleteShopStoreSlide(slideId: string, shopId: string) {
     return { ok: false, error: err.message || "فشل حذف الإعلان" };
   }
 }
+
+export async function updateShopStoreCategory(categoryId: string, shopId: string, formData: FormData) {
+  try {
+    const name = String(formData.get("name") ?? "").trim();
+    const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+
+    if (!name) return { ok: false, error: "اسم القسم مطلوب" };
+
+    await prisma.shopStoreCategory.update({
+      where: { id: categoryId },
+      data: {
+        name,
+        photoUrl,
+      },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تحديث القسم" };
+  }
+}
+
+export async function toggleShopStoreCategoryActive(categoryId: string, shopId: string, active: boolean) {
+  try {
+    await prisma.shopStoreCategory.update({
+      where: { id: categoryId },
+      data: { active },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تغيير حالة القسم" };
+  }
+}
+
+export async function updateShopStoreBranch(branchId: string, shopId: string, formData: FormData) {
+  try {
+    const name = String(formData.get("name") ?? "").trim();
+    const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+    const categoryId = String(formData.get("categoryId") ?? "").trim();
+
+    if (!name) return { ok: false, error: "اسم الفرع مطلوب" };
+
+    await prisma.shopStoreBranch.update({
+      where: { id: branchId },
+      data: {
+        name,
+        photoUrl,
+        ...(categoryId ? { categoryId } : {}),
+      },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تحديث الفرع" };
+  }
+}
+
+export async function toggleShopStoreBranchActive(branchId: string, shopId: string, active: boolean) {
+  try {
+    await prisma.shopStoreBranch.update({
+      where: { id: branchId },
+      data: { active },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تغيير حالة الفرع" };
+  }
+}
+
+export async function updateShopStoreProduct(productId: string, shopId: string, formData: FormData) {
+  try {
+    const name = String(formData.get("name") ?? "").trim();
+    const priceRaw = String(formData.get("price") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+    const categoryId = String(formData.get("categoryId") ?? "").trim();
+    const branchId = String(formData.get("branchId") ?? "").trim() || null;
+
+    if (!name) return { ok: false, error: "اسم المنتج مطلوب" };
+    const price = parseFloat(priceRaw);
+    if (isNaN(price) || price < 0) return { ok: false, error: "أدخل سعراً صحيحاً" };
+
+    await prisma.shopStoreProduct.update({
+      where: { id: productId },
+      data: {
+        name,
+        price,
+        description,
+        photoUrl,
+        photoUrls: photoUrl ? [photoUrl] : [],
+        ...(categoryId ? { categoryId } : {}),
+        branchId,
+      },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تحديث المنتج" };
+  }
+}
+
+export async function toggleShopStoreProductActive(productId: string, shopId: string, active: boolean) {
+  try {
+    await prisma.shopStoreProduct.update({
+      where: { id: productId },
+      data: { active },
+    });
+
+    revalidatePath(`/shop-manage/${shopId}`);
+    revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تغيير حالة المنتج" };
+  }
+}
+
