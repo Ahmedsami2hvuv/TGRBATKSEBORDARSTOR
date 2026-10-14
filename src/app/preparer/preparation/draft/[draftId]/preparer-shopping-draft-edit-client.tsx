@@ -1253,14 +1253,86 @@ export function PreparerShoppingDraftEditClient({
               </p>
             )}
 
-            {/* صندوق أزرار الكسور السريعة مطابق للتصميم */}
+            {/* صندوق أزرار الكسور السريعة ذكي وديناميكي */}
             {(() => {
               const typedValue = parseFloat(pricingLinesText);
-              const base = !isNaN(typedValue) && typedValue >= 0 ? Math.floor(typedValue) : 5;
+              const hasTyped = !isNaN(typedValue) && typedValue >= 0 && pricingLinesText.trim() !== "";
+
+              if (!hasTyped) {
+                // المجهز لم يكتب رقماً بعد: نعرض مقترحات سريعة أو أسعار شائعة دون فرض الرقم 5
+                const suggestions = (priceHistory[products[selectedPriceIndex]!.line] || [
+                  { buyAlf: 0.5 }, { buyAlf: 0.75 }, { buyAlf: 1 }, { buyAlf: 1.5 }, { buyAlf: 2 }, { buyAlf: 2.5 }, { buyAlf: 3 }, { buyAlf: 4 }
+                ]);
+
+                return (
+                  <div className="bg-[#f0f7ff] border border-[#cce5ff] rounded-2xl p-3 mb-4">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-[11px] font-bold text-[#004085]">أسعار مقترحة سريعة:</span>
+                      <span className="text-[10px] text-slate-400">أو اكتب الرقم لتظهر كسوره</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestions.slice(0, 8).map((s, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onPointerDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            const buy = s.buyAlf;
+                            const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy, noProfit);
+                            const nextProducts = [...products];
+                            const target = nextProducts[selectedPriceIndex!];
+                            if (target) {
+                              nextProducts[selectedPriceIndex!] = {
+                                ...target,
+                                buyAlf: buy,
+                                sellAlf: sell,
+                                pricedBy: preparerName,
+                                pricedById: preparerId
+                              };
+                              const nextJson = JSON.stringify(nextProducts.map(p => ({
+                                line: p.line,
+                                buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+                                sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+                                pricedBy: p.pricedBy,
+                                pricedById: p.pricedById,
+                                assignedPreparerId: p.assignedPreparerId,
+                                assignedPreparerName: p.assignedPreparerName,
+                              })));
+                              setProducts(nextProducts);
+                              performSave(nextJson);
+
+                              const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                              const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                              if (nextVisualItem) {
+                                setSelectedPriceIndex(nextVisualItem.idx);
+                                setPricingLinesText("");
+                                pricingTextareaRef.current?.focus();
+                              } else {
+                                setSelectedPriceIndex(null);
+                                setPricingLinesText("");
+                              }
+                            }
+                          }}
+                          className="bg-white border border-[#cce5ff] text-[#007bff] hover:bg-[#007bff] hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-black shadow-2xs transition active:scale-95"
+                        >
+                          {s.buyAlf} ألف
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              // إذا كتب المجهز رقماً: تظهر أزرار الكسور بناًء على الرقم المكتوب
+              const base = Math.floor(typedValue);
               const fractions = [0, 0.25, 0.5, 0.75];
 
               return (
-                <div className="bg-[#f0f7ff] border border-[#cce5ff] rounded-2xl p-3 mb-4">
+                <div className="bg-[#f0f7ff] border border-[#cce5ff] rounded-2xl p-3 mb-4 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[11px] font-black text-[#004085]">إكمال السعر لـ ({base}):</span>
+                    <span className="text-[10px] font-bold text-[#007bff] animate-pulse">انقر للكسر والحفظ الفوري</span>
+                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {fractions.map((frac, fIdx) => {
                       const totalVal = base + frac;
