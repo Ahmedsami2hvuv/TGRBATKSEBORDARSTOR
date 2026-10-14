@@ -20,12 +20,21 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
   // إحداثيات السحب والتحريك الحر للزر العائم
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number; moved: boolean }>({
+  const containerRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initX: number;
+    initY: number;
+    hasMoved: boolean;
+  }>({
     startX: 0,
     startY: 0,
     initX: 0,
     initY: 0,
-    moved: false,
+    hasMoved: false,
   });
 
   useEffect(() => {
@@ -39,41 +48,96 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
     }
   }, [state.ok, router]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  // منع ميزة Pull-to-refresh وتحديث الصفحة في الهواتف نهائياً أثناء لمس الزر
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStartNative = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        dragRef.current = {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          initX: position.x,
+          initY: position.y,
+          hasMoved: false,
+        };
+        setIsDragging(true);
+      }
+    };
+
+    const onTouchMoveNative = (e: TouchEvent) => {
+      // منع المتصفح من عمل ريفريش للشاشة
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const dx = touch.clientX - dragRef.current.startX;
+        const dy = touch.clientY - dragRef.current.startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+          dragRef.current.hasMoved = true;
+        }
+        setPosition({
+          x: dragRef.current.initX + dx,
+          y: dragRef.current.initY + dy,
+        });
+      }
+    };
+
+    const onTouchEndNative = () => {
+      setIsDragging(false);
+    };
+
+    el.addEventListener("touchstart", onTouchStartNative, { passive: true });
+    el.addEventListener("touchmove", onTouchMoveNative, { passive: false });
+    el.addEventListener("touchend", onTouchEndNative, { passive: true });
+    el.addEventListener("touchcancel", onTouchEndNative, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStartNative);
+      el.removeEventListener("touchmove", onTouchMoveNative);
+      el.removeEventListener("touchend", onTouchEndNative);
+      el.removeEventListener("touchcancel", onTouchEndNative);
+    };
+  }, [position, visible]);
+
+  // دعم السحب بالماوس للكمبيوتر
+  const handleMouseDown = (e: React.MouseEvent) => {
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       initX: position.x,
       initY: position.y,
-      moved: false,
+      hasMoved: false,
     };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setIsDragging(true);
-  };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
-      dragRef.current.moved = true;
-    }
-    setPosition({
-      x: dragRef.current.initX + dx,
-      y: dragRef.current.initY + dy,
-    });
-  };
+    const onMouseMove = (moveEvt: MouseEvent) => {
+      moveEvt.preventDefault();
+      const dx = moveEvt.clientX - dragRef.current.startX;
+      const dy = moveEvt.clientY - dragRef.current.startY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        dragRef.current.hasMoved = true;
+      }
+      setPosition({
+        x: dragRef.current.initX + dx,
+        y: dragRef.current.initY + dy,
+      });
+    };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
+    const onMouseUp = () => {
+      setIsDragging(false);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
-    // إذا كان المجهز يقوم بسحب الزر، نمنع إرسال النموذج حتى لا يسجل بالخطأ أثناء مجرد التحريك
-    if (dragRef.current.moved) {
+    // إذا كان المجهز يقوم بسحب الزر، نمنع إرسال النموذج
+    if (dragRef.current.hasMoved) {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -83,19 +147,18 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
 
   return (
     <div
+      ref={containerRef}
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
         touchAction: "none",
+        overscrollBehavior: "none",
       }}
-      className={`fixed top-4 inset-x-4 z-[999] mx-auto max-w-xs transition-shadow duration-200 select-none ${
+      className={`fixed top-4 inset-x-4 z-[9999] mx-auto max-w-xs transition-shadow duration-200 select-none ${
         isDragging ? "cursor-grabbing scale-105" : "cursor-grab"
       }`}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      onMouseDown={handleMouseDown}
     >
-      <form action={formAction} className="w-full">
+      <form ref={formRef} action={formAction} className="w-full">
         <input type="hidden" name="p" value={auth.p} />
         <input type="hidden" name="exp" value={auth.exp} />
         <input type="hidden" name="s" value={auth.s} />
@@ -118,13 +181,14 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
             type="submit"
             onClick={handleButtonClick}
             disabled={pending}
+            style={{ touchAction: "none" }}
             className="group relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 font-black text-white shadow-[0_10px_30px_rgba(16,185,129,0.5)] ring-2 ring-emerald-400/80 transition-transform active:scale-95 hover:brightness-110 disabled:opacity-80"
           >
             {/* لمعة متحركة مستمرة لتأكيد أنه عائم ومتحرك */}
             <span className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-            {/* أيقونة حركة صغيرة تسحب الزر */}
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-40 text-xs pointer-events-none">
+            {/* مقبض سحب جانبي */}
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 text-xs font-mono pointer-events-none">
               ⋮⋮
             </span>
 
