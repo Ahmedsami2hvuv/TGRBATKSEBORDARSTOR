@@ -22,6 +22,7 @@ export async function updateShopStoreProfile(shopId: string, formData: FormData)
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل تحديث بيانات المتجر" };
@@ -45,6 +46,7 @@ export async function addShopStoreCategory(shopId: string, formData: FormData) {
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل إضافة القسم" };
@@ -58,6 +60,7 @@ export async function deleteShopStoreCategory(categoryId: string, shopId: string
     });
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل حذف القسم" };
@@ -93,6 +96,7 @@ export async function addShopStoreBranch(shopId: string, formData: FormData) {
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل إضافة الفرع" };
@@ -106,6 +110,7 @@ export async function deleteShopStoreBranch(branchId: string, shopId: string) {
     });
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل حذف الفرع" };
@@ -150,6 +155,7 @@ export async function addShopStoreProduct(shopId: string, formData: FormData) {
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل إضافة المنتج" };
@@ -163,6 +169,7 @@ export async function deleteShopStoreProduct(productId: string, shopId: string) 
     });
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل حذف المنتج" };
@@ -188,6 +195,7 @@ export async function addShopStoreSlide(shopId: string, formData: FormData) {
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل إضافة الإعلان" };
@@ -201,6 +209,7 @@ export async function deleteShopStoreSlide(slideId: string, shopId: string) {
     });
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
+    revalidatePath(`/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل حذف الإعلان" };

@@ -263,7 +263,7 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                   {/* زر معاينة المتجر للزبائن برابط مشفر نظيف */}
                   {s.storeEnabled && (
                     <Link
-                      href={`/store/shop/${s.storeToken || s.id}`}
+                      href={`/shop/${s.storeToken || s.id}`}
                       target="_blank"
                       className="text-xs font-black bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1.5 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1 shadow-sm"
                       title="فتح متجر المحل كما يراه الزبائن"
@@ -278,7 +278,7 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     <button
                       type="button"
                       onClick={() => {
-                        const storeUrl = `https://aboakbr.com/store/shop/${s.storeToken || s.id}`;
+                        const storeUrl = `https://aboakbr.com/shop/${s.storeToken || s.id}`;
                         const msg = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
                         if (navigator.clipboard) {
                           navigator.clipboard.writeText(msg);

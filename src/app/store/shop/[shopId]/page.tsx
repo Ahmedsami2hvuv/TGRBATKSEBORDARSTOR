@@ -83,22 +83,25 @@ export default async function SingleShopStorePage({
     );
   }
 
+  // استخدام الـ ID الحقيقي للمحل لجلب الأقسام والمنتجات
+  const realShopId = shopRaw.id;
+
   // جلب محتويات متجر المحل
   const [categoriesRaw, branchesRaw, productsRaw, slidesRaw] = await Promise.all([
     prisma.shopStoreCategory.findMany({
-      where: { shopId, active: true },
+      where: { shopId: realShopId, active: true },
       orderBy: { sequence: "asc" },
     }).catch(() => []),
     prisma.shopStoreBranch.findMany({
-      where: { shopId, active: true },
+      where: { shopId: realShopId, active: true },
       orderBy: { sequence: "asc" },
     }).catch(() => []),
     prisma.shopStoreProduct.findMany({
-      where: { shopId, active: true },
+      where: { shopId: realShopId, active: true },
       orderBy: { sequence: "asc" },
     }).catch(() => []),
     prisma.shopStoreSlide.findMany({
-      where: { shopId, active: true },
+      where: { shopId: realShopId, active: true },
       orderBy: { sequence: "asc" },
     }).catch(() => []),
   ]);

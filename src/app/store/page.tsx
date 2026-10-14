@@ -115,7 +115,7 @@ async function ActiveShopsRow() {
           {shopsRaw.map((s: any) => (
             <Link
               key={s.id}
-              href={`/store/shop/${s.storeToken || s.id}`}
+              href={`/shop/${s.storeToken || s.id}`}
               className="min-w-[170px] max-w-[190px] bg-white border border-slate-200 rounded-2xl p-3 shadow-xs hover:shadow-md transition flex flex-col justify-between shrink-0 group active:scale-95"
             >
               <div>

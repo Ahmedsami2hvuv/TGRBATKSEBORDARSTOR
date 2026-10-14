@@ -77,8 +77,8 @@ export function StoreManager({
   // رابط المتجر النظيف والمشفر للزبائن بدون أي شفرة إدارة
   const targetToken = shop.storeToken || shop.id;
   const storeUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/store/shop/${targetToken}`
-    : `https://aboakbr.com/store/shop/${targetToken}`;
+    ? `${window.location.origin}/shop/${targetToken}`
+    : `https://aboakbr.com/shop/${targetToken}`;
 
   const shareText = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
 
@@ -148,7 +148,7 @@ export function StoreManager({
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/store/shop/${targetToken}`}
+              href={`/shop/${targetToken}`}
               target="_blank"
               className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black shadow-md transition flex items-center gap-2"
             >
