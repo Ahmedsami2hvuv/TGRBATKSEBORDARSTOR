@@ -194,13 +194,6 @@ export function ShopStoreView({
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link
-              href="/store"
-              className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition"
-              title="العودة للمتجر الرئيسي"
-            >
-              ←
-            </Link>
             <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
               {shop.storeLogoUrl ? (
                 <img src={shop.storeLogoUrl} alt={shop.name} className="w-full h-full object-cover" />
