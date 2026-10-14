@@ -7,7 +7,8 @@ import { ProductCard } from "./product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { getDefaultStoreMetadata, getStoreProductMetadata } from "@/lib/store-meta";
 
-export const dynamic = "force-dynamic";
+// تخزين مؤقت ذكي لمدة 60 ثانية لجعل الصفحة تفتح في أجزاء من الثانية وتخفيف الضغط كلياً عن قاعدة البيانات
+export const revalidate = 60;
 
 export async function generateMetadata(props: {
   searchParams: Promise<{ product?: string }>;

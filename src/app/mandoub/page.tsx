@@ -259,7 +259,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       },
       include: mandoubOrderListInclude,
       orderBy: { createdAt: "desc" },
-      take: 150,
+      take: 60,
     }),
     fetchOrderOnlyMoneySumsForCourier(courier.id, totalsBaseline),
     computeMandoubAdminTotalAllTimeDinar(courier.id),

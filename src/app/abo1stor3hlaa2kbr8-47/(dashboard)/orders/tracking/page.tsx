@@ -158,11 +158,11 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       pendingTabWhere.OR = or;
     }
 
-    // تقليل عدد الطلبات المسترجعة في الصفحة الواحدة لتخفيف العبء على الاتصال
+    // جلب أحدث 60 طلباً لتسريع استجابة الصفحة الفورية وتقليل وقت الانتظار
     let [orders, couriers, pendingTabCount] = await Promise.all([
       prisma.order.findMany({
         where,
-        take: 150,
+        take: 60,
         orderBy: { createdAt: "desc" },
         include: {
           shop: {

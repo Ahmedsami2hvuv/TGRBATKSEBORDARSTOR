@@ -9,11 +9,11 @@ if (datasourceUrl) {
     const url = new URL(datasourceUrl);
     const isPooler = url.port === "6543" || url.hostname.includes("pooler.supabase.com");
 
-    // إتاحة عدد اتصالات كافٍ لتشغيل استعلامات Promise.all المتزامنة في صفحات لوحة التحكم والمندوب والمتجر
-    url.searchParams.set("connection_limit", "10");
-    // مهلة انتظار مرنة تمنع أخطاء Timeout عند تزامن عدة استعلامات في نفس الصفحة
-    url.searchParams.set("pool_timeout", "20");
-    url.searchParams.set("connect_timeout", "15");
+    // ضبط عدد الاتصالات المتوازنة (5) لتسريع الفتح الفوري ومنع تأخير الشبكة
+    url.searchParams.set("connection_limit", "5");
+    // مهلة انتظار مرنة وسريعة تمنع تعليق المتصفح
+    url.searchParams.set("pool_timeout", "15");
+    url.searchParams.set("connect_timeout", "10");
 
     // تفعيل وضع PgBouncer التلقائي عند استخدام وصلة Pooler بورت 6543
     if (isPooler) {
