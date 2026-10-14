@@ -19,6 +19,7 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 import { calculateAccumulatedSalaryInternal } from "./actions";
 import { getIraqTime } from "@/lib/baghdad-time";
+import { getPendingPreparationOrdersCount } from "@/lib/preparer-pending-orders";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -105,8 +106,9 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canSubmitAny = preparer.shopLinks.some((l) => l.canSubmitOrders);
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
+  const submittableShopIds = preparer.shopLinks.filter((l) => l.canSubmitOrders).map((l) => l.shopId);
 
-  const [couriersForBulkAssign, walletTotals, stats, icons] = await Promise.all([
+  const [couriersForBulkAssign, walletTotals, stats, icons, pendingPreparationCount] = await Promise.all([
     prisma.courier.findMany({
       where: preparerCourierAssignWhere,
       orderBy: { name: "asc" },
@@ -115,6 +117,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     getPreparerMoneyTotals(preparer.id),
     calculateAccumulatedSalaryInternal(preparer.id),
     iconsPromise,
+    canSubmitAny ? getPendingPreparationOrdersCount(preparer.id, submittableShopIds) : Promise.resolve(0),
   ]);
 
   let tableRows: any[] = [];
@@ -275,15 +278,24 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           {canSubmitAny && (
             <FullscreenWalletLauncher
               href={preparerPath("/preparer/preparation", baseAuth)}
-              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center rounded-xl border border-[#DDD6FE] bg-[#F5F3FF] text-[#7C3AED] shadow-xs hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex-1 min-w-0 h-9 sm:h-10 flex items-center justify-center gap-1.5 rounded-xl border border-[#DDD6FE] bg-[#F5F3FF] text-[#7C3AED] shadow-xs hover:bg-violet-100 transition hover:scale-105 active:scale-95 cursor-pointer px-1"
               title="تجهيز الطلبات"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="m7.5 4.27 9 5.15" />
                 <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                 <path d="m3.3 7 8.7 5 8.7-5" />
                 <path d="M12 22V12" />
               </svg>
+              <span
+                className={`text-[10px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-md leading-none font-mono truncate ${
+                  pendingPreparationCount > 0
+                    ? "bg-[#7C3AED] text-white shadow-xs"
+                    : "bg-[#EDE9FE] text-[#7C3AED]"
+                }`}
+              >
+                {pendingPreparationCount}
+              </span>
             </FullscreenWalletLauncher>
           )}
 
