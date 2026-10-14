@@ -156,8 +156,8 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const [actualBuyText, setActualBuyText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [bulkAddText, setBulkAddText] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
+  const [deletedIndices, setDeletedIndices] = useState<Set<number>>(new Set());
   /** idle → بعد التحليل؛ need_pick → يجب اختيار المنطقة قبل عرض المنتجات؛ ready → يمكن التسعير */
   const [regionGate, setRegionGate] = useState<"idle" | "need_pick" | "ready">("idle");
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
@@ -344,14 +344,19 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     setBulkAddText("");
   }
 
-  function removeProduct(i: number) {
-    setSelectedPriceIndex((sel) => {
-      if (sel === null) return null;
-      if (sel === i) return null;
-      if (sel > i) return sel - 1;
-      return sel;
+  function toggleDeleteProduct(i: number) {
+    setDeletedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) {
+        next.delete(i);
+      } else {
+        next.add(i);
+        if (selectedPriceIndex === i) {
+          setSelectedPriceIndex(null);
+        }
+      }
+      return next;
     });
-    setProducts((p) => p.filter((_, j) => j !== i));
   }
 
   function isRowPriced(i: number): boolean {
@@ -366,8 +371,8 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   }
 
   function handleProductButton(i: number) {
-    if (deleteMode) {
-      removeProduct(i);
+    if (deleteMode || deletedIndices.has(i)) {
+      toggleDeleteProduct(i);
       return;
     }
     setShowAddProduct(false);
@@ -424,32 +429,41 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     shop && selected && !Number.isNaN(custDelAlf) ? Math.max(shop.shopDeliveryAlf, custDelAlf) : null;
 
   const allPriced = useMemo(() => {
-    if (products.length === 0) return false;
-    for (let i = 0; i < products.length; i++) {
+    const activeIndices = products.map((_, i) => i).filter((idx) => !deletedIndices.has(idx));
+    if (activeIndices.length === 0) return false;
+    for (const i of activeIndices) {
       if (!isRowPriced(i)) return false;
     }
     return true;
-  }, [products, priceRows]);
+  }, [products, priceRows, deletedIndices]);
 
-  /** المنتجات المسعّرة تُعرض أولاً. */
+  /** المنتجات غير الممسوحة تظهر أولاً، والمسعّرة أولاً. */
   const sortedProductIndices = useMemo(() => {
     return products.map((_, i) => i).sort((a, b) => {
+      const aDel = deletedIndices.has(a);
+      const bDel = deletedIndices.has(b);
+      if (aDel !== bDel) return aDel ? 1 : -1;
+
       const pa = isRowPriced(a) ? 1 : 0;
       const pb = isRowPriced(b) ? 1 : 0;
       if (pa !== pb) return pb - pa;
       return a - b;
     });
-  }, [products, priceRows]);
+  }, [products, priceRows, deletedIndices]);
 
   const previewPayload: PreparerShoppingPayloadV1 | null = useMemo(() => {
     if (!titleLine.trim() || products.length === 0 || !allPriced || placesCount == null) return null;
+    const activeIndices = products.map((_, i) => i).filter((idx) => !deletedIndices.has(idx));
+    if (activeIndices.length === 0) return null;
+
     return {
       version: 1,
       titleLine: titleLine.trim(),
       placesCount,
       noProfit,
       rawListText: rawListText.trim() || undefined,
-      products: products.map((line, i) => {
+      products: activeIndices.map((i) => {
+        const line = products[i]!;
         const row = priceRows[i]!;
         const buyAlf = parseFloat(row.buy.replace(/,/g, ".").trim());
         const sellAlf = parseFloat(row.sell.replace(/,/g, ".").trim());
@@ -462,7 +476,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
         };
       }),
     };
-  }, [titleLine, products, priceRows, allPriced, placesCount, rawListText, noProfit]);
+  }, [titleLine, products, priceRows, allPriced, placesCount, rawListText, noProfit, deletedIndices]);
 
   const previewInvoice =
     previewPayload && deliveryAlf != null
@@ -663,7 +677,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                         ? "bg-rose-600 text-white animate-pulse shadow-lg"
                         : "bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-500/20 dark:text-rose-400"
                     }`}
-                    title="حذف منتج"
+                    title="حذف / استرجاع منتج"
                   >
                     <DynamicIcon iconKey="ui_delete" config={icons} className="h-4 w-4" fallback={<span>×</span>} />
                   </button>
@@ -692,6 +706,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
               <div className="grid grid-cols-1 gap-2.5">
                 {sortedProductIndices.map((i) => {
                   const line = products[i]!;
+                  const isDeleted = deletedIndices.has(i);
                   const priced = isRowPriced(i);
                   const sellShow = priceRows[i]?.sell?.replace(/,/g, ".").trim();
                   return (
@@ -700,13 +715,15 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                       type="button"
                       onClick={() => handleProductButton(i)}
                       className={`group relative flex min-h-[56px] w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
-                        selectedPriceIndex === i
-                          ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
-                          : deleteMode
-                            ? "border-rose-400 bg-rose-50 dark:bg-rose-500/10"
-                            : priced
-                              ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-200/50 dark:shadow-none"
-                              : "border-slate-100 bg-white/50 hover:border-sky-200 hover:bg-white dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-950"
+                        isDeleted
+                          ? "border-dashed border-rose-300 bg-rose-50/50 opacity-65 dark:bg-rose-950/20 dark:border-rose-900/40"
+                          : selectedPriceIndex === i
+                            ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
+                            : deleteMode
+                              ? "border-rose-400 bg-rose-50 dark:bg-rose-500/10"
+                              : priced
+                                ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-200/50 dark:shadow-none"
+                                : "border-slate-100 bg-white/50 hover:border-sky-200 hover:bg-white dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-950"
                       }`}
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -717,13 +734,25 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                          ) : (
                            <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700" />
                          )}
-                          <span className={`truncate text-sm font-bold flex items-center gap-1 ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
-                            {priced && <span className="shrink-0">✅</span>}
+                          <span className={`truncate text-sm font-bold flex items-center gap-1.5 ${
+                            isDeleted ? "line-through text-slate-400 dark:text-slate-500" :
+                            priced ? "text-white" : "text-slate-800 dark:text-slate-200"
+                          }`}>
+                            {priced && !isDeleted && <span className="shrink-0">✅</span>}
                             <span>{line}</span>
+                            {isDeleted && (
+                              <span className="text-[9px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200">ممسوح</span>
+                            )}
                           </span>
                       </div>
 
-                      {priced && sellShow ? (
+                      {isDeleted ? (
+                        <div className="shrink-0">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-black text-white shadow-xs hover:bg-emerald-700">
+                            ↩️ استرجاع
+                          </span>
+                        </div>
+                      ) : priced && sellShow ? (
                         <div className="flex flex-col items-end shrink-0">
                           <span className="font-mono text-[9px] font-black text-emerald-100/80" dir="ltr">
                              {priceRows[i]?.buy}

@@ -29,7 +29,29 @@ type ProductRow = {
   qty?: number | null;
   quantity?: number | null;
   count?: number | null;
+  deleted?: boolean;
 };
+
+function serializeProducts(list: ProductRow[]): string {
+  return JSON.stringify(
+    list.map((p) => ({
+      line: p.line,
+      buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+      actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
+      sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+      pricedBy: p.pricedBy,
+      pricedById: p.pricedById,
+      assignedPreparerId: p.assignedPreparerId,
+      assignedPreparerName: p.assignedPreparerName,
+      productId: p.productId,
+      isFromStore: p.isFromStore,
+      qty: p.qty,
+      quantity: p.quantity,
+      count: p.count,
+      deleted: Boolean(p.deleted),
+    }))
+  );
+}
 
 type DraftWithRegion = {
   id: string;
@@ -84,6 +106,7 @@ function parseProducts(raw: unknown): ProductRow[] {
       qty: resolvedQty,
       quantity: resolvedQty,
       count: resolvedQty,
+      deleted: Boolean(r.deleted || r.isDeleted),
     });
   }
   return results;
@@ -298,7 +321,7 @@ export function PreparerShoppingDraftEditClient({
 
   const myTotalBuyAlf = useMemo(() => {
     return products.reduce((sum, p) => {
-      if (typeof p.buyAlf === "number" && p.pricedById === preparerId) {
+      if (!p.deleted && typeof p.buyAlf === "number" && p.pricedById === preparerId) {
         return sum + p.buyAlf;
       }
       return sum;
@@ -495,24 +518,10 @@ export function PreparerShoppingDraftEditClient({
     }
   }, [submitState.ok, router, auth]);
 
-  const allProductsPriced = products.length > 0 && products.every((p) => p.buyAlf !== "" && p.sellAlf !== "");
+  const activeProducts = useMemo(() => products.filter((p) => !p.deleted), [products]);
+  const allProductsPriced = activeProducts.length > 0 && activeProducts.every((p) => p.buyAlf !== "" && p.sellAlf !== "");
 
-  const productsJson = useMemo(
-    () =>
-      JSON.stringify(
-        products.map((p) => ({
-          line: p.line,
-          buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-          actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
-          sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-          pricedBy: p.pricedBy,
-          pricedById: p.pricedById,
-          assignedPreparerId: p.assignedPreparerId,
-          assignedPreparerName: p.assignedPreparerName,
-        })),
-      ),
-    [products],
-  );
+  const productsJson = useMemo(() => serializeProducts(products), [products]);
 
   const performSave = useCallback(async (jsonToSave: string, overrideNoProfit?: boolean) => {
     isDirtyRef.current = true;
@@ -547,36 +556,21 @@ export function PreparerShoppingDraftEditClient({
     if (lines.length === 0) return;
     const next: ProductRow[] =[
         ...products,
-        ...lines.map((line) => ({ line, buyAlf: "" as const, sellAlf: "" as const, pricedBy: null, pricedById: null, assignedPreparerId: null, assignedPreparerName: null })),
+        ...lines.map((line) => ({ line, buyAlf: "" as const, sellAlf: "" as const, pricedBy: null, pricedById: null, assignedPreparerId: null, assignedPreparerName: null, deleted: false })),
     ];
     setProducts(next);
-    const nextJson = JSON.stringify(next.map(p => ({
-        line: p.line,
-        buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-        sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-        pricedBy: p.pricedBy,
-        pricedById: p.pricedById,
-        assignedPreparerId: p.assignedPreparerId,
-        assignedPreparerName: p.assignedPreparerName,
-    })));
-    performSave(nextJson);
+    performSave(serializeProducts(next));
     setAddProductsText("");
     setShowAddProductsPanel(false);
   }
 
-  function removeProductByIndex(idx: number) {
-    const next = products.filter((_, i) => i !== idx);
+  function toggleDeleteProductByIndex(idx: number) {
+    const next = products.map((p, i) => {
+      if (i !== idx) return p;
+      return { ...p, deleted: !p.deleted };
+    });
     setProducts(next);
-    const nextJson = JSON.stringify(next.map(p => ({
-        line: p.line,
-        buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-        sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-        pricedBy: p.pricedBy,
-        pricedById: p.pricedById,
-        assignedPreparerId: p.assignedPreparerId,
-        assignedPreparerName: p.assignedPreparerName,
-    })));
-    performSave(nextJson);
+    performSave(serializeProducts(next));
   }
 
   const fetchLatestData = useCallback(async () => {
@@ -632,8 +626,9 @@ export function PreparerShoppingDraftEditClient({
   },[titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount, customDeliveryAlf, performSave, productsJson]);
 
   const stats = useMemo(() => {
-    const total = products.length;
-    const priced = products.filter(p => p.buyAlf !== "" && p.sellAlf !== "").length;
+    const active = products.filter(p => !p.deleted);
+    const total = active.length;
+    const priced = active.filter(p => p.buyAlf !== "" && p.sellAlf !== "").length;
     const percent = total > 0 ? Math.round((priced / total) * 100) : 0;
     return { total, priced, percent };
   }, [products]);
@@ -665,6 +660,13 @@ export function PreparerShoppingDraftEditClient({
     }
 
     return filtered.sort((a, b) => {
+      // -1. المواد غير الممسوحة تظهر أولاً، والمواد الممسوحة تذهب للأسفل
+      const aDel = Boolean(a.p.deleted);
+      const bDel = Boolean(b.p.deleted);
+      if (aDel !== bDel) {
+        return aDel ? 1 : -1;
+      }
+
       // 0. المواد المسندة للمجهز الحالي ("لك") تظهر في الأعلام أولاً في الطلب المشترك
       const getPrepRank = (item: typeof a) => {
         const assigned = item.p.assignedPreparerId;
@@ -986,7 +988,7 @@ export function PreparerShoppingDraftEditClient({
                 </button>
                 <button type="button" onClick={() => { setShowAddProductsPanel(!showAddProductsPanel); setDeleteMode(false); }} className="rounded-lg bg-emerald-600 text-white px-2 py-1 text-[10px] font-bold">+ مادة</button>
                 <button type="button" onClick={() => setShowUnavailableModal(true)} className="rounded-lg bg-amber-500 text-white px-2 py-1 text-[10px] font-bold">غير متوفر</button>
-                <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowAddProductsPanel(false); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${deleteMode ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>حذف</button>
+                <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowAddProductsPanel(false); }} className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all ${deleteMode ? 'bg-rose-600 text-white animate-pulse shadow-md' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>{deleteMode ? 'إيقاف الحذف ✕' : 'حذف / استرجاع 🗑️'}</button>
             </div>
         </div>
 
@@ -1000,6 +1002,7 @@ export function PreparerShoppingDraftEditClient({
 
         <div className="grid grid-cols-2 gap-1.5">
             {orderedForButtons.map(({ p, idx: i }) => {
+              const isDeleted = Boolean(p.deleted);
               const isMeat = isMeatProduct(p.line);
               const priced = p.buyAlf !== "" && p.sellAlf !== "";
               const isAssignedToOther = Boolean(p.assignedPreparerId && p.assignedPreparerId !== preparerId);
@@ -1016,9 +1019,10 @@ export function PreparerShoppingDraftEditClient({
                 <button
                   key={`${i}-${p.line}`}
                   type="button"
-                  disabled={(isAssignedToOther || isPricedByOther) && !deleteMode}
+                  disabled={(isAssignedToOther || isPricedByOther) && !deleteMode && !isDeleted}
                   onClick={() => {
-                    if (deleteMode) { removeProductByIndex(i); return; }
+                    if (deleteMode) { toggleDeleteProductByIndex(i); return; }
+                    if (isDeleted) { toggleDeleteProductByIndex(i); return; }
                     if (isMeat) {
                         if (!priced) handleAutoPriceMeat(i);
                         return;
@@ -1028,10 +1032,11 @@ export function PreparerShoppingDraftEditClient({
                     setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   }}
                   className={`w-full relative flex flex-col justify-between rounded-xl border-2 p-2.5 text-start transition min-h-[72px] select-none ${
+                    isDeleted ? "border-2 border-dashed border-rose-300 bg-rose-50/50 opacity-65 dark:bg-rose-950/20 dark:border-rose-900/40" :
                     active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
                     isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
                     priced ? "border-emerald-800 bg-emerald-900 text-white shadow-sm" : "border-slate-200 bg-white shadow-sm"
-                  } ${isMeat && priced ? "opacity-90 cursor-default" : ""} active:scale-[0.99]`}
+                  } ${isMeat && priced && !isDeleted ? "opacity-90 cursor-default" : ""} active:scale-[0.99]`}
                 >
                   {/* رأس البطاقة: الصورة واسم المنتج والمجهز */}
                   <div className="flex items-start gap-2 w-full">
@@ -1049,15 +1054,18 @@ export function PreparerShoppingDraftEditClient({
                         <img
                           src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
                           alt=""
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${isDeleted ? "grayscale opacity-50" : ""}`}
                         />
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs sm:text-[13px] font-black leading-snug break-words ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
+                      <p className={`text-xs sm:text-[13px] font-black leading-snug break-words ${
+                        isDeleted ? "line-through text-slate-400 dark:text-slate-500" :
+                        priced && !isOthers ? "text-white" : "text-slate-800"
+                      }`}>
                         <span>{p.line}</span>
-                        {displayQty > 1 && (
+                        {displayQty > 1 && !isDeleted && (
                           <span className="mr-1.5 inline-block px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-black shadow-sm align-middle">
                             {displayQty}×
                           </span>
@@ -1065,7 +1073,11 @@ export function PreparerShoppingDraftEditClient({
                       </p>
 
                       <div className="flex flex-wrap items-center gap-1 mt-1">
-                        {isAssignedToOther ? (
+                        {isDeleted ? (
+                          <span className="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                            🗑️ ممسوح
+                          </span>
+                        ) : isAssignedToOther ? (
                           <span className="text-[8px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
                             ⚠️ {p.assignedPreparerName || "مجهز آخر"}
                           </span>
@@ -1080,43 +1092,52 @@ export function PreparerShoppingDraftEditClient({
                     </div>
                   </div>
 
-                  {/* أسفل البطاقة: الكمية وسعر الشراء المكبر */}
-                  <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
-                    {/* شارة العدد لطلبات المتجر */}
-                    <div>
-                      {displayQty > 1 ? (
-                        <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white shadow-sm">
-                          العدد: {displayQty}
-                        </span>
-                      ) : (
-                        <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                          1×
-                        </span>
-                      )}
+                  {/* أسفل البطاقة: الكمية وسعر الشراء المكبر أو زر الاسترجاع إذا كان ممسوحاً */}
+                  {isDeleted ? (
+                    <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-rose-200/60 dark:border-rose-900/40 w-full">
+                      <span className="text-[9px] font-bold text-rose-500">تم المسح</span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white shadow-xs hover:bg-emerald-700">
+                        ↩️ استرجاع
+                      </span>
                     </div>
-
-                    {/* شارة السعر المكبرة بالأسفل */}
-                    <div className="flex items-center gap-1 mr-auto">
-                      {isMeat ? (
-                        priced ? (
-                          <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-600/40 shadow-sm">تلقائي 🥩</span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shadow-sm">تسعير 🥩</span>
-                        )
-                      ) : priced ? (
-                        <div className="flex items-center gap-1">
-                          <span className={`font-mono text-xs sm:text-[13px] font-black px-2.5 py-0.5 rounded-md shadow-sm border ${isOthers ? "bg-slate-200 text-slate-500 border-slate-300" : "bg-emerald-500 text-white border-emerald-400/30"}`}>
-                            {p.buyAlf}
+                  ) : (
+                    <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-white/10 dark:border-white/5 w-full">
+                      {/* شارة العدد لطلبات المتجر */}
+                      <div>
+                        {displayQty > 1 ? (
+                          <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white shadow-sm">
+                            العدد: {displayQty}
                           </span>
-                          {p.actualBuyAlf !== "" && p.actualBuyAlf != null && Number(p.actualBuyAlf) !== Number(p.buyAlf) && (
-                            <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-sm bg-amber-500 text-white border border-amber-400/30" title={`محفظة: ${p.actualBuyAlf}`}>
-                              محفظة: {p.actualBuyAlf}
+                        ) : (
+                          <span className="shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                            1×
+                          </span>
+                        )}
+                      </div>
+
+                      {/* شارة السعر المكبرة بالأسفل */}
+                      <div className="flex items-center gap-1 mr-auto">
+                        {isMeat ? (
+                          priced ? (
+                            <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-600/40 shadow-sm">تلقائي 🥩</span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shadow-sm">تسعير 🥩</span>
+                          )
+                        ) : priced ? (
+                          <div className="flex items-center gap-1">
+                            <span className={`font-mono text-xs sm:text-[13px] font-black px-2.5 py-0.5 rounded-md shadow-sm border ${isOthers ? "bg-slate-200 text-slate-500 border-slate-300" : "bg-emerald-500 text-white border-emerald-400/30"}`}>
+                              {p.buyAlf}
                             </span>
-                          )}
-                        </div>
-                      ) : null}
+                            {p.actualBuyAlf !== "" && p.actualBuyAlf != null && Number(p.actualBuyAlf) !== Number(p.buyAlf) && (
+                              <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-sm bg-amber-500 text-white border border-amber-400/30" title={`محفظة: ${p.actualBuyAlf}`}>
+                                محفظة: {p.actualBuyAlf}
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </button>
             );
           })}

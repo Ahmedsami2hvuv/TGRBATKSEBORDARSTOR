@@ -278,7 +278,8 @@ export async function updatePreparerShoppingDraft(
     const orderSubtotalRaw = formData.get("orderSubtotal");
     const orderSubtotalAlf = orderSubtotalRaw !== null ? (String(orderSubtotalRaw) === "" ? null : Number(orderSubtotalRaw)) : (dbData.orderSubtotalAlf ?? null);
 
-    const newStatus = mergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
+    const activeMergedProducts = mergedProducts.filter((p: any) => !p.deleted && !p.isDeleted);
+    const newStatus = activeMergedProducts.length > 0 && activeMergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
 
     const noProfitRaw = formData.get("noProfit");
     const noProfit = noProfitRaw !== null ? noProfitRaw === "true" : !!dbData.noProfit;
@@ -386,7 +387,10 @@ export async function submitPreparerShoppingDraft(
         console.error("Failed to parse productsJson from formData:", e);
       }
     }
-    if (!products || products.some(p => p.buyAlf == null || p.buyAlf === "")) return { error: "أكمل تسعير جميع المواد." };
+    const activeProducts = (products || []).filter((p: any) => !p.deleted && !p.isDeleted);
+    if (!activeProducts || activeProducts.length === 0 || activeProducts.some((p: any) => p.buyAlf == null || p.buyAlf === "")) {
+      return { error: "أكمل تسعير جميع المواد غير الممسوحة." };
+    }
 
     const systemShopInfo = await getOrCreateSystemAdminShop();
     const shop = await prisma.shop.findUnique({ where: { id: systemShopInfo.id }, include: { region: true } });
@@ -405,12 +409,12 @@ export async function submitPreparerShoppingDraft(
         ? new Decimal(customDeliveryAlf).mul(ALF_PER_DINAR)
         : defaultDelivery;
 
-    const sumSellAlf = products.reduce((acc, p) => acc + Number(p.sellAlf), 0);
+    const sumSellAlf = activeProducts.reduce((acc: number, p: any) => acc + Number(p.sellAlf), 0);
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
 
     let subtotalValueAlf = sumSellAlf + extraAlf;
     // إذا كانت هناك قيمة يدوية لسعر الطلب ولا توجد منتجات مسعرة، نستخدم القيمة اليدوية
-    if (products.length === 0 && draftData?.orderSubtotalAlf != null && Number(draftData.orderSubtotalAlf) > 0) {
+    if (activeProducts.length === 0 && draftData?.orderSubtotalAlf != null && Number(draftData.orderSubtotalAlf) > 0) {
         subtotalValueAlf = Number(draftData.orderSubtotalAlf);
     }
 
@@ -419,18 +423,18 @@ export async function submitPreparerShoppingDraft(
 
     // --- توليد فواتير الشراء المنفصلة وتوزيعها ---
     // نستخدم pricedById للتجميع لضمان الدقة، مع استخدامpricedBy كاسم عرض
-    const preparerIds = Array.from(new Set(products.map(p => p.pricedById || currentPreparer?.id).filter(Boolean)));
+    const preparerIds = Array.from(new Set(activeProducts.map((p: any) => p.pricedById || currentPreparer?.id).filter(Boolean)));
     const preparerInvoices = preparerIds.map(id => {
-        const myProducts = products.filter(p => (p.pricedById || currentPreparer?.id) === id);
-        const myTotalBuy = myProducts.reduce((acc, p) => {
+        const myProducts = activeProducts.filter((p: any) => (p.pricedById || currentPreparer?.id) === id);
+        const myTotalBuy = myProducts.reduce((acc: number, p: any) => {
           const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
             ? Number(p.actualBuyAlf)
             : Number(p.buyAlf || 0);
           return acc + effectiveCost;
         }, 0);
-        const myTotalSell = myProducts.reduce((acc, p) => acc + Number(p.sellAlf || 0), 0);
+        const myTotalSell = myProducts.reduce((acc: number, p: any) => acc + Number(p.sellAlf || 0), 0);
         const myChargeBuy = myProducts.reduce(
-          (acc, p) => {
+          (acc: number, p: any) => {
             if (isMeatProduct(p.line)) return acc;
             const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
               ? Number(p.actualBuyAlf)
@@ -463,7 +467,7 @@ export async function submitPreparerShoppingDraft(
 
     let resolvedOrderType = draftData?.orderType || "تجهيز تسوق";
     if (resolvedOrderType === "تجهيز تسوق" || !resolvedOrderType.trim()) {
-      resolvedOrderType = resolveDynamicOrderType(products, resolvedOrderType);
+      resolvedOrderType = resolveDynamicOrderType(activeProducts, resolvedOrderType);
     }
 
     let order: any;
