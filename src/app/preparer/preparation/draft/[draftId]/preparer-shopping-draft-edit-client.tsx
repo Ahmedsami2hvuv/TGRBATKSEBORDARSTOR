@@ -1190,10 +1190,6 @@ export function PreparerShoppingDraftEditClient({
 
               return (
                 <div className="bg-[#f0f7ff] border border-[#cce5ff] rounded-2xl p-3 mb-4 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-[11px] font-black text-[#004085]">إكمال السعر لـ ({base}):</span>
-                    <span className="text-[10px] font-bold text-[#007bff] animate-pulse">انقر للكسر والحفظ الفوري</span>
-                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {fractions.map((frac, fIdx) => {
                       const totalVal = base + frac;
