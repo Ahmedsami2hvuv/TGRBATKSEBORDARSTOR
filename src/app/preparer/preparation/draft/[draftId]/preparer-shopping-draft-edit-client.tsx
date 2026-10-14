@@ -1321,8 +1321,8 @@ export function PreparerShoppingDraftEditClient({
               </button>
             </div>
 
-            <div className="flex items-center justify-between mt-3">
-              {products[selectedPriceIndex]?.buyAlf !== "" && (
+            {products[selectedPriceIndex]?.buyAlf !== "" && (
+              <div className="mt-3 text-center">
                 <button
                   type="button"
                   onClick={unpriceProduct}
@@ -1330,15 +1330,8 @@ export function PreparerShoppingDraftEditClient({
                 >
                   مسح السعر 🗑️
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setSelectedPriceIndex(null)}
-                className="w-full text-center bg-transparent text-slate-400 hover:text-slate-600 border-none py-2 font-bold text-xs cursor-pointer"
-              >
-                إلغاء وتراجع
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
