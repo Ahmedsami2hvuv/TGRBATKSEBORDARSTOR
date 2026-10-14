@@ -861,21 +861,9 @@ export function PreparerShoppingDraftEditClient({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-[#e8f5e9] text-[#28a745]">
-            {isAutoSaving || isDirtyRef.current ? (
-              <span className="text-amber-600 font-bold animate-pulse text-[11px]">⏳ جاري الحفظ...</span>
-            ) : (
-              <>
-                <span>✓</span>
-                <span className="hidden sm:inline text-[11px]">تم الحفظ</span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-1 text-sm sm:text-base font-black text-[#007bff]">
-            <span className="text-amber-400 text-base sm:text-lg">⚡</span>
-            <span>وصلي</span>
-          </div>
+        <div className="flex items-center gap-1 text-sm sm:text-base font-black text-[#007bff]">
+          <span className="text-amber-400 text-base sm:text-lg">⚡</span>
+          <span>وصلي</span>
         </div>
       </div>
 
