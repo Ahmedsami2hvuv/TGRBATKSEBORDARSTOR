@@ -11,6 +11,11 @@ export async function register() {
     await ensureEmployeeLocationColumnsIfMissing();
     await ensurePreparerSalaryConfigColumnsIfMissing();
     await ensurePreparerWorkLogShiftNameColumnIfMissing();
+
+    const { ensureShopStoreTablesIfMissing } = await import(
+      "@/lib/db-self-heal-shop-store"
+    );
+    await ensureShopStoreTablesIfMissing();
   } catch (e) {
     console.error("[instrumentation] db-self-heal-columns", e);
   }

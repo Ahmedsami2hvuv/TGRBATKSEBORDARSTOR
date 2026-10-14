@@ -303,4 +303,21 @@ export async function updateGlobalCarStatus(formData: FormData) {
   revalidatePath(`/client/order`);
 }
 
+export async function toggleShopStoreEnabled(formData: FormData) {
+  const shopId = String(formData.get("id") ?? "").trim();
+  const enabled = formData.get("enabled") === "true";
+
+  if (!shopId) return;
+
+  await prisma.shop.update({
+    where: { id: shopId },
+    data: { storeEnabled: enabled },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+  revalidatePath(`/store`);
+  revalidatePath(`/store/shop/${shopId}`);
+}
+
+
 

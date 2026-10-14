@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ad } from "@/lib/admin-ui";
-import { deleteShop, togglePauseOrders } from "./actions";
+import { deleteShop, togglePauseOrders, toggleShopStoreEnabled } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 
@@ -18,6 +18,7 @@ export type ShopRow = {
   ordersCount: number;
   hideDebts: boolean;
   hideFromCreditBook: boolean;
+  storeEnabled?: boolean;
   createdAt: string;
   phones?: string[];
 };
@@ -186,6 +187,16 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                         مستبعد من دفتر الديون 🏦
                       </span>
                     )}
+
+                    {s.storeEnabled ? (
+                      <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white shadow-sm flex items-center gap-1">
+                        🏪 المتجر مفعّل
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-gray-400 px-2 py-0.5 text-[10px] font-black text-white shadow-sm">
+                        المتجر غير متاح
+                      </span>
+                    )}
                   </div>
                   <p className={ad.listMuted}>{s.regionName}</p>
 
@@ -218,7 +229,46 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* زر تفعيل/إيقاف المتجر للمحل */}
+                  <form action={toggleShopStoreEnabled} className="inline-block">
+                    <input type="hidden" name="id" value={s.id} />
+                    <input type="hidden" name="enabled" value={s.storeEnabled ? "false" : "true"} />
+                    <button
+                      type="submit"
+                      title={s.storeEnabled ? "إيقاف متجر المحل" : "فتح وتفعيل متجر المحل"}
+                      className={`text-xs font-black px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm ${
+                        s.storeEnabled
+                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"
+                      }`}
+                    >
+                      <span>🏪</span>
+                      {s.storeEnabled ? "تعطيل المتجر" : "فتح المتجر"}
+                    </button>
+                  </form>
+
+                  {/* زر إعدادات المتجر */}
+                  <Link
+                    href={`/abo1stor3hlaa2kbr8-47/shops/${s.id}/store`}
+                    className="text-xs font-black bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-sm"
+                  >
+                    <span>⚙️</span>
+                    إعدادات المتجر
+                  </Link>
+
+                  {/* زر معاينة المتجر الخارجي إن كان مفعلاً */}
+                  {s.storeEnabled && (
+                    <Link
+                      href={`/store/shop/${s.id}`}
+                      target="_blank"
+                      className="text-xs font-black bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1.5 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1 shadow-sm"
+                    >
+                      <span>🔗</span>
+                      زيارة المتجر
+                    </Link>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {

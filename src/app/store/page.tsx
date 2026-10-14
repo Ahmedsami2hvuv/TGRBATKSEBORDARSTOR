@@ -76,6 +76,81 @@ async function CategoriesRow() {
   }
 }
 
+async function ActiveShopsRow() {
+  try {
+    const shopsRaw = await prisma.shop.findMany({
+      where: {
+        storeEnabled: true,
+        shopStoreProducts: {
+          some: { active: true },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        region: { select: { name: true } },
+        _count: {
+          select: {
+            shopStoreProducts: { where: { active: true } },
+          },
+        },
+      },
+      take: 12,
+    });
+
+    if (!shopsRaw || shopsRaw.length === 0) return null;
+
+    return (
+      <div className="space-y-3 mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🏪</span>
+            <h2 className="text-xl font-black text-slate-800">متاجر المحلات</h2>
+          </div>
+          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl">
+            متاجر معتمدة
+          </span>
+        </div>
+
+        <div className="flex items-stretch gap-3 overflow-x-auto pb-4 pt-1 px-1 hide-scrollbar">
+          {shopsRaw.map((s) => (
+            <Link
+              key={s.id}
+              href={`/store/shop/${s.id}`}
+              className="min-w-[170px] max-w-[190px] bg-white border border-slate-200 rounded-2xl p-3 shadow-xs hover:shadow-md transition flex flex-col justify-between shrink-0 group active:scale-95"
+            >
+              <div>
+                <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
+                  {s.photoUrl ? (
+                    <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <span className="text-4xl">🏪</span>
+                  )}
+                </div>
+                <h3 className="font-black text-xs md:text-sm text-slate-900 truncate">
+                  {s.name}
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  📍 {s.region?.name || "البصرة"}
+                </p>
+              </div>
+
+              <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-blue-600">
+                <span>{s._count?.shopStoreProducts ?? 0} منتج</span>
+                <span className="group-hover:translate-x-1 transition-transform">تصفح ←</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+
 // أضفنا قسم للأكثر مبيعاً ليعرض بعض المنتجات بشكل أفقي
 async function BestSellersRow() {
   try {
@@ -278,6 +353,13 @@ export default async function StoreHomePage() {
           </div>
           <Suspense fallback={<div className="flex gap-4 overflow-hidden"><div className="w-16 h-16 bg-slate-200 rounded-2xl animate-pulse" /></div>}>
             <CategoriesRow />
+          </Suspense>
+        </ScrollReveal>
+
+        {/* قسم متاجر المحلات النشطة */}
+        <ScrollReveal>
+          <Suspense fallback={null}>
+            <ActiveShopsRow />
           </Suspense>
         </ScrollReveal>
 
