@@ -52,28 +52,17 @@ async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Prom
 
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
-    select: { hideFromCreditBook: true }
+    select: { id: true }
   });
 
-  if (!shop || shop.hideFromCreditBook) return { autoDebt: 0, orderCount: 0, orders: [] };
+  if (!shop) return { autoDebt: 0, orderCount: 0, orders: [] };
 
   const whereClause: any = {
     shopId,
-    routeMode: { not: "double" },
     shopCostPaidAt: null,
-    AND: [
-      {
-        OR: [
-          { status: { in: ["delivered", "archived"] } },
-          { archivedAt: { not: null } }
-        ]
-      },
-      {
-        OR: [
-          { orderSubtotal: { gt: 0 } },
-          { prepaidAll: true }
-        ]
-      }
+    OR: [
+      { status: { in: ["delivered", "archived"] } },
+      { archivedAt: { not: null } }
     ]
   };
 
@@ -346,12 +335,30 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
-        } else if (p.type === "shop" && p.externalId) {
+        } else if (p.type === "shop" || p.type === "deleted_shop" || p.externalId) {
           try {
-            const lastZero = getPartnerLastZeroDate(p.transactions);
-            const { autoDebt, orderCount } = await getShopAutoDebt(p.externalId, lastZero);
-            autoBalance = -autoDebt;
-            shopOrderCount = orderCount;
+            let targetShopId = p.externalId;
+            if (!targetShopId || p.type !== "shop") {
+              const cleanName = p.name.replace(/\s*\([^)]*\)\s*$/, "").replace(/[\(\)\[\]]/g, "").trim();
+              const matchedShop = await prisma.shop.findFirst({
+                where: {
+                  OR: [
+                    ...(p.externalId ? [{ id: p.externalId }] : []),
+                    { name: { equals: cleanName, mode: "insensitive" } },
+                    { name: { contains: cleanName, mode: "insensitive" } }
+                  ]
+                },
+                select: { id: true }
+              });
+              if (matchedShop) targetShopId = matchedShop.id;
+            }
+
+            if (targetShopId) {
+              const lastZero = getPartnerLastZeroDate(p.transactions);
+              const { autoDebt, orderCount } = await getShopAutoDebt(targetShopId, lastZero);
+              autoBalance = -autoDebt;
+              shopOrderCount = orderCount;
+            }
           } catch (e) {
             console.error(`Failed to get shop auto debt for ${p.name}:`, e);
           }
@@ -907,63 +914,87 @@ export async function getPartnerDetails(partnerId: string) {
       } catch (e) {
         console.error("Error compiling accumulated salaries for root partner:", e);
       }
-    } else if (partner.type === "shop" && partner.externalId) {
+    } else if (partner.type === "shop" || partner.type === "deleted_shop" || partner.externalId || partner.name) {
       try {
-        const lastZero = getPartnerLastZeroDate(partner.transactions);
-        const { autoDebt, orderCount, orders } = await getShopAutoDebt(partner.externalId, lastZero);
-        autoBalance = -autoDebt;
+        let targetShopId = partner.externalId;
+        const cleanName = partner.name
+          .replace(/\s*\([^)]*\)\s*$/, "")
+          .replace(/[\(\)\[\]]/g, "")
+          .trim();
 
-        for (const o of orders) {
-          const subtotal = Number(o.orderSubtotal || 0);
-          if (subtotal > 0) {
-            autoTransactions.push({
-              id: `auto-shop-order-subtotal-${o.id}`,
-              partnerId: partner.id,
-              amount: subtotal,
-              kind: "took", // أخذت = يطلبنا قيمة بضاعة المحل
-              note: `طلب #${o.orderNumber || "—"} | مستحقات بضاعة المحل (تلقائي)`,
-              createdAt: o.createdAt,
-              updatedAt: o.createdAt,
-              isAuto: true,
-              orderId: o.id
-            });
+        if (!targetShopId || partner.type !== "shop") {
+          const matchedShop = await prisma.shop.findFirst({
+            where: {
+              OR: [
+                ...(partner.externalId ? [{ id: partner.externalId }] : []),
+                { name: { equals: cleanName, mode: "insensitive" } },
+                { name: { contains: cleanName, mode: "insensitive" } }
+              ]
+            },
+            select: { id: true, name: true }
+          });
+          if (matchedShop) {
+            targetShopId = matchedShop.id;
           }
+        }
 
-          const pickupEvents = o.moneyEvents?.filter((me: any) => me.kind === "pickup_out") || [];
-          for (const pe of pickupEvents) {
-            const pAmt = Number(pe.amountDinar || 0);
-            if (pAmt > 0) {
-              autoTransactions.push({
-                id: `auto-shop-pickup-out-${pe.id}`,
-                partnerId: partner.id,
-                amount: pAmt,
-                kind: "gave", // أعطيت = تسديد للمحل نقداً عبر المندوب
-                note: `تسليم نقد للمحل للطلب #${o.orderNumber || "—"} (تلقائي)`,
-                createdAt: pe.createdAt,
-                updatedAt: pe.createdAt,
-                isAuto: true,
-                orderId: o.id
-              });
-            }
-          }
+        if (targetShopId) {
+          const lastZero = getPartnerLastZeroDate(partner.transactions);
+          const { autoDebt, orderCount, orders } = await getShopAutoDebt(targetShopId, lastZero);
+          autoBalance = -autoDebt;
 
-          if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
-            const delPrice = Number(o.deliveryPrice);
-            const hasMatchingDeliveryIn = o.moneyEvents?.some(
-              (me: any) => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
-            );
-            if (!hasMatchingDeliveryIn) {
+          for (const o of orders) {
+            const subtotal = Number(o.orderSubtotal || 0);
+            if (subtotal > 0) {
               autoTransactions.push({
-                id: `auto-shop-prepaid-delivery-${o.id}`,
+                id: `auto-shop-order-subtotal-${o.id}`,
                 partnerId: partner.id,
-                amount: delPrice,
-                kind: "gave", // أعطيت = تسديد كلفة التوصيل
-                note: `كلفة توصيل واصل كامل للطلب #${o.orderNumber || "—"} (تلقائي)`,
+                amount: subtotal,
+                kind: "took", // أخذت = يطلبنا قيمة بضاعة المحل
+                note: `طلب #${o.orderNumber || "—"} | مستحقات بضاعة المحل (تلقائي)`,
                 createdAt: o.createdAt,
                 updatedAt: o.createdAt,
                 isAuto: true,
                 orderId: o.id
               });
+            }
+
+            const pickupEvents = o.moneyEvents?.filter((me: any) => me.kind === "pickup_out") || [];
+            for (const pe of pickupEvents) {
+              const pAmt = Number(pe.amountDinar || 0);
+              if (pAmt > 0) {
+                autoTransactions.push({
+                  id: `auto-shop-pickup-out-${pe.id}`,
+                  partnerId: partner.id,
+                  amount: pAmt,
+                  kind: "gave", // أعطيت = تسديد للمحل نقداً عبر المندوب
+                  note: `تسليم نقد للمحل للطلب #${o.orderNumber || "—"} (تلقائي)`,
+                  createdAt: pe.createdAt,
+                  updatedAt: pe.createdAt,
+                  isAuto: true,
+                  orderId: o.id
+                });
+              }
+            }
+
+            if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
+              const delPrice = Number(o.deliveryPrice);
+              const hasMatchingDeliveryIn = o.moneyEvents?.some(
+                (me: any) => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
+              );
+              if (!hasMatchingDeliveryIn) {
+                autoTransactions.push({
+                  id: `auto-shop-prepaid-delivery-${o.id}`,
+                  partnerId: partner.id,
+                  amount: delPrice,
+                  kind: "gave", // أعطيت = تسديد كلفة التوصيل
+                  note: `كلفة توصيل واصل كامل للطلب #${o.orderNumber || "—"} (تلقائي)`,
+                  createdAt: o.createdAt,
+                  updatedAt: o.createdAt,
+                  isAuto: true,
+                  orderId: o.id
+                });
+              }
             }
           }
         }
@@ -1710,11 +1741,9 @@ export async function syncSystemPartners() {
 
       const isExcluded =
         trimmedName === "الإدارة".toLowerCase() ||
-        trimmedName === "طلبات الإدارة العامة".toLowerCase() ||
-        allSuppliersNames.has(trimmedName) ||
-        allPreparersNames.has(trimmedName);
+        trimmedName === "طلبات الإدارة العامة".toLowerCase();
 
-      if (shop.hideFromCreditBook || isExcluded) {
+      if (isExcluded) {
         if (exists && !exists.type.startsWith("deleted_")) {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
@@ -1726,6 +1755,18 @@ export async function syncSystemPartners() {
           importedCount++;
         }
         continue;
+      }
+
+      // إذا كان المحل محذوفاً بالخطأ، نقوم باستعادته فوراً كشريك نشط
+      if (exists && exists.type === "deleted_shop") {
+        await prisma.creditBookPartner.update({
+          where: { id: exists.id },
+          data: {
+            type: "shop",
+            name: expectedName,
+            updatedAt: new Date()
+          }
+        }).catch(e => console.error("Err restore shop partner", e));
       }
 
       // إذا كان المحل مضافاً وموجوداً في الدفتر ولم يُحذف، نحدث بياناته دون إجبار غير المضاف
