@@ -78,27 +78,23 @@ async function CategoriesRow() {
 
 async function ActiveShopsRow() {
   try {
-    const shopsRaw = await prisma.shop.findMany({
-      where: {
-        storeEnabled: true,
-        shopStoreProducts: {
-          some: { active: true },
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        photoUrl: true,
-        storeToken: true,
-        region: { select: { name: true } },
-        _count: {
-          select: {
-            shopStoreProducts: { where: { active: true } },
-          },
-        },
-      },
-      take: 12,
-    });
+    const shopsRaw = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT 
+        s.id, 
+        s.name, 
+        s."photoUrl", 
+        COALESCE(s."storeToken", '') as "storeToken",
+        r.name as "regionName",
+        COUNT(p.id)::int as "productsCount"
+      FROM "Shop" s
+      LEFT JOIN "Region" r ON s."regionId" = r.id
+      INNER JOIN "ShopStoreProduct" p ON p."shopId" = s.id AND p.active = true
+      WHERE s."storeEnabled" = true
+      GROUP BY s.id, s.name, s."photoUrl", s."storeToken", r.name
+      HAVING COUNT(p.id) > 0
+      ORDER BY s."updatedAt" DESC
+      LIMIT 12;
+    `);
 
     if (!shopsRaw || shopsRaw.length === 0) return null;
 
@@ -133,12 +129,12 @@ async function ActiveShopsRow() {
                   {s.name}
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  📍 {s.region?.name || "البصرة"}
+                  📍 {s.regionName || "البصرة"}
                 </p>
               </div>
 
               <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-blue-600">
-                <span>{s._count?.shopStoreProducts ?? 0} منتج</span>
+                <span>{s.productsCount ?? 0} منتج</span>
                 <span className="group-hover:translate-x-1 transition-transform">تصفح ←</span>
               </div>
             </Link>

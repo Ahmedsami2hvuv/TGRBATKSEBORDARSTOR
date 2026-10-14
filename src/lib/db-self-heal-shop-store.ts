@@ -20,8 +20,18 @@ async function safeExecute(sql: string) {
  */
 export async function ensureShopStoreTablesIfMissing(): Promise<void> {
   if (hasCheckedShopStore) return;
+  hasCheckedShopStore = true;
 
   try {
+    // فحص سريع: إذا كان الجدول موجوداً بالفعل، لا داعي لتنفيذ أي شيء
+    const check = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT to_regclass('public."ShopStoreCategory"') as exists;`
+    ).catch(() => null);
+
+    if (check && check[0]?.exists) {
+      return;
+    }
+
     // 1. إضافة أعمدة متجر المحل في جدول Shop
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeEnabled" BOOLEAN NOT NULL DEFAULT false;`);
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeBannerUrl" TEXT NOT NULL DEFAULT '';`);

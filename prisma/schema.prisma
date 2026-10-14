@@ -125,14 +125,22 @@ model Shop {
   ordersPaused  Boolean        @default(false)
   pauseMessage  String         @default("")
   hideDebts     Boolean        @default(false)
-  hideFromCreditBook Boolean    @default(false)
-  customers     Customer[]
-  employees     Employee[]
-  orders        Order[]
-  preparerLinks PreparerShop[]
-  blockedPhones ShopBlockedPhone[]
-  clientFeedbacks ClientFeedback[]
-  region        Region         @relation(fields: [regionId], references: [id])
+  storeEnabled        Boolean             @default(false)
+  storeBannerUrl      String              @default("")
+  storeBio            String              @default("")
+  storeToken          String              @default("")
+  shopStoreCategories ShopStoreCategory[]
+  shopStoreBranches   ShopStoreBranch[]
+  shopStoreProducts   ShopStoreProduct[]
+  shopStoreSlides     ShopStoreSlide[]
+  shopStoreOrders     ShopStoreOrder[]
+  customers           Customer[]
+  employees           Employee[]
+  orders              Order[]
+  preparerLinks       PreparerShop[]
+  blockedPhones       ShopBlockedPhone[]
+  clientFeedbacks     ClientFeedback[]
+  region              Region              @relation(fields: [regionId], references: [id])
 }
 
 model CompanyPreparer {
@@ -1155,5 +1163,97 @@ model DriverRating {
   @@index([customerPhone])
   @@index([createdAt])
 }
+
+model ShopStoreCategory {
+  id        String            @id @default(cuid())
+  shopId    String
+  name      String
+  photoUrl  String            @default("")
+  sequence  Int               @default(0)
+  active    Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @default(now()) @updatedAt
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branches  ShopStoreBranch[]
+  products  ShopStoreProduct[]
+
+  @@index([shopId, active, sequence])
+}
+
+model ShopStoreBranch {
+  id             String            @id @default(cuid())
+  shopId         String
+  categoryId     String
+  parentBranchId String?
+  name           String
+  photoUrl       String            @default("")
+  sequence       Int               @default(0)
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
+  shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category       ShopStoreCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  parentBranch   ShopStoreBranch?  @relation("ShopStoreBranchHierarchy", fields: [parentBranchId], references: [id], onDelete: Cascade)
+  childBranches  ShopStoreBranch[] @relation("ShopStoreBranchHierarchy")
+  products       ShopStoreProduct[]
+
+  @@index([shopId])
+  @@index([categoryId])
+}
+
+model ShopStoreProduct {
+  id          String             @id @default(cuid())
+  shopId      String
+  categoryId  String
+  branchId    String?
+  name        String
+  description String             @default("")
+  price       Decimal            @db.Decimal(10, 2)
+  photoUrl    String             @default("")
+  photoUrls   String[]           @default([])
+  active      Boolean            @default(true)
+  sequence    Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+  shop        Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category    ShopStoreCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  branch      ShopStoreBranch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, active, sequence])
+}
+
+model ShopStoreSlide {
+  id        String   @id @default(cuid())
+  shopId    String
+  title     String   @default("")
+  imageUrl  String
+  linkUrl   String   @default("")
+  active    Boolean  @default(true)
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, active, sequence])
+}
+
+model ShopStoreOrder {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
+  shopId        String
+  shopName      String
+  customerPhone String
+  regionName    String
+  receiptTime   String
+  totalPrice    Decimal  @db.Decimal(10, 2)
+  items         Json
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([createdAt])
+}
+
 
 

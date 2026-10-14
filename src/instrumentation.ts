@@ -1,22 +1,27 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  try {
-    const { 
-      ensureEmployeeLocationColumnsIfMissing, 
-      ensurePreparerSalaryConfigColumnsIfMissing,
-      ensurePreparerWorkLogShiftNameColumnIfMissing 
-    } = await import(
-      "@/lib/db-self-heal-employee-location"
-    );
-    await ensureEmployeeLocationColumnsIfMissing();
-    await ensurePreparerSalaryConfigColumnsIfMissing();
-    await ensurePreparerWorkLogShiftNameColumnIfMissing();
 
-    const { ensureShopStoreTablesIfMissing } = await import(
-      "@/lib/db-self-heal-shop-store"
-    );
-    await ensureShopStoreTablesIfMissing();
-  } catch (e) {
-    console.error("[instrumentation] db-self-heal-columns", e);
-  }
+  // تشغيل فحوصات قاعدة البيانات الآمنة في الخلفية دون حظر استجابة السيرفر للطلبات
+  (async () => {
+    try {
+      const { 
+        ensureEmployeeLocationColumnsIfMissing, 
+        ensurePreparerSalaryConfigColumnsIfMissing,
+        ensurePreparerWorkLogShiftNameColumnIfMissing 
+      } = await import(
+        "@/lib/db-self-heal-employee-location"
+      );
+      await ensureEmployeeLocationColumnsIfMissing();
+      await ensurePreparerSalaryConfigColumnsIfMissing();
+      await ensurePreparerWorkLogShiftNameColumnIfMissing();
+
+      const { ensureShopStoreTablesIfMissing } = await import(
+        "@/lib/db-self-heal-shop-store"
+      );
+      await ensureShopStoreTablesIfMissing();
+    } catch (e) {
+      console.warn("[instrumentation] background db-self-heal notice:", e);
+    }
+  })();
 }
+
