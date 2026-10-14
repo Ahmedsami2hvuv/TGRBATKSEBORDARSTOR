@@ -78,6 +78,7 @@ export function PreparerWalletTransferSection({
                   {new Date(p.createdAt).toLocaleString("ar-IQ-u-nu-latn", {
                     dateStyle: "medium",
                     timeStyle: "short",
+                    timeZone: "Asia/Baghdad",
                   })}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">

@@ -359,12 +359,14 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
                               year: "numeric",
                               month: "numeric",
                               day: "numeric",
+                              timeZone: "Asia/Baghdad",
                             })}
                           </span>
                           <span>
                             {new Date(tx.createdAt).toLocaleTimeString("ar-IQ-u-nu-latn", {
                               hour: "2-digit",
                               minute: "2-digit",
+                              timeZone: "Asia/Baghdad",
                             })}
                           </span>
                         </div>

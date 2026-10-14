@@ -39,6 +39,7 @@ function buildWalletSearchText(line: MandoubWalletLedgerLine) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "Asia/Baghdad",
   });
 
   return [
@@ -166,7 +167,7 @@ export function PreparerWalletClient({
           const isOutPick = !isTransfer && (line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out");
 
           const dirLabel = ledgerDirLabel(line);
-          const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+          const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Baghdad' });
           const orderHref = (orderLinkAuth && line.orderId) ? `/preparer/order/${line.orderId}?${new URLSearchParams({ p: orderLinkAuth.p, exp: orderLinkAuth.exp, s: orderLinkAuth.s }).toString()}` : null;
           const hoursPassed = (Date.now() - new Date(line.createdAt).getTime()) / (1000 * 60 * 60);
           const showDelete =

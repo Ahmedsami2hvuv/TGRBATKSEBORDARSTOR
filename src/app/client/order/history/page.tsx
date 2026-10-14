@@ -10,6 +10,7 @@ import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { formatBaghdadDateTime, getIraqTime } from "@/lib/baghdad-time";
 import { CancelOrderButton } from "./cancel-order-button";
 
 export const dynamic = "force-dynamic";
@@ -193,7 +194,8 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
               const dailyTotals: Record<string, number> = {};
               orders.forEach(o => {
                 if (o.status === "delivered") {
-                  const dateKey = `${o.createdAt.getDate()}/${o.createdAt.getMonth() + 1}/${o.createdAt.getFullYear()}`;
+                  const iraq = getIraqTime(o.createdAt);
+                  const dateKey = `${iraq.day}/${iraq.month}/${iraq.year}`;
                   const subtotal = Number(o.orderSubtotal || 0);
                   const delivery = Number(o.deliveryPrice || 0);
                   
@@ -212,10 +214,11 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                 <ul className="space-y-3">
                   {orders.map((o, idx) => {
                     const prevOrder = orders[idx - 1];
-                    const showSeparator = !prevOrder ||
-                      o.createdAt.toLocaleDateString("en-US") !== prevOrder.createdAt.toLocaleDateString("en-US");
-
-                    const dateKey = `${o.createdAt.getDate()}/${o.createdAt.getMonth() + 1}/${o.createdAt.getFullYear()}`;
+                    const iraq = getIraqTime(o.createdAt);
+                    const dateKey = `${iraq.day}/${iraq.month}/${iraq.year}`;
+                    const prevIraq = prevOrder ? getIraqTime(prevOrder.createdAt) : null;
+                    const prevDateKey = prevIraq ? `${prevIraq.day}/${prevIraq.month}/${prevIraq.year}` : null;
+                    const showSeparator = !prevOrder || dateKey !== prevDateKey;
                     const totalForDay = dailyTotals[dateKey] || 0;
 
                     const typeLine = o.orderType?.trim() || "—";
@@ -259,7 +262,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                               <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs md:text-sm font-black text-sky-800 bg-sky-50 dark:text-sky-200 dark:bg-sky-950/80 px-4 py-1.5 rounded-full border border-sky-200/80 dark:border-sky-800 shadow-sm whitespace-nowrap">
-                                  {o.createdAt.toLocaleDateString("ar-IQ", { weekday: "long" })}، {dateKey}
+                                  {o.createdAt.toLocaleDateString("ar-IQ", { weekday: "long", timeZone: "Asia/Baghdad" })}، {dateKey}
                                 </span>
                                 {totalForDay > 0 && (
                                   <span className="text-xs md:text-sm font-black text-emerald-800 bg-emerald-50 dark:text-emerald-200 dark:bg-emerald-950/80 px-4 py-1.5 rounded-full border border-emerald-200/80 dark:border-emerald-800 shadow-sm whitespace-nowrap">
@@ -388,8 +391,8 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                       )}
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
-                        <span className="tabular-nums">
-                          📅 {o.createdAt.toLocaleString("ar-IQ-u-nu-latn", {
+                        <span className="tabular-nums font-semibold text-slate-700 dark:text-slate-300">
+                          📅 وقت الرفع: {formatBaghdadDateTime(o.createdAt, {
                             dateStyle: "short",
                             timeStyle: "short",
                           })}
