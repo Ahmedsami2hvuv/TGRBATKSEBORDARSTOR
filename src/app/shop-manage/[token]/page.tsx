@@ -35,8 +35,6 @@ export default async function ShopManageByTokenPage({
 }) {
   const { token } = await params;
 
-  await ensureShopStoreTablesIfMissing();
-
   // البحث عن المحل عبر التوكن المشفر أو عبر الـ ID
   const shopRaw = await prisma.shop.findFirst({
     where: {

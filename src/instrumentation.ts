@@ -15,10 +15,7 @@ export async function register() {
       await ensurePreparerSalaryConfigColumnsIfMissing();
       await ensurePreparerWorkLogShiftNameColumnIfMissing();
 
-      const { ensureShopStoreTablesIfMissing } = await import(
-        "@/lib/db-self-heal-shop-store"
-      );
-      await ensureShopStoreTablesIfMissing();
+      // انتهت متطلبات فحص الجداول
     } catch (e) {
       console.warn("[instrumentation] background db-self-heal notice:", e);
     }

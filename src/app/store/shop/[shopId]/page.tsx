@@ -41,9 +41,6 @@ export default async function SingleShopStorePage({
 }) {
   const { shopId } = await params;
 
-  // ضمان وجود الجداول تلقائياً
-  await ensureShopStoreTablesIfMissing();
-
   const [shopRaw, regionsRaw] = await Promise.all([
     prisma.shop.findFirst({
       where: {

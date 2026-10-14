@@ -129,33 +129,64 @@ export default async function ClientOrderPage(props: Props) {
     }
 
   try {
-    // جلب البيانات الأساسية فقط وبسرعة
-    const employee = await prisma.employee.findUnique({
-      where: { id: v.employeeId },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        orderPortalToken: true,
-        uiMode: true,
-        shop: {
-          select: {
-            id: true,
-            name: true,
-            photoUrl: true,
-            ordersPaused: true,
-            pauseMessage: true,
-            storeEnabled: true,
-            region: {
-              select: {
-                name: true,
-                deliveryPrice: true
+    let employee: any = null;
+    let storeEnabled = false;
+
+    try {
+      employee = await prisma.employee.findUnique({
+        where: { id: v.employeeId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          orderPortalToken: true,
+          uiMode: true,
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              photoUrl: true,
+              ordersPaused: true,
+              pauseMessage: true,
+              storeEnabled: true,
+              region: {
+                select: {
+                  name: true,
+                  deliveryPrice: true
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+      storeEnabled = Boolean(employee?.shop?.storeEnabled);
+    } catch {
+      employee = await prisma.employee.findUnique({
+        where: { id: v.employeeId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          orderPortalToken: true,
+          uiMode: true,
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              photoUrl: true,
+              ordersPaused: true,
+              pauseMessage: true,
+              region: {
+                select: {
+                  name: true,
+                  deliveryPrice: true
+                }
+              }
+            }
+          }
+        }
+      });
+    }
 
     if (!employee) {
       return (
@@ -320,7 +351,7 @@ export default async function ClientOrderPage(props: Props) {
           noCarsMode={currentNoCarsMode}
           employeePhone={employee.phone}
           recentOrderTypes={recentOrderTypes}
-          storeEnabled={shop.storeEnabled ?? false}
+          storeEnabled={storeEnabled}
         />
       </div>
     );

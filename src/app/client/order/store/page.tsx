@@ -36,9 +36,6 @@ export default async function ClientShopStorePage(props: Props) {
   }
 
   try {
-    // التأكد من توفر جداول المتجر وحقوله
-    await ensureShopStoreTablesIfMissing();
-
     const employee = await prisma.employee.findUnique({
       where: { id: v.employeeId },
       include: {

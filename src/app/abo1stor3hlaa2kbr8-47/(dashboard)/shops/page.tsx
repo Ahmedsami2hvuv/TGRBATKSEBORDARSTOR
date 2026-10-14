@@ -13,8 +13,6 @@ import { ensureShopStoreTablesIfMissing } from "@/lib/db-self-heal-shop-store";
 export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
-  await ensureShopStoreTablesIfMissing();
-
   // جلب البيانات مع تأمين ضد الأخطاء
   const [regionsRaw, shopsRaw, iconsRaw, globalSettingsRaw] = await Promise.all([
     prisma.region.findMany({ orderBy: { name: "asc" } }).catch(() => []),

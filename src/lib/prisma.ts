@@ -9,11 +9,17 @@ if (datasourceUrl) {
     const url = new URL(datasourceUrl);
     const isPooler = url.port === "6543" || url.hostname.includes("pooler.supabase.com");
 
-    // ضبط عدد الاتصالات المتوازنة (5) لتسريع الفتح الفوري ومنع تأخير الشبكة
-    url.searchParams.set("connection_limit", "5");
-    // مهلة انتظار مرنة وسريعة تمنع تعليق المتصفح
-    url.searchParams.set("pool_timeout", "15");
-    url.searchParams.set("connect_timeout", "10");
+    // ضبط عدد الاتصالات بشكل متوازن لمنع استنفاذ الاتصالات
+    if (!url.searchParams.has("connection_limit")) {
+      url.searchParams.set("connection_limit", "10");
+    }
+    // مهلة انتظار مرنة تمنع فشل الطلبات في أوقات الذروة
+    if (!url.searchParams.has("pool_timeout")) {
+      url.searchParams.set("pool_timeout", "30");
+    }
+    if (!url.searchParams.has("connect_timeout")) {
+      url.searchParams.set("connect_timeout", "15");
+    }
 
     // تفعيل وضع PgBouncer التلقائي عند استخدام وصلة Pooler بورت 6543
     if (isPooler) {
