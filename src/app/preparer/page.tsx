@@ -17,7 +17,7 @@ import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launche
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
-import { calculateAccumulatedSalaryInternal } from "./actions";
+import { calculateAccumulatedSalaryInternal, recordPreparerWorkLog } from "./actions";
 import { getIraqTime } from "@/lib/baghdad-time";
 import { getPendingPreparationOrdersCount } from "@/lib/preparer-pending-orders";
 
@@ -107,6 +107,23 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
   const submittableShopIds = preparer.shopLinks.filter((l) => l.canSubmitOrders).map((l) => l.shopId);
+
+  // تسجيل تواجد المجهز في حسابه لاحتساب الشفت إن لم يكن مسجلاً في آخر 30 دقيقة
+  try {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const recentLog = await prisma.companyPreparerWorkLog.findFirst({
+      where: {
+        preparerId: preparer.id,
+        createdAt: { gte: thirtyMinutesAgo },
+      },
+      select: { id: true },
+    });
+    if (!recentLog) {
+      await recordPreparerWorkLog(preparer.id, "portal_active");
+    }
+  } catch (e) {
+    // تجاهل أي خطأ ثانوي
+  }
 
   const [couriersForBulkAssign, walletTotals, stats, icons, pendingPreparationCount] = await Promise.all([
     prisma.courier.findMany({

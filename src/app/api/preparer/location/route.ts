@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { prisma } from "@/lib/prisma";
 import { assertTrackingEnabled, handleResourceDisabledError } from "@/lib/portal-chat-settings";
+import { recordPreparerWorkLog } from "@/app/preparer/actions";
 
 export const runtime = "nodejs";
 
@@ -53,6 +54,23 @@ export async function POST(req: Request) {
         lastPreparerLocationAt: serverTime,
       },
     });
+
+    // تسجيل لوج عمل للشفت إذا لم يكن مسجلاً خلال آخر 30 دقيقة
+    try {
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      const recentLog = await prisma.companyPreparerWorkLog.findFirst({
+        where: {
+          preparerId: v.preparerId,
+          createdAt: { gte: thirtyMinutesAgo },
+        },
+        select: { id: true },
+      });
+      if (!recentLog) {
+        await recordPreparerWorkLog(v.preparerId, "active_location");
+      }
+    } catch (e) {
+      // عدم تعطيل مسار الرفع إن حدث أي خطأ ثانوي
+    }
 
     return NextResponse.json({ ok: true, serverTime: serverTime.toISOString() });
   } catch (error) {

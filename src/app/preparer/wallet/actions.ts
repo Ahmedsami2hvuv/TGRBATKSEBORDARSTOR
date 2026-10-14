@@ -9,6 +9,7 @@ import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { notifyTelegramCourierTransferEvent, notifyTelegramPreparerWalletEvent } from "@/lib/telegram-notify";
 import { resolvePartyDisplayName, writeLedgerEntriesForAcceptedTransfer } from "@/lib/wallet-peer-transfer";
+import { recordPreparerWorkLog } from "@/app/preparer/actions";
 
 export type WalletPeerTransferState = { error?: string };
 export type EmployeeWalletMiscState = { error?: string };
@@ -53,6 +54,8 @@ export async function submitEmployeeWalletMiscEntryFromCompanyPreparer(_prev: Em
     amountDinar,
     label
   });
+
+  await recordPreparerWorkLog(v.preparerId, directionRaw === "take" ? "wallet_take" : "wallet_give");
 
   revalidateAll();
   return {};
@@ -99,6 +102,8 @@ export async function softDeleteEmployeeWalletMiscEntryFromCompanyPreparer(
       deletedByDisplayName: deletedBy,
     },
   });
+
+  await recordPreparerWorkLog(v.preparerId, "wallet_misc_delete");
 
   revalidateAll();
   return {};
@@ -167,6 +172,8 @@ export async function createWalletPeerTransferFromCompanyPreparer(_prev: WalletP
       }
     }
   }
+
+  await recordPreparerWorkLog(v.preparerId, "wallet_transfer_create");
 
   revalidateAll();
   return {};
@@ -239,6 +246,8 @@ export async function respondWalletPeerTransferByCompanyPreparer(_prev: WalletPe
       }
     }
   }
+
+  await recordPreparerWorkLog(v.preparerId, accept ? "wallet_transfer_accept" : "wallet_transfer_reject");
 
   revalidateAll();
   return {};

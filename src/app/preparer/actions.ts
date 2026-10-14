@@ -1332,6 +1332,7 @@ export async function rejectOrderFromPreparerAction(
       data: { status: "archived" }
     });
 
+    await recordPreparerWorkLog(v.preparerId, "reject_order");
     revalidatePath("/preparer/preparation");
     return { ok: true };
   } catch (e) {
@@ -1375,14 +1376,7 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
   });
 
   // تسجيل الشفت أولاً
-  const shiftName = await determineShiftName(v.preparerId, new Date());
-  await prisma.companyPreparerWorkLog.create({
-    data: {
-      preparerId: v.preparerId,
-      actionType: "assign_order",
-      shiftName
-    },
-  });
+  await recordPreparerWorkLog(v.preparerId, "assign_order");
 
   // تشغيل الإشعارات في الخلفية لتفادي بطء الاستجابة
   setTimeout(() => {
@@ -1438,6 +1432,7 @@ export async function uploadPreparerPortalOrderImage(
       },
     });
 
+    await recordPreparerWorkLog(v.preparerId, "upload_order_image");
     revalidatePath("/preparer");
     revalidatePath(`/preparer/order/${orderId}`);
     revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
@@ -1495,6 +1490,7 @@ export async function uploadPreparerPortalShopDoorPhoto(
       },
     });
 
+    await recordPreparerWorkLog(v.preparerId, "upload_shop_photo");
     revalidatePath("/preparer");
     revalidatePath(`/preparer/order/${orderId}`);
     revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
@@ -1644,6 +1640,7 @@ export async function reportUnavailableProductsAction(
       unavailableItems,
     });
 
+    await recordPreparerWorkLog(v.preparerId, "report_unavailable");
     return { ok: true };
   } catch (e) {
     console.error("reportUnavailableProductsAction error:", e);
@@ -1651,7 +1648,13 @@ export async function reportUnavailableProductsAction(
   }
 }
 
-export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
+export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
+  const v = readPortal(formData);
+  if (v.ok) {
+    void recordPreparerWorkLog(v.preparerId, "presence_toggle").catch(console.error);
+  }
+  return { ok: true };
+}
 
 /** إخفاء الطلبية من قائمة الديون الخاصة بالمجهز */
 export async function hideOrderFromPreparerDebtsAction(
@@ -1904,14 +1907,7 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
       }, 50);
     }
 
-    const shiftName = await determineShiftName(v.preparerId, new Date());
-    await prisma.companyPreparerWorkLog.create({
-      data: {
-        preparerId: v.preparerId,
-        actionType: "assign_order",
-        shiftName
-      },
-    });
+    await recordPreparerWorkLog(v.preparerId, "bulk_assign_orders");
 
     revalidatePath("/preparer");
     return { ok: true };
