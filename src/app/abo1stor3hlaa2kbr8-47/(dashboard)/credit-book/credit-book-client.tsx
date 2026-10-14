@@ -55,6 +55,15 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setAllPartners(initialPartners);
+  }, [initialPartners]);
+
+  useEffect(() => {
+    // جلب أحدث الأرقام الحية فورياً عند فتح الصفحة لضمان مطابقة الشاشة للواقع
+    refreshList();
+  }, []);
+
   // نموذج إضافة شريك جديد
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
