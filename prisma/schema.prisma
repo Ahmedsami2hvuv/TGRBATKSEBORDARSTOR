@@ -421,6 +421,7 @@ model Courier {
   profitHistories             CourierProfitHistory[]
   webPushSubscriptions        WebPushSubscription[]
   locationPoints             CourierLocationPoint[]
+  workLogs                   CourierWorkLog[]
 }
 
 model CourierLocationPoint {
@@ -435,6 +436,18 @@ model CourierLocationPoint {
 
   @@index([courierId])
   @@index([recordedAt])
+}
+
+model CourierWorkLog {
+  id         String   @id @default(cuid())
+  courierId  String
+  shiftName  String   @default("")
+  dateKey    String   @default("")
+  createdAt  DateTime @default(now())
+  courier    Courier  @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId, dateKey, shiftName])
+  @@index([courierId, createdAt])
 }
 
 model CourierTip {

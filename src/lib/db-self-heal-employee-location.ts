@@ -127,4 +127,30 @@ export async function ensurePreparerWorkLogShiftNameColumnIfMissing(): Promise<v
   }
 }
 
+let hasCheckedCourierWorkLog = false;
+
+export async function ensureCourierWorkLogTableIfMissing(): Promise<void> {
+  if (hasCheckedCourierWorkLog) return;
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "CourierWorkLog" (
+        "id" TEXT PRIMARY KEY,
+        "courierId" TEXT NOT NULL,
+        "shiftName" TEXT NOT NULL DEFAULT '',
+        "dateKey" TEXT NOT NULL DEFAULT '',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "CourierWorkLog_courierId_fkey" FOREIGN KEY ("courierId") REFERENCES "Courier" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "CourierWorkLog_courierId_dateKey_shiftName_idx" 
+      ON "CourierWorkLog" ("courierId", "dateKey", "shiftName");
+    `);
+    hasCheckedCourierWorkLog = true;
+  } catch (error) {
+    console.error("[DbSelfHeal] Error checking/creating CourierWorkLog table:", error);
+  }
+}
+
 

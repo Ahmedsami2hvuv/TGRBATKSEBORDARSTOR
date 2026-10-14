@@ -52,3 +52,27 @@ export async function setCourierPresenceFromForm(
   revalidatePath("/mandoub");
   return { ok: true };
 }
+
+export async function recordCourierShiftPresenceAction(
+  _prev: MandoubPresenceState,
+  formData: FormData
+): Promise<MandoubPresenceState> {
+  const c = String(formData.get("c") ?? "").trim();
+  const exp = String(formData.get("exp") ?? "").trim();
+  const s = String(formData.get("s") ?? "").trim();
+
+  const v = verifyDelegatePortalQuery(c, exp || undefined, s);
+  if (!v.ok) {
+    return { error: "الرابط غير صالح." };
+  }
+
+  const { recordCourierShiftPresence } = await import("@/lib/courier-shift");
+  const res = await recordCourierShiftPresence(v.courierId);
+  if (!res.ok) {
+    return { error: res.error || "تعذر تسجيل الحضور." };
+  }
+
+  revalidatePath("/mandoub");
+  return { ok: true };
+}
+
