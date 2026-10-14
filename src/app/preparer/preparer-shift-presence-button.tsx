@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { recordPreparerShiftPresenceAction, type PreparerActionState } from "./actions";
 
@@ -17,6 +17,17 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
   const [visible, setVisible] = useState(initialShow);
   const [justRecorded, setJustRecorded] = useState(false);
 
+  // إحداثيات السحب والتحريك الحر للزر العائم
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number; moved: boolean }>({
+    startX: 0,
+    startY: 0,
+    initX: 0,
+    initY: 0,
+    moved: false,
+  });
+
   useEffect(() => {
     if (state.ok) {
       setJustRecorded(true);
@@ -28,10 +39,62 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
     }
   }, [state.ok, router]);
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: position.x,
+      initY: position.y,
+      moved: false,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      dragRef.current.moved = true;
+    }
+    setPosition({
+      x: dragRef.current.initX + dx,
+      y: dragRef.current.initY + dy,
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    // إذا كان المجهز يقوم بسحب الزر، نمنع إرسال النموذج حتى لا يسجل بالخطأ أثناء مجرد التحريك
+    if (dragRef.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 inset-x-4 z-50 mx-auto max-w-xs transition-all duration-300 ease-in-out">
+    <div
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        touchAction: "none",
+      }}
+      className={`fixed top-4 inset-x-4 z-[999] mx-auto max-w-xs transition-shadow duration-200 select-none ${
+        isDragging ? "cursor-grabbing scale-105" : "cursor-grab"
+      }`}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       <form action={formAction} className="w-full">
         <input type="hidden" name="p" value={auth.p} />
         <input type="hidden" name="exp" value={auth.exp} />
@@ -53,11 +116,17 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
         ) : (
           <button
             type="submit"
+            onClick={handleButtonClick}
             disabled={pending}
-            className="group relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 font-black text-white shadow-[0_10px_25px_-5px_rgba(16,185,129,0.5)] ring-2 ring-emerald-400/80 transition-all duration-200 active:scale-95 hover:brightness-110 disabled:opacity-80"
+            className="group relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 font-black text-white shadow-[0_10px_30px_rgba(16,185,129,0.5)] ring-2 ring-emerald-400/80 transition-transform active:scale-95 hover:brightness-110 disabled:opacity-80"
           >
-            {/* لمعة متحركة لجذب انتباه المجهز */}
-            <span className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            {/* لمعة متحركة مستمرة لتأكيد أنه عائم ومتحرك */}
+            <span className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+            {/* أيقونة حركة صغيرة تسحب الزر */}
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-40 text-xs pointer-events-none">
+              ⋮⋮
+            </span>
 
             {pending ? (
               <span className="flex items-center gap-2 text-base">
