@@ -145,6 +145,7 @@ export default async function ClientOrderPage(props: Props) {
             photoUrl: true,
             ordersPaused: true,
             pauseMessage: true,
+            storeEnabled: true,
             region: {
               select: {
                 name: true,
@@ -319,6 +320,7 @@ export default async function ClientOrderPage(props: Props) {
           noCarsMode={currentNoCarsMode}
           employeePhone={employee.phone}
           recentOrderTypes={recentOrderTypes}
+          storeEnabled={shop.storeEnabled ?? false}
         />
       </div>
     );

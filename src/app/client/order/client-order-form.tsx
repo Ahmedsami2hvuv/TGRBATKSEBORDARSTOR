@@ -91,6 +91,7 @@ type PropsInner = {
   noCarsMode?: string;
   employeePhone?: string;
   recentOrderTypes?: string[];
+  storeEnabled?: boolean;
   initialOrder: {
     orderNumber: number;
     customerPhone: string;
@@ -129,6 +130,7 @@ function ClientOrderFormInner({
   noCarsMode = "off",
   employeePhone = "",
   recentOrderTypes = [],
+  storeEnabled = false,
   initialOrder,
   onResetForNewOrder,
 }: PropsInner) {
@@ -710,6 +712,35 @@ function ClientOrderFormInner({
             </div>
           </div>
         </div>
+
+        {/* بطاقة متجر المحل المميزة - تظهر فقط إذا كان المتجر مفعلاً للمحل من قبل الإدارة */}
+        {storeEnabled && (
+          <div className="rounded-[18px] bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 p-[1.5px] shadow-[0_4px_16px_rgba(217,119,6,0.2)] mb-[12px] group">
+            <Link
+              href={`/client/order/store?e=${e}&exp=${exp}&s=${sig}`}
+              className="w-full bg-white hover:bg-amber-50/60 rounded-[16.5px] px-[14px] py-[10px] flex items-center justify-between gap-[10px] transition-all"
+            >
+              <div className="flex items-center gap-[10px] min-w-0">
+                <div className="w-[38px] h-[38px] rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+                  <Store className="w-[20px] h-[20px]" />
+                </div>
+                <div className="min-w-0 text-right">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-black text-slate-800">🏪 متجر محلي الإلكتروني</span>
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-amber-300">مفعّل</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                    إدارة الأقسام والمنتجات والعروض ومشاركة الرابط للزبائن
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center gap-1 text-amber-700 font-black text-[12px] bg-amber-50 group-hover:bg-amber-100 px-2.5 py-1.5 rounded-lg border border-amber-200 transition">
+                <span>دخول</span>
+                <span className="text-[14px]">←</span>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* أزرار الوصول السريع الثلاثية */}
         <div className="rounded-[16px] bg-[#FFFFFF] border border-[#0B2E8C]/15 p-[8px] mb-[12px]">

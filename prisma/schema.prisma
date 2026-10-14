@@ -126,6 +126,7 @@ model Shop {
   pauseMessage  String         @default("")
   hideDebts     Boolean        @default(false)
   storeEnabled        Boolean             @default(false)
+  storeLogoUrl        String              @default("")
   storeBannerUrl      String              @default("")
   storeBio            String              @default("")
   storeToken          String              @default("")

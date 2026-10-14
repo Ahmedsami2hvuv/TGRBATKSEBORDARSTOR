@@ -23,17 +23,9 @@ export async function ensureShopStoreTablesIfMissing(): Promise<void> {
   hasCheckedShopStore = true;
 
   try {
-    // فحص سريع: إذا كان الجدول موجوداً بالفعل، لا داعي لتنفيذ أي شيء
-    const check = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT to_regclass('public."ShopStoreCategory"') as exists;`
-    ).catch(() => null);
-
-    if (check && check[0]?.exists) {
-      return;
-    }
-
     // 1. إضافة أعمدة متجر المحل في جدول Shop
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeEnabled" BOOLEAN NOT NULL DEFAULT false;`);
+    await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeLogoUrl" TEXT NOT NULL DEFAULT '';`);
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeBannerUrl" TEXT NOT NULL DEFAULT '';`);
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeBio" TEXT NOT NULL DEFAULT '';`);
     await safeExecute(`ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeToken" TEXT NOT NULL DEFAULT '';`);
@@ -44,6 +36,15 @@ export async function ensureShopStoreTablesIfMissing(): Promise<void> {
       SET "storeToken" = 'store' || md5(id || 'kse_secret_salt') 
       WHERE "storeToken" IS NULL OR "storeToken" = '';
     `);
+
+    // فحص سريع: إذا كان الجدول موجوداً بالفعل، لا داعي لإعادة إنشاء الجداول
+    const check = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT to_regclass('public."ShopStoreCategory"') as exists;`
+    ).catch(() => null);
+
+    if (check && check[0]?.exists) {
+      return;
+    }
 
     // 2. إنشاء جدول أقسام متجر المحل ShopStoreCategory
     await safeExecute(`

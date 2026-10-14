@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export async function updateShopStoreProfile(shopId: string, formData: FormData) {
   try {
-    const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+    const storeLogoUrl = String(formData.get("storeLogoUrl") || formData.get("photoUrl") || "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
     const bio = String(formData.get("bio") ?? "").trim();
     const storeBannerUrl = String(formData.get("storeBannerUrl") ?? "").trim();
@@ -13,7 +13,7 @@ export async function updateShopStoreProfile(shopId: string, formData: FormData)
     await prisma.shop.update({
       where: { id: shopId },
       data: {
-        ...(photoUrl ? { photoUrl } : {}),
+        ...(storeLogoUrl ? { storeLogoUrl } : {}),
         ...(storeBannerUrl ? { storeBannerUrl } : {}),
         phone: phone || undefined,
         storeBio: bio,

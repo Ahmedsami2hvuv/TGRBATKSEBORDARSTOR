@@ -17,6 +17,7 @@ export async function GET(_req: NextRequest) {
 
   // 1. إضافة الأعمدة لجدول Shop
   await execute("col_storeEnabled", `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeEnabled" BOOLEAN NOT NULL DEFAULT false;`);
+  await execute("col_storeLogoUrl", `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeLogoUrl" TEXT NOT NULL DEFAULT '';`);
   await execute("col_storeBannerUrl", `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeBannerUrl" TEXT NOT NULL DEFAULT '';`);
   await execute("col_storeBio", `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeBio" TEXT NOT NULL DEFAULT '';`);
   await execute("col_storeToken", `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "storeToken" TEXT NOT NULL DEFAULT '';`);

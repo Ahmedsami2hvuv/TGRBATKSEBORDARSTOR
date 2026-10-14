@@ -34,7 +34,7 @@ export function StoreManager({
   const [copied, setCopied] = useState(false);
 
   // حقول معلومات المتجر
-  const [photoUrl, setPhotoUrl] = useState(shop.photoUrl || "");
+  const [storeLogoUrl, setStoreLogoUrl] = useState(shop.storeLogoUrl || "");
   const [bannerUrl, setBannerUrl] = useState(shop.storeBannerUrl || "");
   const [phone, setPhone] = useState(shop.phone || "");
   const [bio, setBio] = useState(shop.storeBio || "");
@@ -83,7 +83,7 @@ export function StoreManager({
 
       const data = await res.json();
       if (data.success && data.url) {
-        if (type === "shop_photo") setPhotoUrl(data.url);
+        if (type === "shop_photo" || type === "shop_logo") setStoreLogoUrl(data.url);
         if (type === "shop_banner") setBannerUrl(data.url);
         if (type === "cat_photo") setNewCatPhoto(data.url);
         if (type === "branch_photo") setNewBranchPhoto(data.url);
@@ -233,7 +233,7 @@ export function StoreManager({
             onSubmit={async (e) => {
               e.preventDefault();
               const fd = new FormData();
-              fd.append("photoUrl", photoUrl);
+              fd.append("storeLogoUrl", storeLogoUrl);
               fd.append("storeBannerUrl", bannerUrl);
               fd.append("phone", phone);
               fd.append("bio", bio);
@@ -244,35 +244,53 @@ export function StoreManager({
             className="space-y-4"
           >
             {/* صورة المتجر / الشعار */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                صورة المتجر (الشعار / اللوغو)
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                  {photoUrl ? (
-                    <img src={photoUrl} alt="Store Logo" className="w-full h-full object-cover" />
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-black text-slate-800 mb-1">
+                  شعار / لوغو المتجر (يظهر للزبائن كشعار خاص بمتجرك)
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  يمكنك وضع لوغو علامتك التجارية هنا، وهو منفصل تماماً عن صورة باب المحل.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                  {storeLogoUrl ? (
+                    <img src={storeLogoUrl} alt="Store Logo" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl">🏪</span>
                   )}
                 </div>
-                <div className="flex-1">
+
+                <div className="flex-1 min-w-[200px]">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) handleFileUpload(f, "shop_photo");
+                      if (f) handleFileUpload(f, "shop_logo");
                     }}
                     className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
                     يتم ضغط الصورة تلقائياً بنسبة 90% بصيغة WebP لتوفير المساحة وسرعة التصفح.
                   </p>
-                  {uploading === "shop_photo" && (
+                  {uploading === "shop_logo" && (
                     <p className="text-xs text-blue-600 font-bold mt-1">جاري الرفع والضغط...</p>
                   )}
                 </div>
+
+                {/* عرض صورة باب المحل الأصلية كمرجع ثابت */}
+                {shop.photoUrl && (
+                  <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+                    <img src={shop.photoUrl} alt="Door Photo" className="w-14 h-14 rounded-xl object-cover border border-slate-200 opacity-80" />
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-500 block">صورة باب المحل</span>
+                      <span className="text-[9px] text-slate-400 block">محفوظة للمندوبين ولا تتأثر</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
