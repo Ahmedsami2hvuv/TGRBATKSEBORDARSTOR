@@ -717,20 +717,11 @@ export function PreparerShoppingDraftEditClient({
 
     let sell = lines[1] ? parseFloat(lines[1]) : calculateAutoSellPrice(products[selectedPriceIndex]!.line, buy, noProfit);
 
-    const nextProducts =[...products];
+    const nextProducts = [...products];
     const target = nextProducts[selectedPriceIndex];
     if (target) {
         nextProducts[selectedPriceIndex] = { ...target, buyAlf: buy, actualBuyAlf: actualBuy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
-        const nextJson = JSON.stringify(nextProducts.map(p => ({
-            line: p.line,
-            buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-            actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
-            sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-            pricedBy: p.pricedBy,
-            pricedById: p.pricedById,
-            assignedPreparerId: p.assignedPreparerId,
-            assignedPreparerName: p.assignedPreparerName,
-        })));
+        const nextJson = serializeProducts(nextProducts);
         setProducts(nextProducts);
         performSave(nextJson);
     }
@@ -742,8 +733,8 @@ export function PreparerShoppingDraftEditClient({
 
         if (nextVisualItem) {
             setSelectedPriceIndex(nextVisualItem.idx);
-            setPricingLinesText("");
-            setActualBuyText("");
+            setPricingLinesText(nextVisualItem.p.buyAlf !== "" ? `${nextVisualItem.p.buyAlf}` : "");
+            setActualBuyText(nextVisualItem.p.actualBuyAlf !== undefined && nextVisualItem.p.actualBuyAlf !== "" && nextVisualItem.p.actualBuyAlf !== null ? `${nextVisualItem.p.actualBuyAlf}` : "");
         } else {
             setSelectedPriceIndex(null);
             setPricingLinesText("");
@@ -762,16 +753,7 @@ export function PreparerShoppingDraftEditClient({
     const target = nextProducts[selectedPriceIndex];
     if (target) {
       nextProducts[selectedPriceIndex] = { ...target, buyAlf: "", actualBuyAlf: "", sellAlf: "", pricedBy: null, pricedById: null };
-      const nextJson = JSON.stringify(nextProducts.map(p => ({
-        line: p.line,
-        buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-        actualBuyAlf: p.actualBuyAlf === "" ? null : p.actualBuyAlf,
-        sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-        pricedBy: p.pricedBy,
-        pricedById: p.pricedById,
-        assignedPreparerId: p.assignedPreparerId,
-        assignedPreparerName: p.assignedPreparerName,
-      })));
+      const nextJson = serializeProducts(nextProducts);
       setProducts(nextProducts);
       performSave(nextJson);
     }
@@ -1008,15 +990,16 @@ export function PreparerShoppingDraftEditClient({
                 if (isAssignedToOther || isPricedByOther) return;
                 setSelectedPriceIndex(i);
                 setPricingLinesText(priced ? `${p.buyAlf}` : "");
+                setActualBuyText(p.actualBuyAlf !== undefined && p.actualBuyAlf !== "" && p.actualBuyAlf !== null ? `${p.actualBuyAlf}` : "");
               }}
-              className={`bg-white border rounded-xl p-2.5 min-h-[70px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none shadow-xs hover:-translate-y-0.5 hover:shadow-md ${
+              className={`border rounded-xl p-2.5 min-h-[72px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none shadow-xs hover:-translate-y-0.5 hover:shadow-md ${
                 active
-                  ? "border-[#007bff] ring-2 ring-sky-200"
+                  ? "border-[#007bff] ring-2 ring-sky-200 bg-white"
                   : isOthers
                   ? "border-slate-200 bg-slate-50 opacity-50 grayscale cursor-not-allowed"
                   : priced
-                  ? "border-emerald-300 bg-emerald-50/20"
-                  : "border-slate-200 hover:border-[#007bff]"
+                  ? "border-2 border-emerald-500 bg-[#e8f5e9] shadow-xs"
+                  : "bg-white border-slate-200 hover:border-[#007bff]"
               }`}
             >
               {/* اسم المنتج والصورة */}
@@ -1040,7 +1023,7 @@ export function PreparerShoppingDraftEditClient({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-[13px] text-[#004085] truncate leading-tight" title={p.line}>
+                  <div className={`font-bold text-[13px] truncate leading-tight ${priced ? "text-emerald-950 font-black" : "text-[#004085]"}`} title={p.line}>
                     {p.line}
                   </div>
                 </div>
@@ -1049,17 +1032,14 @@ export function PreparerShoppingDraftEditClient({
               {/* سطر التفاصيل السفلي: شارة الملكية أو السعر والكمية */}
               <div className="flex items-center justify-between gap-1 mt-1">
                 <div className="flex items-center gap-1">
-                  {isAssignedToOther ? (
+                  {priced ? (
+                    <span className="bg-[#28a745] text-white font-mono text-[11px] font-black px-2 py-0.5 rounded flex items-center gap-1 shadow-2xs">
+                      <span>✓</span>
+                      <span>{p.buyAlf} ألف</span>
+                    </span>
+                  ) : isAssignedToOther ? (
                     <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-200">
                       {p.assignedPreparerName || "آخر"}
-                    </span>
-                  ) : p.assignedPreparerId === preparerId ? (
-                    <span className="bg-[#e8f5e9] text-[#28a745] text-[10px] font-bold px-1.5 py-0.5 rounded">
-                      لك
-                    </span>
-                  ) : priced ? (
-                    <span className="bg-emerald-600 text-white font-mono text-[11px] font-bold px-1.5 py-0.5 rounded">
-                      {p.buyAlf} ألف
                     </span>
                   ) : (
                     <span className="bg-[#e8f5e9] text-[#28a745] text-[10px] font-bold px-1.5 py-0.5 rounded">
@@ -1074,7 +1054,7 @@ export function PreparerShoppingDraftEditClient({
                   )}
                 </div>
 
-                <div className="bg-[#f4f7fb] text-[#004085] text-[11px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
+                <div className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${priced ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-[#f4f7fb] text-[#004085] border-slate-200"}`}>
                   ×{displayQty}
                 </div>
               </div>
@@ -1150,15 +1130,7 @@ export function PreparerShoppingDraftEditClient({
                                 pricedBy: preparerName,
                                 pricedById: preparerId
                               };
-                              const nextJson = JSON.stringify(nextProducts.map(p => ({
-                                line: p.line,
-                                buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-                                sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-                                pricedBy: p.pricedBy,
-                                pricedById: p.pricedById,
-                                assignedPreparerId: p.assignedPreparerId,
-                                assignedPreparerName: p.assignedPreparerName,
-                              })));
+                              const nextJson = serializeProducts(nextProducts);
                               setProducts(nextProducts);
                               performSave(nextJson);
 
@@ -1166,11 +1138,13 @@ export function PreparerShoppingDraftEditClient({
                               const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
                               if (nextVisualItem) {
                                 setSelectedPriceIndex(nextVisualItem.idx);
-                                setPricingLinesText("");
+                                setPricingLinesText(nextVisualItem.p.buyAlf !== "" ? `${nextVisualItem.p.buyAlf}` : "");
+                                setActualBuyText(nextVisualItem.p.actualBuyAlf !== undefined && nextVisualItem.p.actualBuyAlf !== "" && nextVisualItem.p.actualBuyAlf !== null ? `${nextVisualItem.p.actualBuyAlf}` : "");
                                 pricingTextareaRef.current?.focus();
                               } else {
                                 setSelectedPriceIndex(null);
                                 setPricingLinesText("");
+                                setActualBuyText("");
                               }
                             }
                           }}
@@ -1213,15 +1187,7 @@ export function PreparerShoppingDraftEditClient({
                                 pricedBy: preparerName,
                                 pricedById: preparerId
                               };
-                              const nextJson = JSON.stringify(nextProducts.map(p => ({
-                                line: p.line,
-                                buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-                                sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-                                pricedBy: p.pricedBy,
-                                pricedById: p.pricedById,
-                                assignedPreparerId: p.assignedPreparerId,
-                                assignedPreparerName: p.assignedPreparerName,
-                              })));
+                              const nextJson = serializeProducts(nextProducts);
                               setProducts(nextProducts);
                               performSave(nextJson);
 
@@ -1230,11 +1196,13 @@ export function PreparerShoppingDraftEditClient({
                               const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
                               if (nextVisualItem) {
                                 setSelectedPriceIndex(nextVisualItem.idx);
-                                setPricingLinesText("");
+                                setPricingLinesText(nextVisualItem.p.buyAlf !== "" ? `${nextVisualItem.p.buyAlf}` : "");
+                                setActualBuyText(nextVisualItem.p.actualBuyAlf !== undefined && nextVisualItem.p.actualBuyAlf !== "" && nextVisualItem.p.actualBuyAlf !== null ? `${nextVisualItem.p.actualBuyAlf}` : "");
                                 pricingTextareaRef.current?.focus();
                               } else {
                                 setSelectedPriceIndex(null);
                                 setPricingLinesText("");
+                                setActualBuyText("");
                               }
                             }
                           }}
