@@ -1,8 +1,24 @@
+# Mobile Apps & Android Projects (Not needed on Vercel)
 android-admin
-public/uploads
+admin-app
+admin-app-v2
+employee-app
+mandob-app
+preparer-app
+store-app
+تطبيقات_جاهزة_للنقل
+
+# Build & Cache Directories
 .next
 node_modules
-*.log
-.DS_Store
 .gradle
 build
+.idea
+scratch
+
+# Static assets not needed in server functions
+public/uploads
+
+# System & Log files
+*.log
+.DS_Store
