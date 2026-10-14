@@ -833,48 +833,51 @@ export function PreparerShoppingDraftEditClient({
 
   return (
     <div className="space-y-4 max-w-lg mx-auto" dir="rtl">
-      {/* شريط التنقل العلوي */}
-      <div className="flex items-center justify-between pb-1">
-        <Link
-          href={preparerPath("/preparer/preparation", auth)}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-[#007bff] hover:text-[#0056b3] transition"
-        >
-          <span className="text-base">→</span>
-          <span>العودة إلى خانة التجهيز</span>
-        </Link>
-        <div className="flex items-center gap-1.5 text-base font-black text-[#007bff]">
-          <span className="text-amber-400 text-lg">⚡</span>
-          <span>وصلي</span>
-        </div>
-      </div>
+      {/* الشريط العلوي المدمج: زر رجوع عادي + اسم المنطقة + زر إيقاف الربح + شارة الحفظ وشعار وصلي */}
+      <div className="bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-200 shadow-[0_4px_12px_rgba(0,123,255,0.06)] flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={preparerPath("/preparer/preparation", auth)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-black text-slate-700 shadow-2xs active:scale-95 transition"
+          >
+            <span className="text-sm">←</span>
+            <span>رجوع</span>
+          </Link>
 
-      {/* كرت معلومات التجهيز المشترك */}
-      <section className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-[0_4px_12px_rgba(0,123,255,0.06)] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-sm sm:text-base font-bold text-[#004085]">
-            تجهيز مشترك: <span className="text-[#007bff] font-black">{initialDraft.customerRegion?.name || "عام"}</span>
-          </h1>
+          <span className="text-sm font-black text-[#004085] bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-100">
+            {initialDraft.customerRegion?.name || "عام"}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => handleToggleNoProfit(!noProfit)}
+            className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition shadow-2xs active:scale-95 ${
+              noProfit
+                ? "bg-rose-600 text-white animate-pulse"
+                : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            {noProfit ? "🚫 بدون ربح" : "🚫 إيقاف الربح"}
+          </button>
         </div>
+
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f5e9] text-[#28a745]">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-[#e8f5e9] text-[#28a745]">
             {isAutoSaving || isDirtyRef.current ? (
-              <span className="text-amber-600 font-bold animate-pulse">⏳ جاري الحفظ...</span>
+              <span className="text-amber-600 font-bold animate-pulse text-[11px]">⏳ جاري الحفظ...</span>
             ) : (
               <>
                 <span>✓</span>
-                <span>تم حفظ التغييرات</span>
+                <span className="hidden sm:inline text-[11px]">تم الحفظ</span>
               </>
             )}
           </div>
-          <Link
-            href={preparerPath("/preparer/preparation", auth)}
-            className="size-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition text-xs"
-            title="إغلاق"
-          >
-            ✕
-          </Link>
+          <div className="flex items-center gap-1 text-sm sm:text-base font-black text-[#007bff]">
+            <span className="text-amber-400 text-base sm:text-lg">⚡</span>
+            <span>وصلي</span>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* الموردون المختارون من الإدارة إن وجدوا */}
       {selectedSupplierNames.length > 0 && (
@@ -883,33 +886,6 @@ export function PreparerShoppingDraftEditClient({
           <p className="mt-1 text-xs font-semibold text-slate-700">{selectedSupplierNames.join("، ")}</p>
         </section>
       )}
-
-
-
-      {/* عنوان قائمة المنتجات وأزرار العمليات */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-bold text-[#004085]">قائمة المنتجات</div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={isSorting}
-              onClick={handleAiSort}
-              className="text-[10px] font-bold text-[#007bff] hover:bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200"
-            >
-              {isSorting ? "ترتيب..." : "ترتيب 🪄"}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleNoProfit(!noProfit)}
-              className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${
-                noProfit ? "bg-rose-600 text-white animate-pulse" : "bg-slate-100 text-slate-600 border border-slate-200"
-              }`}
-            >
-              {noProfit ? "بدون ربح" : "إيقاف ربح"}
-            </button>
-          </div>
-        </div>
 
         {/* شبكة العمليات 4 أزرار متطابقة مع التصميم المطلوب */}
         <div className="grid grid-cols-4 gap-2 mb-3">
@@ -962,7 +938,8 @@ export function PreparerShoppingDraftEditClient({
             </span>
           </div>
         </div>
-      </div>
+
+
 
       {sortError && (
         <p className="text-center text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-xl border border-rose-200">
