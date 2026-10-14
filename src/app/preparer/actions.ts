@@ -12,7 +12,8 @@ import {
   buildCombinedOrderSummaryText,
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
-import { calculateAutoSellPrice, isMeatProduct, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, setGlobalNoProfitKeywords, isNoProfitProduct } from "@/lib/auto-pricing";
+import { loadNoProfitKeywordsFromServer } from "@/lib/auto-pricing-server";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { prisma } from "@/lib/prisma";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
@@ -221,6 +222,11 @@ export async function updatePreparerShoppingDraft(
         });
     }
 
+    await loadNoProfitKeywordsFromServer();
+
+    const noProfitRaw = formData.get("noProfit");
+    const noProfit = noProfitRaw !== null ? noProfitRaw === "true" : !!dbData.noProfit;
+
     // الدمج الذكي: نستخدم الترتيب في المصفوفة بدلاً من الاسم لمنع التداخل (flipping)
     const mergedProducts = uiProducts.map((uiProd, index) => {
         const dbProd = (dbData.products && dbData.products[index]) || {};
@@ -231,11 +237,16 @@ export async function updatePreparerShoppingDraft(
 
         if (dbAssignedToOther) {
             // لا نسمح للمجهز غير المخصص بتعديل المنتج؛ نحتفظ ببيانات المالك الأصلي
+            const lineText = String(dbProd.line ?? uiProd.line ?? "").trim();
+            const buyVal = Number(dbProd.buyAlf);
+            const shouldBeZeroProfit = noProfit || isNoProfitProduct(lineText);
+            const finalSell = shouldBeZeroProfit && Number.isFinite(buyVal) ? buyVal : dbProd.sellAlf;
+
             return {
               ...dbProd,
-              line: String(dbProd.line ?? uiProd.line ?? "").trim(),
+              line: lineText,
               buyAlf: dbProd.buyAlf,
-              sellAlf: dbProd.sellAlf,
+              sellAlf: finalSell,
               pricedBy: dbProd.pricedBy || uiProd.pricedBy || null,
               pricedById: dbProd.pricedById || uiProd.pricedById || null,
               assignedPreparerId: dbProd.assignedPreparerId,
@@ -249,9 +260,17 @@ export async function updatePreparerShoppingDraft(
         const finalAssignedPreparerName = isDraftOwner ? uiAssignedPreparerName : dbProd.assignedPreparerName;
 
         if (uiHasPrice) {
-            // إذا كان السعر لم يتغير عن المخزون، نحتفظ بالمنسوب الأصلي
+            const lineText = String(uiProd.line ?? dbProd.line ?? "").trim();
+            const buyVal = Number(uiProd.buyAlf);
+            const shouldBeZeroProfit = noProfit || isNoProfitProduct(lineText);
+            const finalSell = shouldBeZeroProfit && Number.isFinite(buyVal)
+              ? buyVal
+              : (uiProd.sellAlf !== "" && uiProd.sellAlf != null ? Number(uiProd.sellAlf) : buyVal);
+
             return {
               ...uiProd,
+              line: lineText,
+              sellAlf: finalSell,
               pricedBy: dbHasPrice ? (dbProd.pricedBy || uiProd.pricedBy) : (uiProd.pricedBy || preparerNameClean),
               pricedById: dbHasPrice ? (dbProd.pricedById || uiProd.pricedById) : (uiProd.pricedById || currentPreparer.id),
               assignedPreparerId: finalAssignedPreparerId,
@@ -280,9 +299,6 @@ export async function updatePreparerShoppingDraft(
 
     const activeMergedProducts = mergedProducts.filter((p: any) => !p.deleted && !p.isDeleted);
     const newStatus = activeMergedProducts.length > 0 && activeMergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
-
-    const noProfitRaw = formData.get("noProfit");
-    const noProfit = noProfitRaw !== null ? noProfitRaw === "true" : !!dbData.noProfit;
 
     const titleLineRaw = String(formData.get("titleLine") ?? "").trim();
     const titleLine = titleLineRaw ? titleLineRaw : draft.titleLine;
@@ -408,6 +424,14 @@ export async function submitPreparerShoppingDraft(
     const delivery = (customDeliveryAlf != null && Number.isFinite(Number(customDeliveryAlf)))
         ? new Decimal(customDeliveryAlf).mul(ALF_PER_DINAR)
         : defaultDelivery;
+
+    await loadNoProfitKeywordsFromServer();
+    const isDraftNoProfit = Boolean(formData.get("noProfit") === "true" || (draft.data as any)?.noProfit);
+    for (const p of activeProducts) {
+      if (isDraftNoProfit || isNoProfitProduct(p.line)) {
+        p.sellAlf = Number(p.buyAlf);
+      }
+    }
 
     const sumSellAlf = activeProducts.reduce((acc: number, p: any) => acc + Number(p.sellAlf), 0);
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
@@ -874,18 +898,7 @@ export async function submitPreparerOrder(
 export async function submitPreparerShoppingOrder(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function updatePreparerShoppingOrder(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   try {
-    // جلب كلمات منع الأرباح المفتاحية وتهيئتها في السيرفر
-    try {
-      const pricingSetting = await prisma.uISystemSetting.findUnique({
-        where: { target_section: { target: "system", section: "pricing_config" } }
-      });
-      const pricingConfig = (pricingSetting?.config as any) || {};
-      if (pricingConfig.no_profit_keywords) {
-        setGlobalNoProfitKeywords(pricingConfig.no_profit_keywords);
-      }
-    } catch (err) {
-      console.error("Failed to load no profit keywords in preparer action:", err);
-    }
+    await loadNoProfitKeywordsFromServer();
 
     const v = readPortal(formData);
     if (!v.ok) return { error: "الرابط غير صالح." };

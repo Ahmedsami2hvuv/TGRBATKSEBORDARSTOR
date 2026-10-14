@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 
 // أيقونات SVG احترافية ونظيفة لواجهات الأعمال والتجهيز
 function IconTruck({ className = "w-4 h-4" }: { className?: string }) {
@@ -205,6 +205,14 @@ export function AssistantClient({ initialPreparer, initialPreparerId }: Props) {
       const saved = localStorage.getItem("preparer_id") || "";
       if (saved) setPreparerId(saved);
     }
+    fetch("/api/pricing/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.no_profit_keywords)) {
+          setGlobalNoProfitKeywords(data.no_profit_keywords);
+        }
+      })
+      .catch(() => {});
   }, [preparerId]);
 
   async function fetchAssistantData(idToUse?: string) {

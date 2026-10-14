@@ -32,7 +32,7 @@ import { updateOrderPricingByAdmin, savePricingProgress, duplicateOrderOrDraft }
 import { orderStatusPendingCardBorderBg } from "@/lib/order-status-style";
 import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
 import { matchFishAndCalculatePrice, parseFishPricesList } from "@/lib/fish-pricing";
 
@@ -523,6 +523,14 @@ export function OrderPricingPanel({
 
   useEffect(() => {
     setIsMounted(true);
+    fetch("/api/pricing/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.no_profit_keywords)) {
+          setGlobalNoProfitKeywords(data.no_profit_keywords);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

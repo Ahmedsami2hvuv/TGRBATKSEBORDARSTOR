@@ -14,7 +14,7 @@ import { buildCustomerInvoiceText } from "@/lib/preparation-invoice";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import type { PreparerShoppingPayloadV1 } from "@/lib/preparer-shopping-payload";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
-import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
@@ -137,10 +137,11 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
       if (row) {
         const buyNum = parseFloat(row.buy) || 0;
         if (buyNum > 0) {
+          const prodName = products[Number(key)] || "";
           updated[key] = {
             buy: row.buy,
             actualBuy: row.actualBuy,
-            sell: calculateAutoSellPrice(key, buyNum, newVal).toString()
+            sell: calculateAutoSellPrice(prodName, buyNum, newVal).toString()
           };
         }
       }
@@ -194,6 +195,14 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
+    fetch("/api/pricing/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.no_profit_keywords)) {
+          setGlobalNoProfitKeywords(data.no_profit_keywords);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

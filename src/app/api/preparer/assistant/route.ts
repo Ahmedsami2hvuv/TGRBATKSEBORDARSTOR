@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calculateAutoSellPrice, loadNoProfitKeywordsFromServer } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { loadNoProfitKeywordsFromServer } from "@/lib/auto-pricing-server";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { courierAssignableWhere } from "@/lib/courier-assignable";

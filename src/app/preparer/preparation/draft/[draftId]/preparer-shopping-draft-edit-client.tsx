@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, reportUnavailableProductsAction, type PreparerActionState } from "@/app/preparer/actions";
 import { suggestFixedPrices } from "@/lib/fixed-prices";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 
@@ -173,6 +173,17 @@ export function PreparerShoppingDraftEditClient({
     const subSource = (initialDraft as any)?.submissionSource || (initialDraft.data as any)?.submissionSource;
     return subSource === "web_store" || t.includes("متجر") || t.includes("store");
   }, [titleLine, initialDraft]);
+
+  useEffect(() => {
+    fetch("/api/pricing/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.no_profit_keywords)) {
+          setGlobalNoProfitKeywords(data.no_profit_keywords);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleToggleNoProfit = (newVal: boolean) => {
     setNoProfit(newVal);

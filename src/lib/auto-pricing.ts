@@ -123,27 +123,7 @@ export function isNoProfitProduct(line: string | null | undefined, customKeyword
   });
 }
 
-/**
- * دالة خادم غير متزامنة لجلب الكلمات المفتاحية مباشرة من قاعدة البيانات وتحديث الذاكرة
- */
-export async function loadNoProfitKeywordsFromServer(): Promise<string[]> {
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    const setting = await prisma.uISystemSetting.findUnique({
-      where: {
-        target_section: { target: "system", section: "pricing_config" }
-      }
-    });
-    const config = (setting?.config as any) || {};
-    if (Array.isArray(config.no_profit_keywords) && config.no_profit_keywords.length > 0) {
-      setGlobalNoProfitKeywords(config.no_profit_keywords);
-      return globalNoProfitKeywords;
-    }
-  } catch (err) {
-    console.error("Failed to fetch no_profit_keywords from DB:", err);
-  }
-  return globalNoProfitKeywords;
-}
+
 
 // دالة تهيئة للمتصفح تلقائياً عند الاستيراد
 if (typeof window !== "undefined") {
