@@ -176,12 +176,7 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
   const safeProductBranchMap = deepSanitize(productBranchMap);
 
   return (
-    <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">
-      <div className="mb-4 text-sm">
-        <Link href={prepHref} className="font-bold text-sky-800 hover:underline">
-          ← العودة إلى خانة التجهيز
-        </Link>
-      </div>
+    <div className="kse-app-inner mx-auto max-w-2xl px-4 py-4 pb-24">
       <PreparerShoppingDraftEditClient
         auth={auth}
         draft={safeDraft}

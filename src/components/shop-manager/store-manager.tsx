@@ -96,6 +96,14 @@ export function StoreManager({
   const [slideImage, setSlideImage] = useState("");
   const [slideTitle, setSlideTitle] = useState("");
 
+  // حالات نوافذ الإضافة المنبثقة (أزرار بدلاً من بلوكات كاملة في الشاشة)
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isAddSlideOpen, setIsAddSlideOpen] = useState(false);
+  const [addBranchTarget, setAddBranchTarget] = useState<{ categoryId: string; categoryName: string } | null>(null);
+  const [newModalBranchName, setNewModalBranchName] = useState("");
+  const [newModalBranchPhoto, setNewModalBranchPhoto] = useState("");
+
   // حالات فتح الأقسام والتعديل المباشر
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categories[0]?.id || null);
   const [addingBranchForCatId, setAddingBranchForCatId] = useState<string | null>(null);
@@ -158,6 +166,7 @@ export function StoreManager({
         if (type === "shop_banner") setBannerUrl(data.url);
         if (type === "cat_photo") setNewCatPhoto(data.url);
         if (type === "branch_photo") setNewBranchPhoto(data.url);
+        if (type === "modal_branch_photo") setNewModalBranchPhoto(data.url);
         if (type === "prod_photo") setProdPhoto(data.url);
         if (type === "slide_image") setSlideImage(data.url);
       } else {
@@ -366,226 +375,26 @@ export function StoreManager({
       {/* ===================== محتوى التبويب 1: المنتجات ===================== */}
       {activeTab === "products" && (
         <div className="space-y-6">
-          {/* بطاقة إضافة منتج جديد */}
-          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
-              <div>
-                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
-                    <Sparkles className="w-4 h-4" />
-                  </span>
-                  نشر منتج جديد في المتجر
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  أدخل تفاصيل وسعر المنتج والصورة ليظهر للزبائن فوراً في متجرك
-                </p>
-              </div>
-            </div>
-
-            {categories.length === 0 ? (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-3">
-                <p className="text-sm font-bold text-amber-800">
-                  لا يمكنك نشر منتجات حالياً لأنه لا يوجد أقسام مضافة في متجرك بعد.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("categories")}
-                  className="bg-amber-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-amber-700 transition"
-                >
-                  الذهاب لإضافة أول قسم الآن
-                </button>
-              </div>
-            ) : (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!prodName.trim()) return alert("يرجى كتابة اسم المنتج");
-                  if (!prodPrice.trim()) return alert("يرجى إدخال سعر المنتج");
-
-                  const targetCatId = prodCatId || categories[0]?.id || "";
-                  if (!targetCatId) return alert("يرجى اختيار القسم أولاً");
-
-                  setSubmitting(true);
-                  try {
-                    const fd = new FormData();
-                    fd.append("name", prodName);
-                    fd.append("price", prodPrice);
-                    fd.append("description", prodDesc);
-                    fd.append("photoUrl", prodPhoto);
-                    fd.append("categoryId", targetCatId);
-                    fd.append("branchId", prodBranchId);
-
-                    const res = await addShopStoreProduct(shop.id, fd);
-                    if (res.ok) {
-                      setProdName("");
-                      setProdPrice("");
-                      setProdDesc("");
-                      setProdPhoto("");
-                      router.refresh();
-                      alert("تم نشر المنتج في المتجر بنجاح");
-                    } else {
-                      alert(res.error || "فشل نشر المنتج");
-                    }
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                className="space-y-4"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      اسم المنتج *
-                    </label>
-                    <input
-                      type="text"
-                      value={prodName}
-                      onChange={(e) => setProdName(e.target.value)}
-                      placeholder="مثال: بطل ماء، شاي، حليب..."
-                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] focus:ring-2 focus:ring-blue-100 outline-none transition"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      السعر (بالدينار العراقي) *
-                    </label>
-                    <input
-                      type="number"
-                      value={prodPrice}
-                      onChange={(e) => setProdPrice(e.target.value)}
-                      placeholder="مثال: 5000"
-                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] focus:ring-2 focus:ring-blue-100 outline-none transition"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      القسم التابع له المنتج *
-                    </label>
-                    <select
-                      value={prodCatId || categories[0]?.id || ""}
-                      onChange={(e) => {
-                        setProdCatId(e.target.value);
-                        setProdBranchId("");
-                      }}
-                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition cursor-pointer"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          قسم: {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      الفرع داخل القسم (اختياري)
-                    </label>
-                    <select
-                      value={prodBranchId}
-                      onChange={(e) => setProdBranchId(e.target.value)}
-                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition cursor-pointer"
-                    >
-                      <option value="">بدون فرع (داخل القسم مباشرة)</option>
-                      {branches
-                        .filter((b) => b.categoryId === (prodCatId || categories[0]?.id))
-                        .map((b) => (
-                          <option key={b.id} value={b.id}>
-                            فرع: {b.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* رفع صورة المنتج */}
-                <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-bold text-slate-700">
-                      صورة المنتج
-                    </label>
-                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                      تضغط 90% تلقائياً بصيغة WebP
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
-                      {prodPhoto ? (
-                        <img src={prodPhoto} alt="Product" className="w-full h-full object-cover" />
-                      ) : (
-                        <ImageIcon className="w-6 h-6 text-slate-300" />
-                      )}
-                    </div>
-
-                    <div className="flex-1">
-                      <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
-                        <Camera className="w-4 h-4 text-[#0B2E8C]" />
-                        <span>{prodPhoto ? "تغيير صورة المنتج" : "اختيار صورة للمنتج"}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleFileUpload(f, "prod_photo");
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-
-                      {uploading === "prod_photo" && (
-                        <p className="text-xs text-blue-600 font-bold mt-2 flex items-center gap-1.5 animate-pulse">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>جاري رفع وضغط الصورة بنجاح...</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* وصف المنتج */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    وصف أو تفاصيل إضافية عن المنتج (اختياري)
-                  </label>
-                  <textarea
-                    value={prodDesc}
-                    onChange={(e) => setProdDesc(e.target.value)}
-                    placeholder="مواصفات، وزن، أو تفاصيل خاصة بالمنتج..."
-                    rows={2}
-                    className="w-full text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl p-3 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-8 py-3 rounded-2xl shadow-md shadow-emerald-900/15 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>نشر المنتج الآن في المتجر</span>
-                </button>
-              </form>
-            )}
-          </div>
-
           {/* قائمة المنتجات الحالية */}
           <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5 gap-3 flex-wrap">
               <div>
                 <h3 className="text-base font-black text-slate-900">
                   قائمة المنتجات الحالية في متجرك ({products.length})
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  تصفح المنتجات المنشورة أو احذف أي منتج غير متوفر
+                  تصفح المنتجات المنشورة أو عدل أو احذف أي منتج
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddProductOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-950/15 transition active:scale-95 flex items-center gap-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة منتج جديد</span>
+              </button>
             </div>
 
             {products.length === 0 ? (
@@ -701,93 +510,9 @@ export function StoreManager({
       {/* ===================== محتوى التبويب 2: الأقسام والفروع ===================== */}
       {activeTab === "categories" && (
         <div className="space-y-6">
-          {/* إضافة قسم رئيسي جديد فقط (تمت إزالة بلوك إضافة فرع العلوي بناء على طلبك) */}
-          <div className="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/90 shadow-sm">
-            <div className="border-b border-slate-100 pb-3 mb-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <FolderPlus className="w-5 h-5 text-blue-600" />
-                <span>إضافة قسم رئيسي جديد</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                أضف أقسام متجرك الرئيسية مثل: مياه وعصائر، منظفات، حلويات، معلبات...
-              </p>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!newCatName.trim()) return alert("يرجى كتابة اسم القسم");
-                const fd = new FormData();
-                fd.append("name", newCatName);
-                fd.append("photoUrl", newCatPhoto);
-                const res = await addShopStoreCategory(shop.id, fd);
-                if (res.ok) {
-                  setNewCatName("");
-                  setNewCatPhoto("");
-                  router.refresh();
-                  alert("تمت إضافة القسم بنجاح");
-                } else {
-                  alert(res.error || "فشل إضافة القسم");
-                }
-              }}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
-            >
-              <div className="sm:col-span-5">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم القسم *</label>
-                <input
-                  type="text"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="مثال: مشروبات وعصائر"
-                  className="w-full text-xs sm:text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
-                  required
-                />
-              </div>
-
-              <div className="sm:col-span-4">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة القسم (اختياري)</label>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                    {newCatPhoto ? (
-                      <img src={newCatPhoto} alt="Category" className="w-full h-full object-cover" />
-                    ) : (
-                      <FolderPlus className="w-5 h-5 text-slate-400" />
-                    )}
-                  </div>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
-                    <Camera className="w-3.5 h-3.5 text-[#0B2E8C]" />
-                    <span>{newCatPhoto ? "تغيير الصورة" : "رفع صورة"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleFileUpload(f, "cat_photo");
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                  {uploading === "cat_photo" && (
-                    <span className="text-[11px] text-blue-600 font-bold animate-pulse">جاري الرفع...</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <button
-                  type="submit"
-                  className="w-full bg-[#0B2E8C] hover:bg-[#082269] text-white font-black text-xs sm:text-sm py-2.5 rounded-xl shadow-md shadow-blue-950/15 transition active:scale-95 flex items-center justify-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>حفظ وإضافة القسم</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
           {/* قائمة الأقسام التفاعلية (النقر على القسم يفتحه ويفتح فروعه ومنتجاته) */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h3 className="text-base font-black text-slate-900">
                   الأقسام المعروضة في متجرك ({categories.length})
@@ -796,6 +521,19 @@ export function StoreManager({
                   اضغط على أي قسم لفتح تفاصيله وإدارة فروعه ومنتجاته
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNewCatName("");
+                  setNewCatPhoto("");
+                  setIsAddCategoryOpen(true);
+                }}
+                className="bg-[#0B2E8C] hover:bg-[#082269] text-white px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-blue-950/15 transition active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة قسم جديد</span>
+              </button>
             </div>
 
             {categories.length === 0 ? (
@@ -935,100 +673,16 @@ export function StoreManager({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (addingBranchForCatId === cat.id) {
-                                    setAddingBranchForCatId(null);
-                                  } else {
-                                    setAddingBranchForCatId(cat.id);
-                                    setInlineBranchName("");
-                                    setInlineBranchPhoto("");
-                                  }
+                                  setNewModalBranchName("");
+                                  setNewModalBranchPhoto("");
+                                  setAddBranchTarget({ categoryId: cat.id, categoryName: cat.name });
                                 }}
-                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
                               >
                                 <Plus className="w-3.5 h-3.5" />
-                                <span>{addingBranchForCatId === cat.id ? "إغلاق النموذج" : "إضافة فرع داخل هذا القسم"}</span>
+                                <span>إضافة فرع جديد</span>
                               </button>
                             </div>
-
-                            {/* نموذج إضافة فرع جديد مدمج داخل القسم */}
-                            {addingBranchForCatId === cat.id && (
-                              <div className="bg-white rounded-2xl p-4 border border-indigo-200/80 shadow-xs space-y-3">
-                                <h6 className="font-black text-xs text-indigo-900">
-                                  إضافة فرع جديد يتبع قسم: {cat.name}
-                                </h6>
-                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                                  <div className="sm:col-span-5">
-                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">اسم الفرع *</label>
-                                    <input
-                                      type="text"
-                                      value={inlineBranchName}
-                                      onChange={(e) => setInlineBranchName(e.target.value)}
-                                      placeholder="مثال: مياه معدنية، مشروبات طاقة..."
-                                      className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right focus:bg-white focus:border-indigo-600 outline-none transition"
-                                    />
-                                  </div>
-
-                                  <div className="sm:col-span-4">
-                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">صورة الفرع (اختياري)</label>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                                        {inlineBranchPhoto ? (
-                                          <img src={inlineBranchPhoto} alt="Branch" className="w-full h-full object-cover" />
-                                        ) : (
-                                          <Layers className="w-4 h-4 text-slate-400" />
-                                        )}
-                                      </div>
-                                      <label className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
-                                        <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                                        <span>{inlineBranchPhoto ? "تغيير" : "صورة"}</span>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            if (f) handleFileUpload(f, "inline_branch", (url) => setInlineBranchPhoto(url));
-                                          }}
-                                          className="hidden"
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-
-                                  <div className="sm:col-span-3 flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={async () => {
-                                        if (!inlineBranchName.trim()) return alert("يرجى كتابة اسم الفرع");
-                                        const fd = new FormData();
-                                        fd.append("categoryId", cat.id);
-                                        fd.append("name", inlineBranchName);
-                                        fd.append("photoUrl", inlineBranchPhoto);
-                                        const res = await addShopStoreBranch(shop.id, fd);
-                                        if (res.ok) {
-                                          setInlineBranchName("");
-                                          setInlineBranchPhoto("");
-                                          setAddingBranchForCatId(null);
-                                          router.refresh();
-                                          alert("تمت إضافة الفرع بنجاح");
-                                        } else {
-                                          alert(res.error || "فشل إضافة الفرع");
-                                        }
-                                      }}
-                                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-2 rounded-xl transition shadow-xs"
-                                    >
-                                      حفظ الفرع
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setAddingBranchForCatId(null)}
-                                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl"
-                                    >
-                                      إلغاء
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
 
                             {/* بطاقات الفروع الخاصة بالقسم */}
                             {catBranches.length === 0 ? (
@@ -1260,92 +914,31 @@ export function StoreManager({
       {/* ===================== محتوى التبويب 3: إعلانات البانر ===================== */}
       {activeTab === "banners" && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm max-w-xl">
-            <div className="border-b border-slate-100 pb-3 mb-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Megaphone className="w-5 h-5 text-purple-600" />
-                إضافة إعلان بانر ترويجي لمتجرك
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                تظهر إعلانات البانر في أعلى متجرك لتسليط الضوء على العروض والخصومات
-              </p>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!slideImage) return alert("يرجى اختيار صورة الإعلان");
-                const fd = new FormData();
-                fd.append("imageUrl", slideImage);
-                fd.append("title", slideTitle);
-                const res = await addShopStoreSlide(shop.id, fd);
-                if (res.ok) {
-                  setSlideImage("");
-                  setSlideTitle("");
-                  router.refresh();
-                  alert("تمت إضافة إعلان البانر بنجاح");
-                } else {
-                  alert(res.error || "فشل إضافة الإعلان");
-                }
-              }}
-              className="space-y-4"
-            >
+          {/* البانرات الحالية */}
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5 gap-3 flex-wrap">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة الإعلان *</label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-14 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                    {slideImage ? (
-                      <img src={slideImage} alt="Banner" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-6 h-6 text-slate-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-xs cursor-pointer active:scale-95 transition">
-                      <Camera className="w-4 h-4 text-[#0B2E8C]" />
-                      <span>{slideImage ? "تغيير صورة البانر" : "اختيار صورة الإعلان"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleFileUpload(f, "slide_image");
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                    {uploading === "slide_image" && (
-                       <p className="text-xs text-blue-600 font-bold mt-1.5 animate-pulse">جاري الرفع والضغط...</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">عنوان أو نص الإعلان (اختياري)</label>
-                <input
-                  type="text"
-                  value={slideTitle}
-                  onChange={(e) => setSlideTitle(e.target.value)}
-                  placeholder="مثال: خصم 15% على جميع المشروبات هذا الأسبوع"
-                  className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
-                />
+                <h3 className="text-base font-black text-slate-900">
+                  إعلانات البانر المعروضة حالياً ({slides.length})
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  تظهر إعلانات البانر الترويجية في أعلى متجرك لتسليط الضوء على العروض
+                </p>
               </div>
 
               <button
-                type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-sm transition active:scale-95"
+                type="button"
+                onClick={() => {
+                  setSlideImage("");
+                  setSlideTitle("");
+                  setIsAddSlideOpen(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-purple-950/15 transition active:scale-95 flex items-center gap-1.5 shrink-0"
               >
-                إضافة إعلان البانر
+                <Plus className="w-4 h-4" />
+                <span>إضافة إعلان بانر جديد</span>
               </button>
-            </form>
-          </div>
-
-          {/* البانرات الحالية */}
-          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/90 shadow-sm">
-            <h3 className="text-base font-black text-slate-900 mb-4">
-              إعلانات البانر المعروضة حالياً ({slides.length})
-            </h3>
+            </div>
             {slides.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">لا توجد إعلانات بانر مضافة بعد</p>
             ) : (
@@ -1918,6 +1511,519 @@ export function StoreManager({
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== نافذة منبثقة: إضافة منتج جديد ===================== */}
+      {isAddProductOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-emerald-600" />
+                <span>إضافة منتج جديد لمتجرك</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsAddProductOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {categories.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-3">
+                <p className="text-sm font-bold text-amber-800">
+                  لا يمكنك إضافة منتج حالياً لأنه لا توجد أقسام في متجرك بعد.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddProductOpen(false);
+                    setActiveTab("categories");
+                  }}
+                  className="bg-amber-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-amber-700 transition"
+                >
+                  الذهاب لإضافة قسم الآن
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!prodName.trim()) return alert("يرجى كتابة اسم المنتج");
+                  if (!prodPrice.trim()) return alert("يرجى إدخال سعر المنتج");
+
+                  const targetCatId = prodCatId || categories[0]?.id || "";
+                  if (!targetCatId) return alert("يرجى اختيار القسم أولاً");
+
+                  setSubmitting(true);
+                  try {
+                    const fd = new FormData();
+                    fd.append("name", prodName);
+                    fd.append("price", prodPrice);
+                    fd.append("description", prodDesc);
+                    fd.append("photoUrl", prodPhoto);
+                    fd.append("categoryId", targetCatId);
+                    fd.append("branchId", prodBranchId);
+
+                    const res = await addShopStoreProduct(shop.id, fd);
+                    if (res.ok) {
+                      setProdName("");
+                      setProdPrice("");
+                      setProdDesc("");
+                      setProdPhoto("");
+                      setIsAddProductOpen(false);
+                      router.refresh();
+                      alert("تم نشر المنتج في المتجر بنجاح");
+                    } else {
+                      alert(res.error || "فشل نشر المنتج");
+                    }
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم المنتج *</label>
+                    <input
+                      type="text"
+                      value={prodName}
+                      onChange={(e) => setProdName(e.target.value)}
+                      placeholder="مثال: بطل ماء، حليب، شاي..."
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-emerald-600 outline-none transition"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">السعر (دينار عراقي) *</label>
+                    <input
+                      type="number"
+                      value={prodPrice}
+                      onChange={(e) => setProdPrice(e.target.value)}
+                      placeholder="مثال: 5000"
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-emerald-600 outline-none transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">القسم *</label>
+                    <select
+                      value={prodCatId || categories[0]?.id || ""}
+                      onChange={(e) => {
+                        setProdCatId(e.target.value);
+                        setProdBranchId("");
+                      }}
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-emerald-600 outline-none transition cursor-pointer"
+                      required
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">الفرع (اختياري)</label>
+                    <select
+                      value={prodBranchId}
+                      onChange={(e) => setProdBranchId(e.target.value)}
+                      className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-emerald-600 outline-none transition cursor-pointer"
+                    >
+                      <option value="">بدون فرع (داخل القسم مباشرة)</option>
+                      {branches
+                        .filter((b) => b.categoryId === (prodCatId || categories[0]?.id))
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">وصف أو تفاصيل إضافية (اختياري)</label>
+                  <textarea
+                    value={prodDesc}
+                    onChange={(e) => setProdDesc(e.target.value)}
+                    placeholder="مواصفات، وزن، أو تفاصيل خاصة..."
+                    rows={2}
+                    className="w-full text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl p-3 text-right focus:bg-white focus:border-emerald-600 outline-none transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة المنتج (اختياري)</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                      {prodPhoto ? (
+                        <img src={prodPhoto} alt="Product" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-6 h-6 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
+                        <Camera className="w-4 h-4 text-emerald-600" />
+                        <span>{prodPhoto ? "تغيير الصورة" : "رفع صورة"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileUpload(f, "prod_photo");
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {uploading === "prod_photo" && (
+                        <p className="text-xs text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع والضغط...</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm py-2.5 rounded-xl transition shadow-xs active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    <span>نشر المنتج الآن</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddProductOpen(false)}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== نافذة منبثقة: إضافة قسم جديد ===================== */}
+      {isAddCategoryOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-[#0B2E8C]" />
+                <span>إضافة قسم رئيسي جديد</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsAddCategoryOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newCatName.trim()) return alert("يرجى كتابة اسم القسم");
+                const fd = new FormData();
+                fd.append("name", newCatName);
+                fd.append("photoUrl", newCatPhoto);
+                const res = await addShopStoreCategory(shop.id, fd);
+                if (res.ok) {
+                  setNewCatName("");
+                  setNewCatPhoto("");
+                  setIsAddCategoryOpen(false);
+                  router.refresh();
+                  alert("تمت إضافة القسم بنجاح");
+                } else {
+                  alert(res.error || "فشل إضافة القسم");
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم القسم *</label>
+                <input
+                  type="text"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="مثال: مشروبات وعصائر، حلويات، منظفات..."
+                  className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-[#0B2E8C] outline-none transition"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة القسم (اختياري)</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {newCatPhoto ? (
+                      <img src={newCatPhoto} alt="Category" className="w-full h-full object-cover" />
+                    ) : (
+                      <FolderPlus className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
+                      <Camera className="w-4 h-4 text-[#0B2E8C]" />
+                      <span>{newCatPhoto ? "تغيير الصورة" : "رفع صورة"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "cat_photo");
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploading === "cat_photo" && (
+                      <p className="text-xs text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#0B2E8C] hover:bg-[#082269] text-white font-black text-sm py-2.5 rounded-xl transition shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة القسم</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCategoryOpen(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== نافذة منبثقة: إضافة فرع جديد ===================== */}
+      {addBranchTarget && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <span>إضافة فرع جديد</span>
+                </h4>
+                <p className="text-xs text-indigo-600 font-bold mt-0.5">
+                  يتبع قسم: {addBranchTarget.categoryName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddBranchTarget(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newModalBranchName.trim()) return alert("يرجى كتابة اسم الفرع");
+                const fd = new FormData();
+                fd.append("categoryId", addBranchTarget.categoryId);
+                fd.append("name", newModalBranchName);
+                fd.append("photoUrl", newModalBranchPhoto);
+                const res = await addShopStoreBranch(shop.id, fd);
+                if (res.ok) {
+                  setNewModalBranchName("");
+                  setNewModalBranchPhoto("");
+                  setAddBranchTarget(null);
+                  router.refresh();
+                  alert("تمت إضافة الفرع بنجاح");
+                } else {
+                  alert(res.error || "فشل إضافة الفرع");
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم الفرع *</label>
+                <input
+                  type="text"
+                  value={newModalBranchName}
+                  onChange={(e) => setNewModalBranchName(e.target.value)}
+                  placeholder="مثال: مياه معدنية، عصائر طبيعية..."
+                  className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-indigo-600 outline-none transition"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة الفرع (اختياري)</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {newModalBranchPhoto ? (
+                      <img src={newModalBranchPhoto} alt="Branch" className="w-full h-full object-cover" />
+                    ) : (
+                      <Layers className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
+                      <Camera className="w-4 h-4 text-indigo-600" />
+                      <span>{newModalBranchPhoto ? "تغيير الصورة" : "رفع صورة"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "modal_branch_photo");
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploading === "modal_branch_photo" && (
+                      <p className="text-xs text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm py-2.5 rounded-xl transition shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة الفرع</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddBranchTarget(null)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== نافذة منبثقة: إضافة إعلان بانر جديد ===================== */}
+      {isAddSlideOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-purple-600" />
+                <span>إضافة إعلان بانر ترويجي</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsAddSlideOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!slideImage) return alert("يرجى اختيار صورة الإعلان");
+                const fd = new FormData();
+                fd.append("imageUrl", slideImage);
+                fd.append("title", slideTitle);
+                const res = await addShopStoreSlide(shop.id, fd);
+                if (res.ok) {
+                  setSlideImage("");
+                  setSlideTitle("");
+                  setIsAddSlideOpen(false);
+                  router.refresh();
+                  alert("تمت إضافة إعلان البانر بنجاح");
+                } else {
+                  alert(res.error || "فشل إضافة الإعلان");
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">صورة الإعلان *</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {slideImage ? (
+                      <img src={slideImage} alt="Banner" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-5 h-5 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition">
+                      <Camera className="w-4 h-4 text-purple-600" />
+                      <span>{slideImage ? "تغيير الصورة" : "اختيار صورة الإعلان"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileUpload(f, "slide_image");
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploading === "slide_image" && (
+                      <p className="text-xs text-blue-600 font-bold mt-1 animate-pulse">جاري الرفع والضغط...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">عنوان أو نص الإعلان (اختياري)</label>
+                <input
+                  type="text"
+                  value={slideTitle}
+                  onChange={(e) => setSlideTitle(e.target.value)}
+                  placeholder="مثال: خصم 20% على جميع العصائر..."
+                  className="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-right focus:bg-white focus:border-purple-600 outline-none transition"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black text-sm py-2.5 rounded-xl transition shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة الإعلان</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddSlideOpen(false)}
                   className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition"
                 >
                   إلغاء
