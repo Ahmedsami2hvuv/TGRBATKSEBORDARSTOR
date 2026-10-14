@@ -32,7 +32,7 @@ export interface PartnerWithBalance {
 }
 
 // دالة مساعدة لاستخراج تاريخ آخر تصفير للشريك من سجل معاملاته
-export function getPartnerLastZeroDate(transactions: { kind: string; note: string | null; createdAt: Date }[]): Date | null {
+function getPartnerLastZeroDate(transactions: { kind: string; note: string | null; createdAt: Date }[]): Date | null {
   const zeroTxs = transactions.filter(t => 
     t.note && (
       t.note.includes("تصفير") || 
