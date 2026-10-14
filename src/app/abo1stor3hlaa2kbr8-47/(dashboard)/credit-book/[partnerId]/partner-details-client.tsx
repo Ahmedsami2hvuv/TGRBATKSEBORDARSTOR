@@ -1145,10 +1145,18 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             sortedAsc.forEach((tx) => {
               const amt = Number(tx.amount || 0);
-              if (tx.kind === "gave" || tx.kind === "expense") {
-                running += amt; // أعطيت أو مصروفات = سددنا له / نطلبه
+              const isExp = tx.kind === "expense" || (tx.note && tx.note.includes("[مصروفات]"));
+              if (isExp) {
+                // للمحلات والمجهزين والموردين: المصروفات مستحقة لهم علينا (يطلبونا إياها وتزيد ما يطلبونه)
+                if (partner.type === "shop" || partner.type === "preparer" || partner.type === "supplier") {
+                  running -= amt;
+                } else {
+                  running += amt;
+                }
+              } else if (tx.kind === "gave") {
+                running += amt;
               } else if (tx.kind === "took") {
-                running -= amt; // أخذت = بضاعة أخذناها منه / يطلبنا
+                running -= amt;
               }
               balanceMap.set(tx.id, running);
             });
@@ -1160,15 +1168,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
 
-            // تصفية المعاملات العادية للكشف الرئيسي (إخفاء المصروفات غير المصفّرة من القائمة العادية لأنها محفوظة ومجمعة بداخل زر المصروفات أعلاه)
-            const displayTxs = filteredTxs.filter(tx => {
-              const isPendingExpense = (tx.kind === "expense" || tx.note?.includes("[مصروفات]")) && !tx.note?.includes("[مصفّرة]");
-              return !isPendingExpense;
-            });
-
-            if (displayTxs.length === 0 && filteredTxs.length > 0) {
-              return <div className="py-10 text-center text-sky-700 dark:text-sky-300 font-bold bg-sky-50/50 rounded-2xl border border-sky-100">المعاملات المسجلة لهذا الحساب هي مصروفات معلقة فقط، وهي محفوظة بداخل زر "قائمة المصروفات" أعلى الكشف.</div>;
-            }
+            // عرض كافة المعاملات في الكشف الرئيسي ليتطابق الرصيد التراكمي في آخر حركة مع رصيد البطاقة 100%
+            const displayTxs = filteredTxs;
 
             if (displayTxs.length === 0) {
               return <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مطابقة لمصطلح البحث.</div>;

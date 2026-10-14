@@ -31,11 +31,102 @@ export interface PartnerWithBalance {
   orderCount?: number; // عدد الطلبات التراكمية للمحل/الشريك
 }
 
-// دالة مساعدة لحساب الديون التلقائية للمحلات
-// تم إيقاف سحب الطلبات التاريخية التلقائية للمحلات نهائياً لمنع أي ديون عشوائية أو تضارب في الأرقام
-// وأصبح دفتر الديون يعتمد حصراً على القيود والمعاملات المحاسبية الدقيقة المسجلة بالدفتر.
-async function getShopAutoDebt(_shopId: string): Promise<{ autoDebt: number; orderCount: number }> {
-  return { autoDebt: 0, orderCount: 0 };
+// دالة مساعدة لاستخراج تاريخ آخر تصفير للشريك من سجل معاملاته
+export function getPartnerLastZeroDate(transactions: { kind: string; note: string | null; createdAt: Date }[]): Date | null {
+  const zeroTxs = transactions.filter(t => 
+    t.note && (
+      t.note.includes("تصفير") || 
+      t.note.includes("تصفية") || 
+      t.note.includes("تصفيه") || 
+      t.note.includes("[مصفّرة]")
+    )
+  );
+  if (zeroTxs.length === 0) return null;
+  zeroTxs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return new Date(zeroTxs[0].createdAt);
+}
+
+// دالة مساعدة لحساب ديون طلبات المحلات غير المسددة من تاريخ آخر تصفير وصاعداً
+async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Promise<{ autoDebt: number; orderCount: number; orders: any[] }> {
+  await ensureMissingPreparerMoneyEvents(undefined, shopId);
+
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { hideFromCreditBook: true }
+  });
+
+  if (!shop || shop.hideFromCreditBook) return { autoDebt: 0, orderCount: 0, orders: [] };
+
+  const whereClause: any = {
+    shopId,
+    routeMode: { not: "double" },
+    shopCostPaidAt: null,
+    status: { in: ["delivered", "archived"] },
+    submittedByCompanyPreparerId: null,
+    submissionSource: { not: "company_preparer" },
+    OR: [
+      { orderSubtotal: { gt: 0 } },
+      { prepaidAll: true }
+    ]
+  };
+
+  // احتساب الطلبات فقط من تاريخ آخر تصفير وصاعداً
+  if (lastZeroDate) {
+    whereClause.createdAt = { gte: lastZeroDate };
+  }
+
+  const orders = await prisma.order.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      orderNumber: true,
+      orderSubtotal: true,
+      prepaidAll: true,
+      deliveryPrice: true,
+      createdAt: true,
+      moneyEvents: {
+        where: {
+          kind: { in: ["pickup_out", "delivery_in"] },
+          deletedAt: null
+        },
+        select: {
+          id: true,
+          amountDinar: true,
+          kind: true,
+          createdAt: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  let autoGave = 0;
+  let autoTook = 0;
+
+  for (const o of orders) {
+    const subtotal = Number(o.orderSubtotal || 0);
+    if (subtotal > 0) {
+      autoTook += subtotal;
+    }
+
+    const pickupPaid = o.moneyEvents
+      .filter(me => me.kind === "pickup_out")
+      .reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+    autoGave += pickupPaid;
+
+    if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
+      const delPrice = Number(o.deliveryPrice);
+      const hasMatchingDeliveryIn = o.moneyEvents.some(
+        me => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
+      );
+
+      if (!hasMatchingDeliveryIn) {
+        autoGave += delPrice;
+      }
+    }
+  }
+
+  return { autoDebt: autoTook - autoGave, orderCount: orders.length, orders };
 }
 
 // دالة لتطهير الحسابات التالفة بسبب تكرار بادئات الحذف
@@ -171,6 +262,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           select: {
             amount: true,
             kind: true,
+            note: true,
             createdAt: true,
           },
         },
@@ -187,7 +279,15 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         p.transactions.forEach((t) => {
           const amt = Number(t.amount);
-          if (t.kind === "gave" || t.kind === "expense") {
+          const isExp = t.kind === "expense" || (t.note && t.note.includes("[مصروفات]"));
+          if (isExp) {
+            // للمحلات والمجهزين والموردين: المصروفات مستحقة لهم علينا (يطلبونا إياها وتزيد ما يطلبونه)
+            if (p.type === "shop" || p.type === "preparer" || p.type === "supplier") {
+              totalTook += amt;
+            } else {
+              totalGave += amt;
+            }
+          } else if (t.kind === "gave") {
             totalGave += amt;
           } else if (t.kind === "took") {
             totalTook += amt;
@@ -241,7 +341,8 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           }
         } else if (p.type === "shop" && p.externalId) {
           try {
-            const { autoDebt, orderCount } = await getShopAutoDebt(p.externalId);
+            const lastZero = getPartnerLastZeroDate(p.transactions);
+            const { autoDebt, orderCount } = await getShopAutoDebt(p.externalId, lastZero);
             autoBalance = -autoDebt;
             shopOrderCount = orderCount;
           } catch (e) {
@@ -800,9 +901,68 @@ export async function getPartnerDetails(partnerId: string) {
         console.error("Error compiling accumulated salaries for root partner:", e);
       }
     } else if (partner.type === "shop" && partner.externalId) {
-      // تم إلغاء التوليد التلقائي لطلبات المحل التاريخية في دفتر الديون نهائياً لمنع الديون الوهمية والمتضاربة
-      // وأصبح كشف حساب المحل يعتمد بدقة 100% على القيود المحاسبية الصريحة المسجلة في الدفتر، ليتطابق الداخل مع الخارج تماماً.
-      autoBalance = 0;
+      try {
+        const lastZero = getPartnerLastZeroDate(partner.transactions);
+        const { autoDebt, orderCount, orders } = await getShopAutoDebt(partner.externalId, lastZero);
+        autoBalance = -autoDebt;
+
+        for (const o of orders) {
+          const subtotal = Number(o.orderSubtotal || 0);
+          if (subtotal > 0) {
+            autoTransactions.push({
+              id: `auto-shop-order-subtotal-${o.id}`,
+              partnerId: partner.id,
+              amount: subtotal,
+              kind: "took", // أخذت = يطلبنا قيمة بضاعة المحل
+              note: `طلب #${o.orderNumber || "—"} | مستحقات بضاعة المحل (تلقائي)`,
+              createdAt: o.createdAt,
+              updatedAt: o.createdAt,
+              isAuto: true,
+              orderId: o.id
+            });
+          }
+
+          const pickupEvents = o.moneyEvents?.filter((me: any) => me.kind === "pickup_out") || [];
+          for (const pe of pickupEvents) {
+            const pAmt = Number(pe.amountDinar || 0);
+            if (pAmt > 0) {
+              autoTransactions.push({
+                id: `auto-shop-pickup-out-${pe.id}`,
+                partnerId: partner.id,
+                amount: pAmt,
+                kind: "gave", // أعطيت = تسديد للمحل نقداً عبر المندوب
+                note: `تسليم نقد للمحل للطلب #${o.orderNumber || "—"} (تلقائي)`,
+                createdAt: pe.createdAt,
+                updatedAt: pe.createdAt,
+                isAuto: true,
+                orderId: o.id
+              });
+            }
+          }
+
+          if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
+            const delPrice = Number(o.deliveryPrice);
+            const hasMatchingDeliveryIn = o.moneyEvents?.some(
+              (me: any) => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
+            );
+            if (!hasMatchingDeliveryIn) {
+              autoTransactions.push({
+                id: `auto-shop-prepaid-delivery-${o.id}`,
+                partnerId: partner.id,
+                amount: delPrice,
+                kind: "gave", // أعطيت = تسديد كلفة التوصيل
+                note: `كلفة توصيل واصل كامل للطلب #${o.orderNumber || "—"} (تلقائي)`,
+                createdAt: o.createdAt,
+                updatedAt: o.createdAt,
+                isAuto: true,
+                orderId: o.id
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching shop auto transactions:", e);
+      }
     }
 
     // استخلاص أرقام الطلبيات المذكورة في ملاحظات المعاملات اليدوية للربط الذكي
@@ -852,7 +1012,15 @@ export async function getPartnerDetails(partnerId: string) {
     // حساب المعاملات اليدوية بالدفتر
     const manualTransactions = partner.transactions.map((t) => {
       const amt = Number(t.amount);
-      if (t.kind === "gave" || t.kind === "expense") {
+      const isExp = t.kind === "expense" || (t.note && t.note.includes("[مصروفات]"));
+      if (isExp) {
+        // للمحلات والمجهزين والموردين: المصروفات مستحقة لهم علينا (يطلبونا إياها)
+        if (partner.type === "shop" || partner.type === "preparer" || partner.type === "supplier") {
+          totalTook += amt;
+        } else {
+          totalGave += amt;
+        }
+      } else if (t.kind === "gave") {
         totalGave += amt;
       } else if (t.kind === "took") {
         totalTook += amt;
