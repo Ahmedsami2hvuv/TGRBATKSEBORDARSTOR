@@ -393,6 +393,21 @@ export default async function StoreHomePage() {
             <CategoryShowcase slides={slides} />
           </Suspense>
         </ScrollReveal>
+
+        {/* فوتر منصة وصلي مع رابط الواتساب */}
+        <footer className="mt-14 pt-8 pb-16 border-t border-slate-200 text-center space-y-2.5">
+          <p className="text-xs font-black text-slate-700">
+            صنع بواسطة وصلي
+          </p>
+          <a
+            href="https://wa.me/9647733921468"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition active:scale-95"
+          >
+            <span>راسلنا واتس اب: 07733921468</span>
+          </a>
+        </footer>
       </div>
     );
   } catch (error) {
