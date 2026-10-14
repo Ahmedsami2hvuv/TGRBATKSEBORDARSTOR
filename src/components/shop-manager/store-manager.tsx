@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   updateShopStoreProfile,
   addShopStoreCategory,
@@ -29,6 +30,7 @@ export function StoreManager({
   products,
   slides,
 }: StoreManagerProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "categories" | "products" | "banners">("info");
   const [uploading, setUploading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -55,6 +57,18 @@ export function StoreManager({
   const [prodPhoto, setProdPhoto] = useState("");
   const [prodCatId, setProdCatId] = useState(categories[0]?.id || "");
   const [prodBranchId, setProdBranchId] = useState("");
+
+  // مزامنة تلقائية لاختيار أول قسم متاح في حال إضافة أقسام أو فتح النموذج
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      if (!prodCatId || !categories.some((c) => c.id === prodCatId)) {
+        setProdCatId(categories[0].id);
+      }
+      if (!newBranchCatId || !categories.some((c) => c.id === newBranchCatId)) {
+        setNewBranchCatId(categories[0].id);
+      }
+    }
+  }, [categories, prodCatId, newBranchCatId]);
 
   // حقول إضافة بانر
   const [slideImage, setSlideImage] = useState("");
@@ -384,6 +398,7 @@ export function StoreManager({
                 if (res.ok) {
                   setNewCatName("");
                   setNewCatPhoto("");
+                  router.refresh();
                   alert("تمت إضافة القسم بنجاح! ✅");
                 } else {
                   alert(res.error || "فشل إضافة القسم");
@@ -448,14 +463,18 @@ export function StoreManager({
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!newBranchName.trim()) return alert("يرجى كتابة اسم الفرع");
+                  const targetBranchCatId = newBranchCatId || categories[0]?.id || "";
+                  if (!targetBranchCatId) return alert("يرجى اختيار القسم الرئيسي أولاً");
+
                   const fd = new FormData();
-                  fd.append("categoryId", newBranchCatId);
+                  fd.append("categoryId", targetBranchCatId);
                   fd.append("name", newBranchName);
                   fd.append("photoUrl", newBranchPhoto);
                   const res = await addShopStoreBranch(shop.id, fd);
                   if (res.ok) {
                     setNewBranchName("");
                     setNewBranchPhoto("");
+                    router.refresh();
                     alert("تمت إضافة الفرع بنجاح! ✅");
                   } else {
                     alert(res.error || "فشل إضافة الفرع");
@@ -559,6 +578,7 @@ export function StoreManager({
                           onClick={async () => {
                             if (confirm(`هل أنت متأكد من حذف قسم "${cat.name}" وجميع منتجاته؟`)) {
                               await deleteShopStoreCategory(cat.id, shop.id);
+                              router.refresh();
                             }
                           }}
                           className="text-xs text-red-600 hover:text-red-700 font-bold p-1"
@@ -582,6 +602,7 @@ export function StoreManager({
                                   onClick={async () => {
                                     if (confirm(`حذف فرع "${b.name}"؟`)) {
                                       await deleteShopStoreBranch(b.id, shop.id);
+                                      router.refresh();
                                     }
                                   }}
                                   className="text-red-500 hover:text-red-700 text-[10px]"
@@ -618,15 +639,15 @@ export function StoreManager({
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  if (!prodName.trim()) return alert("اسم المنتج مطلوب");
-                  if (!prodPrice.trim()) return alert("سعر المنتج مطلوب");
+                  const targetCatId = prodCatId || categories[0]?.id || "";
+                  if (!targetCatId) return alert("يرجى اختيار أو إضافة قسم أولاً من تبويب الأقسام والفروع");
 
                   const fd = new FormData();
                   fd.append("name", prodName);
                   fd.append("price", prodPrice);
                   fd.append("description", prodDesc);
                   fd.append("photoUrl", prodPhoto);
-                  fd.append("categoryId", prodCatId);
+                  fd.append("categoryId", targetCatId);
                   fd.append("branchId", prodBranchId);
 
                   const res = await addShopStoreProduct(shop.id, fd);
@@ -635,6 +656,7 @@ export function StoreManager({
                     setProdPrice("");
                     setProdDesc("");
                     setProdPhoto("");
+                    router.refresh();
                     alert("تم نشر المنتج في المتجر بنجاح! ✅");
                   } else {
                     alert(res.error || "فشل نشر المنتج");
@@ -678,12 +700,12 @@ export function StoreManager({
                       القسم التابع له المنتج
                     </label>
                     <select
-                      value={prodCatId}
+                      value={prodCatId || categories[0]?.id || ""}
                       onChange={(e) => {
                         setProdCatId(e.target.value);
                         setProdBranchId("");
                       }}
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
+                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right font-bold text-slate-800"
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -700,11 +722,11 @@ export function StoreManager({
                     <select
                       value={prodBranchId}
                       onChange={(e) => setProdBranchId(e.target.value)}
-                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
+                      className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right font-medium text-slate-800"
                     >
                       <option value="">بدون فرع (داخل القسم مباشرة)</option>
                       {branches
-                        .filter((b) => b.categoryId === prodCatId)
+                        .filter((b) => b.categoryId === (prodCatId || categories[0]?.id))
                         .map((b) => (
                           <option key={b.id} value={b.id}>
                             فرع: {b.name}
@@ -798,6 +820,7 @@ export function StoreManager({
                       onClick={async () => {
                         if (confirm(`حذف منتج "${p.name}"؟`)) {
                           await deleteShopStoreProduct(p.id, shop.id);
+                          router.refresh();
                         }
                       }}
                       className="mt-3 w-full bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-1.5 rounded-xl transition"
@@ -837,6 +860,7 @@ export function StoreManager({
                 if (res.ok) {
                   setSlideImage("");
                   setSlideTitle("");
+                  router.refresh();
                   alert("تمت إضافة إعلان البانر بنجاح! ✅");
                 } else {
                   alert(res.error || "فشل إضافة الإعلان");
@@ -910,6 +934,7 @@ export function StoreManager({
                       onClick={async () => {
                         if (confirm("حذف هذا الإعلان؟")) {
                           await deleteShopStoreSlide(slide.id, shop.id);
+                          router.refresh();
                         }
                       }}
                       className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-xl text-xs font-bold shadow-md hover:bg-red-700 transition"

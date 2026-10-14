@@ -66,11 +66,20 @@ export async function deleteShopStoreCategory(categoryId: string, shopId: string
 
 export async function addShopStoreBranch(shopId: string, formData: FormData) {
   try {
-    const categoryId = String(formData.get("categoryId") ?? "").trim();
+    let categoryId = String(formData.get("categoryId") ?? "").trim();
+    if (!categoryId) {
+      const firstCat = await prisma.shopStoreCategory.findFirst({
+        where: { shopId },
+        orderBy: [{ sequence: "asc" }, { createdAt: "asc" }],
+        select: { id: true },
+      });
+      if (firstCat) categoryId = firstCat.id;
+    }
+
     const name = String(formData.get("name") ?? "").trim();
     const photoUrl = String(formData.get("photoUrl") ?? "").trim();
 
-    if (!categoryId) return { ok: false, error: "اختر القسم أولاً" };
+    if (!categoryId) return { ok: false, error: "يرجى إضافة قسم أولاً لتتمكن من إنشاء فروع داخله" };
     if (!name) return { ok: false, error: "اسم الفرع مطلوب" };
 
     await prisma.shopStoreBranch.create({
@@ -105,14 +114,23 @@ export async function deleteShopStoreBranch(branchId: string, shopId: string) {
 
 export async function addShopStoreProduct(shopId: string, formData: FormData) {
   try {
-    const categoryId = String(formData.get("categoryId") ?? "").trim();
+    let categoryId = String(formData.get("categoryId") ?? "").trim();
+    if (!categoryId) {
+      const firstCat = await prisma.shopStoreCategory.findFirst({
+        where: { shopId },
+        orderBy: [{ sequence: "asc" }, { createdAt: "asc" }],
+        select: { id: true },
+      });
+      if (firstCat) categoryId = firstCat.id;
+    }
+
     const branchId = String(formData.get("branchId") ?? "").trim() || null;
     const name = String(formData.get("name") ?? "").trim();
     const priceRaw = String(formData.get("price") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const photoUrl = String(formData.get("photoUrl") ?? "").trim();
 
-    if (!categoryId) return { ok: false, error: "اختر القسم" };
+    if (!categoryId) return { ok: false, error: "يرجى إضافة قسم أولاً من تبويب الأقسام" };
     if (!name) return { ok: false, error: "اسم المنتج مطلوب" };
     const price = parseFloat(priceRaw);
     if (isNaN(price) || price < 0) return { ok: false, error: "أدخل سعراً صحيحاً" };
