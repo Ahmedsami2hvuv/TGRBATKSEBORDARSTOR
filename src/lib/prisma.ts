@@ -9,12 +9,11 @@ if (datasourceUrl) {
     const url = new URL(datasourceUrl);
     const isPooler = url.port === "6543" || url.hostname.includes("pooler.supabase.com");
 
-    // في بيئة سيرفرلس (Vercel)، كل حاوية تتعامل مع طلب.
-    // تحديد حد الاتصال بـ 1 يمنع نفاد اتصالات قاعدة البيانات (Connection Pool Exhaustion)
-    url.searchParams.set("connection_limit", "1");
-    // تقليل مهلة الانتظار إلى 10 ثوانٍ لمنع بقاء المتصفح معلقاً في التحميل
-    url.searchParams.set("pool_timeout", "10");
-    url.searchParams.set("connect_timeout", "10");
+    // إتاحة عدد اتصالات كافٍ لتشغيل استعلامات Promise.all المتزامنة في صفحات لوحة التحكم والمندوب والمتجر
+    url.searchParams.set("connection_limit", "10");
+    // مهلة انتظار مرنة تمنع أخطاء Timeout عند تزامن عدة استعلامات في نفس الصفحة
+    url.searchParams.set("pool_timeout", "20");
+    url.searchParams.set("connect_timeout", "15");
 
     // تفعيل وضع PgBouncer التلقائي عند استخدام وصلة Pooler بورت 6543
     if (isPooler) {
