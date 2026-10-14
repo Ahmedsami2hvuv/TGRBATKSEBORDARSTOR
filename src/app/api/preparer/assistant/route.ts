@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, loadNoProfitKeywordsFromServer } from "@/lib/auto-pricing";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
@@ -302,6 +302,8 @@ export async function POST(req: NextRequest) {
 
       const actualBuyTrimmed = actualBuyAlf != null && String(actualBuyAlf).trim() !== "" ? String(actualBuyAlf).replace(/,/g, ".").trim() : null;
       const actualBuyNum = actualBuyTrimmed != null && Number.isFinite(parseFloat(actualBuyTrimmed)) ? parseFloat(actualBuyTrimmed) : null;
+
+      await loadNoProfitKeywordsFromServer();
 
       if (isDraft) {
         const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: orderId } });

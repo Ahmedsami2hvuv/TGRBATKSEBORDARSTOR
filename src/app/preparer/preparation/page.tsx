@@ -7,6 +7,8 @@ import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 import { OpenAddOrderButton } from "./open-add-order-button";
+import { getPreparerShiftStatus } from "@/lib/preparer-shift";
+import { PreparerShiftPresenceButton } from "../preparer-shift-presence-button";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +43,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = (preparerRaw.shopLinks || []).map((l: any) => l.shopId);
 
-  const [webStorePending, drafts] = await Promise.all([
+  const [webStorePending, drafts, shiftStatus] = await Promise.all([
     prisma.order.findMany({
       where: {
         shopId: { in: shopIds },
@@ -66,6 +68,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
+    getPreparerShiftStatus(preparerId),
   ]);
 
   // تصفية المسودات التي تحوي طلبات منجزة أو مسلّمة
@@ -168,6 +171,14 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       <div className="mx-auto max-w-lg">
         <PreparerSiteOrderDraftClient auth={auth} preparerName={safePreparer.name} homeHref={homeHref} />
       </div>
+
+      {/* زر تسجيل الشفت العائم للمجهز */}
+      {shiftStatus.shouldShowButton ? (
+        <PreparerShiftPresenceButton
+          auth={auth}
+          initialShow={shiftStatus.shouldShowButton}
+        />
+      ) : null}
     </div>
   );
 }

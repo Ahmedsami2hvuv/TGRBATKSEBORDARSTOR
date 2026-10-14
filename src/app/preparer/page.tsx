@@ -20,6 +20,8 @@ import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 import { calculateAccumulatedSalaryInternal, recordPreparerWorkLog } from "./actions";
 import { getIraqTime } from "@/lib/baghdad-time";
 import { getPendingPreparationOrdersCount } from "@/lib/preparer-pending-orders";
+import { getPreparerShiftStatus } from "@/lib/preparer-shift";
+import { PreparerShiftPresenceButton } from "./preparer-shift-presence-button";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -125,7 +127,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     // تجاهل أي خطأ ثانوي
   }
 
-  const [couriersForBulkAssign, walletTotals, stats, icons, pendingPreparationCount] = await Promise.all([
+  const [couriersForBulkAssign, walletTotals, stats, icons, pendingPreparationCount, shiftStatus] = await Promise.all([
     prisma.courier.findMany({
       where: preparerCourierAssignWhere,
       orderBy: { name: "asc" },
@@ -135,6 +137,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     calculateAccumulatedSalaryInternal(preparer.id),
     iconsPromise,
     canSubmitAny ? getPendingPreparationOrdersCount(preparer.id, submittableShopIds) : Promise.resolve(0),
+    getPreparerShiftStatus(preparer.id),
   ]);
 
   let tableRows: any[] = [];
@@ -359,6 +362,14 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           icons={safeIcons}
         />
       </section>
+
+      {/* زر تسجيل الشفت العائم للمجهز */}
+      {shiftStatus.shouldShowButton ? (
+        <PreparerShiftPresenceButton
+          auth={baseAuth}
+          initialShow={shiftStatus.shouldShowButton}
+        />
+      ) : null}
     </div>
   );
 }

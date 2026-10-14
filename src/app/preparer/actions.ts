@@ -2087,6 +2087,29 @@ export async function recordPreparerWorkLog(preparerId: string, actionType: stri
   }
 }
 
+export async function recordPreparerShiftPresenceAction(
+  _prev: PreparerActionState,
+  formData: FormData
+): Promise<PreparerActionState> {
+  const p = String(formData.get("p") ?? "").trim();
+  const exp = String(formData.get("exp") ?? "").trim();
+  const s = String(formData.get("s") ?? "").trim();
+
+  const v = verifyCompanyPreparerPortalQuery(p, exp || undefined, s);
+  if (!v.ok) {
+    return { error: "الرابط غير صالح." };
+  }
+
+  const { recordPreparerShiftPresence } = await import("@/lib/preparer-shift");
+  const res = await recordPreparerShiftPresence(v.preparerId);
+  if (!res.ok) {
+    return { error: res.error || "تعذر تسجيل الشفت." };
+  }
+
+  revalidatePath("/preparer");
+  return { ok: true };
+}
+
 // دالة لتحديد اسم الشفت الحالي للعملية وضمان عدم ضياع أي حركة على مدار الـ 24 ساعة
 async function determineShiftName(preparerId: string, time: Date): Promise<string> {
   await ensurePreparerSalaryConfigColumnsIfMissing();
