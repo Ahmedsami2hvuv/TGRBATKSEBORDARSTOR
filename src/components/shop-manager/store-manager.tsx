@@ -12,7 +12,7 @@ import {
   deleteShopStoreProduct,
   addShopStoreSlide,
   deleteShopStoreSlide,
-} from "./actions";
+} from "@/app/actions/shop-store-actions";
 
 interface StoreManagerProps {
   shop: any;
@@ -60,9 +60,11 @@ export function StoreManager({
   const [slideImage, setSlideImage] = useState("");
   const [slideTitle, setSlideTitle] = useState("");
 
+  // رابط المتجر النظيف والمشفر للزبائن بدون أي شفرة إدارة
+  const targetToken = shop.storeToken || shop.id;
   const storeUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/store/shop/${shop.id}`
-    : `https://aboakbr.com/store/shop/${shop.id}`;
+    ? `${window.location.origin}/store/shop/${targetToken}`
+    : `https://aboakbr.com/store/shop/${targetToken}`;
 
   const shareText = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
 
@@ -114,29 +116,27 @@ export function StoreManager({
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* الشريط العلوي للوحة تحكم المتجر */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white rounded-2xl p-5 md:p-7 shadow-lg relative overflow-hidden">
+    <div className="space-y-6 pb-20 font-sans" dir="rtl">
+      {/* الشريط العلوي للوحة تحكم متجر المحل */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-blue-200 text-xs font-bold mb-1">
-              <Link href="/abo1stor3hlaa2kbr8-47/shops" className="hover:underline">
-                ← العودة لقائمة المحلات
-              </Link>
+            <div className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-blue-100 text-xs font-bold mb-2">
+              منصة متاجر المحلات المعتمدة
             </div>
             <h1 className="text-2xl md:text-3xl font-black flex items-center gap-2">
               🏪 إعدادات متجر {shop.name}
             </h1>
             <p className="text-blue-100 text-sm mt-1">
-              إدارة الأقسام والمنتجات والإعلانات الخاصة بمتجر المحل
+              إدارة الأقسام والمنتجات والإعلانات الخاصة بمتجرك
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/store/shop/${shop.id}`}
+              href={`/store/shop/${targetToken}`}
               target="_blank"
-              className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl text-sm font-black shadow transition flex items-center gap-1.5"
+              className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black shadow-md transition flex items-center gap-2"
             >
               <span>🌐</span>
               معاينة المتجر للزبائن
@@ -144,7 +144,7 @@ export function StoreManager({
 
             <button
               onClick={shareOnWhatsApp}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-black shadow transition flex items-center gap-1.5"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black shadow-md transition flex items-center gap-2"
             >
               <span>📲</span>
               مشاركة عبر واتساب
@@ -152,17 +152,17 @@ export function StoreManager({
           </div>
         </div>
 
-        {/* زر ورسالة المشاركة السريعة */}
-        <div className="mt-5 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20 flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm">
+        {/* زر ورسالة المشاركة السريعة المعتمدة */}
+        <div className="mt-5 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm">
           <div className="flex-1 min-w-[200px]">
-            <span className="font-bold text-blue-200">نص المشاركة: </span>
+            <span className="font-bold text-blue-200">رسالة المشاركة: </span>
             <span className="text-white font-medium select-all">
               &quot;مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه {storeUrl}&quot;
             </span>
           </div>
           <button
             onClick={copyShareMessage}
-            className="bg-white text-slate-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 transition"
+            className="bg-white text-slate-800 hover:bg-blue-50 px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 transition"
           >
             <span>📋</span>
             {copied ? "تم النسخ بنجاح! ✔️" : "مشاركة متجرك"}
@@ -174,10 +174,10 @@ export function StoreManager({
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab("info")}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
             activeTab === "info"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-md"
+              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
           }`}
         >
           <span>⚙️</span>
@@ -186,10 +186,10 @@ export function StoreManager({
 
         <button
           onClick={() => setActiveTab("categories")}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
             activeTab === "categories"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-md"
+              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
           }`}
         >
           <span>📁</span>
@@ -198,10 +198,10 @@ export function StoreManager({
 
         <button
           onClick={() => setActiveTab("products")}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
             activeTab === "products"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-md"
+              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
           }`}
         >
           <span>📦</span>
@@ -210,10 +210,10 @@ export function StoreManager({
 
         <button
           onClick={() => setActiveTab("banners")}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shrink-0 ${
             activeTab === "banners"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-blue-600 text-white shadow-md"
+              : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
           }`}
         >
           <span>🖼️</span>
@@ -223,7 +223,7 @@ export function StoreManager({
 
       {/* ===================== التبويب 1: بيانات وصورة المتجر ===================== */}
       {activeTab === "info" && (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-2xl space-y-5">
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-2xl space-y-5">
           <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
             <span>🏪</span>
             إعدادات متجر خاص باسم {shop.name}
@@ -339,7 +339,7 @@ export function StoreManager({
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl shadow-md transition"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-2xl shadow-md transition"
             >
               حفظ إعدادات المتجر
             </button>
@@ -350,8 +350,7 @@ export function StoreManager({
       {/* ===================== التبويب 2: الأقسام والفروع ===================== */}
       {activeTab === "categories" && (
         <div className="space-y-6">
-          {/* قسم إضافة قسم جديد */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-xl">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
             <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>➕</span>
               إضافة قسم جديد
@@ -413,7 +412,7 @@ export function StoreManager({
 
               <button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-xl text-sm transition"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2.5 rounded-xl text-sm transition"
               >
                 حفظ وإضافة القسم
               </button>
@@ -422,7 +421,7 @@ export function StoreManager({
 
           {/* إضافة فرع داخل قسم */}
           {categories.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-xl">
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
               <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
                 <span>🌿</span>
                 إضافة فرع (قسم فرعي) داخل القسم
@@ -499,7 +498,7 @@ export function StoreManager({
 
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-4 py-2 rounded-xl text-sm transition"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-2.5 rounded-xl text-sm transition"
                 >
                   إضافة الفرع داخل القسم
                 </button>
@@ -508,7 +507,7 @@ export function StoreManager({
           )}
 
           {/* قائمة الأقسام والفروع الحالية */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
             <h3 className="text-base font-black text-slate-800 mb-4">
               الأقسام والفروع الحالية ({categories.length})
             </h3>
@@ -520,7 +519,7 @@ export function StoreManager({
                   const catBranches = branches.filter((b) => b.categoryId === cat.id);
                   const catProducts = products.filter((p) => p.categoryId === cat.id);
                   return (
-                    <div key={cat.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
+                    <div key={cat.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {cat.photoUrl ? (
@@ -588,14 +587,13 @@ export function StoreManager({
       {/* ===================== التبويب 3: المنتجات ===================== */}
       {activeTab === "products" && (
         <div className="space-y-6">
-          {/* إضافة منتج جديد */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-2xl">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-2xl">
             <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>➕</span>
               نشر منتج جديد في المتجر
             </h3>
             {categories.length === 0 ? (
-              <p className="text-sm text-amber-600 font-bold bg-amber-50 p-3 rounded-xl border border-amber-200">
+              <p className="text-sm text-amber-600 font-bold bg-amber-50 p-3 rounded-2xl border border-amber-200">
                 يرجى إضافة قسم أولاً من تبويب &quot;الأقسام والفروع&quot; لتتمكن من نشر المنتجات داخلها.
               </p>
             ) : (
@@ -665,7 +663,7 @@ export function StoreManager({
                       value={prodCatId}
                       onChange={(e) => {
                         setProdCatId(e.target.value);
-                        setProdBranchId(""); // تصفير الفرع عند تغيير القسم
+                        setProdBranchId("");
                       }}
                       className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 text-right"
                     >
@@ -740,7 +738,7 @@ export function StoreManager({
 
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow transition"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-3 rounded-2xl text-sm shadow-md transition"
                 >
                   نشر المنتج الآن
                 </button>
@@ -749,7 +747,7 @@ export function StoreManager({
           </div>
 
           {/* قائمة المنتجات المنشورة */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
             <h3 className="text-base font-black text-slate-800 mb-4">
               المنتجات المعروضة في المتجر ({products.length})
             </h3>
@@ -784,7 +782,7 @@ export function StoreManager({
                           await deleteShopStoreProduct(p.id, shop.id);
                         }
                       }}
-                      className="mt-3 w-full bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-1 rounded-lg transition"
+                      className="mt-3 w-full bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-1.5 rounded-xl transition"
                     >
                       حذف
                     </button>
@@ -799,7 +797,7 @@ export function StoreManager({
       {/* ===================== التبويب 4: إعلانات بانر ===================== */}
       {activeTab === "banners" && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-xl">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm max-w-xl">
             <h3 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>🖼️</span>
               إعلانات بانر (سلايدر العروض)
@@ -866,7 +864,7 @@ export function StoreManager({
 
               <button
                 type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white font-black px-5 py-2.5 rounded-xl text-sm shadow transition"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-md transition"
               >
                 إضافة إعلان البانر
               </button>
@@ -874,7 +872,7 @@ export function StoreManager({
           </div>
 
           {/* البانرات الحالية */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
             <h3 className="text-base font-black text-slate-800 mb-4">
               إعلانات البانر المعروضة ({slides.length})
             </h3>
@@ -886,7 +884,7 @@ export function StoreManager({
                   <div key={slide.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative group">
                     <img src={slide.imageUrl} alt="Banner" className="w-full h-36 object-cover" />
                     {slide.title && (
-                      <div className="p-2 text-xs font-bold text-slate-800 text-center bg-white border-t">
+                      <div className="p-2.5 text-xs font-bold text-slate-800 text-center bg-white border-t">
                         {slide.title}
                       </div>
                     )}
@@ -896,7 +894,7 @@ export function StoreManager({
                           await deleteShopStoreSlide(slide.id, shop.id);
                         }
                       }}
-                      className="absolute top-2 left-2 bg-red-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold shadow hover:bg-red-700 transition"
+                      className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-xl text-xs font-bold shadow-md hover:bg-red-700 transition"
                     >
                       حذف 🗑️
                     </button>

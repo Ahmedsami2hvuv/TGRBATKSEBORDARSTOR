@@ -8,10 +8,13 @@ import { serializePrisma } from "@/lib/serialize-prisma";
 
 import { GlobalPauseButton } from "./global-pause-button";
 import { GlobalCarStatusButton } from "./global-car-status-button";
+import { ensureShopStoreTablesIfMissing } from "@/lib/db-self-heal-shop-store";
 
 export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
+  await ensureShopStoreTablesIfMissing();
+
   // جلب البيانات مع تأمين ضد الأخطاء
   const [regionsRaw, shopsRaw, iconsRaw, globalSettingsRaw] = await Promise.all([
     prisma.region.findMany({ orderBy: { name: "asc" } }).catch(() => []),
@@ -61,6 +64,7 @@ export default async function ShopsPage() {
     hideDebts: !!s.hideDebts,
     hideFromCreditBook: !!s.hideFromCreditBook,
     storeEnabled: !!s.storeEnabled,
+    storeToken: s.storeToken || `store_${s.id}`,
     createdAt: s.createdAt,
     phones: Array.from(
       new Set(

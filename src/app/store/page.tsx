@@ -89,6 +89,7 @@ async function ActiveShopsRow() {
         id: true,
         name: true,
         photoUrl: true,
+        storeToken: true,
         region: { select: { name: true } },
         _count: {
           select: {
@@ -114,10 +115,10 @@ async function ActiveShopsRow() {
         </div>
 
         <div className="flex items-stretch gap-3 overflow-x-auto pb-4 pt-1 px-1 hide-scrollbar">
-          {shopsRaw.map((s) => (
+          {shopsRaw.map((s: any) => (
             <Link
               key={s.id}
-              href={`/store/shop/${s.id}`}
+              href={`/store/shop/${s.storeToken || s.id}`}
               className="min-w-[170px] max-w-[190px] bg-white border border-slate-200 rounded-2xl p-3 shadow-xs hover:shadow-md transition flex flex-col justify-between shrink-0 group active:scale-95"
             >
               <div>

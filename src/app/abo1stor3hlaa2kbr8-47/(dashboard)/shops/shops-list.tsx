@@ -19,6 +19,7 @@ export type ShopRow = {
   hideDebts: boolean;
   hideFromCreditBook: boolean;
   storeEnabled?: boolean;
+  storeToken?: string;
   createdAt: string;
   phones?: string[];
 };
@@ -248,25 +249,50 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     </button>
                   </form>
 
-                  {/* زر إعدادات المتجر */}
+                  {/* زر إعدادات المتجر برابط مشفر خاص بالمحل لا يحمل شفرة الإدارة */}
                   <Link
-                    href={`/abo1stor3hlaa2kbr8-47/shops/${s.id}/store`}
+                    href={`/shop-manage/${s.storeToken || s.id}`}
+                    target="_blank"
                     className="text-xs font-black bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-sm"
+                    title="فتح لوحة إعدادات متجر المحل برابط خاص ومستقل"
                   >
                     <span>⚙️</span>
                     إعدادات المتجر
                   </Link>
 
-                  {/* زر معاينة المتجر الخارجي إن كان مفعلاً */}
+                  {/* زر معاينة المتجر للزبائن برابط مشفر نظيف */}
                   {s.storeEnabled && (
                     <Link
-                      href={`/store/shop/${s.id}`}
+                      href={`/store/shop/${s.storeToken || s.id}`}
                       target="_blank"
                       className="text-xs font-black bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-1.5 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1 shadow-sm"
+                      title="فتح متجر المحل كما يراه الزبائن"
                     >
                       <span>🔗</span>
-                      زيارة المتجر
+                      متجر الزبائن
                     </Link>
+                  )}
+
+                  {/* زر نسخ رسالة مشاركة المتجر */}
+                  {s.storeEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const storeUrl = `https://aboakbr.com/store/shop/${s.storeToken || s.id}`;
+                        const msg = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(msg);
+                          alert("تم نسخ رسالة ورابط المتجر بنجاح! جاهز للإرسال لصاحب المحل أو الزبائن. ✔️");
+                        } else {
+                          prompt("انسخ رسالة المتجر:", msg);
+                        }
+                      }}
+                      className="text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1 shadow-sm"
+                      title="نسخ رسالة مشاركة المتجر الجاهزة للمحل"
+                    >
+                      <span>📲</span>
+                      مشاركة المتجر
+                    </button>
                   )}
 
                   <button

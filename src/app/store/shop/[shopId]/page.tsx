@@ -45,8 +45,10 @@ export default async function SingleShopStorePage({
   await ensureShopStoreTablesIfMissing();
 
   const [shopRaw, regionsRaw] = await Promise.all([
-    prisma.shop.findUnique({
-      where: { id: shopId },
+    prisma.shop.findFirst({
+      where: {
+        OR: [{ storeToken: shopId }, { id: shopId }],
+      },
       include: { region: true },
     }),
     prisma.region.findMany({

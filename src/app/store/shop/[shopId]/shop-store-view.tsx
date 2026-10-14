@@ -172,9 +172,10 @@ export function ShopStoreView({
     }
   };
 
+  const targetToken = shop.storeToken || shop.id;
   const storeUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/store/shop/${shop.id}`
-    : `https://aboakbr.com/store/shop/${shop.id}`;
+    ? `${window.location.origin}/store/shop/${targetToken}`
+    : `https://aboakbr.com/store/shop/${targetToken}`;
   const shareText = `مرحبا الي سالوني عن متجرنه هذا الرابط مالتنه:\n${storeUrl}`;
 
   const copyShare = () => {

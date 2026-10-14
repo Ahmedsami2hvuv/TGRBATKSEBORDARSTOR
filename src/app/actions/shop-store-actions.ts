@@ -20,7 +20,7 @@ export async function updateShopStoreProfile(shopId: string, formData: FormData)
       },
     });
 
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -43,7 +43,7 @@ export async function addShopStoreCategory(shopId: string, formData: FormData) {
       },
     });
 
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -56,7 +56,7 @@ export async function deleteShopStoreCategory(categoryId: string, shopId: string
     await prisma.shopStoreCategory.delete({
       where: { id: categoryId },
     });
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -82,7 +82,7 @@ export async function addShopStoreBranch(shopId: string, formData: FormData) {
       },
     });
 
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -95,7 +95,7 @@ export async function deleteShopStoreBranch(branchId: string, shopId: string) {
     await prisma.shopStoreBranch.delete({
       where: { id: branchId },
     });
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -130,7 +130,7 @@ export async function addShopStoreProduct(shopId: string, formData: FormData) {
       },
     });
 
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -143,7 +143,7 @@ export async function deleteShopStoreProduct(productId: string, shopId: string) 
     await prisma.shopStoreProduct.delete({
       where: { id: productId },
     });
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -168,7 +168,7 @@ export async function addShopStoreSlide(shopId: string, formData: FormData) {
       },
     });
 
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
@@ -181,7 +181,7 @@ export async function deleteShopStoreSlide(slideId: string, shopId: string) {
     await prisma.shopStoreSlide.delete({
       where: { id: slideId },
     });
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/shops/${shopId}/store`);
+    revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     return { ok: true };
   } catch (err: any) {
