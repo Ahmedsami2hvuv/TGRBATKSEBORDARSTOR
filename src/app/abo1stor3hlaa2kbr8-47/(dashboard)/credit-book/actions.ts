@@ -61,12 +61,19 @@ async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Prom
     shopId,
     routeMode: { not: "double" },
     shopCostPaidAt: null,
-    status: { in: ["delivered", "archived"] },
-    submittedByCompanyPreparerId: null,
-    submissionSource: { not: "company_preparer" },
-    OR: [
-      { orderSubtotal: { gt: 0 } },
-      { prepaidAll: true }
+    AND: [
+      {
+        OR: [
+          { status: { in: ["delivered", "archived"] } },
+          { archivedAt: { not: null } }
+        ]
+      },
+      {
+        OR: [
+          { orderSubtotal: { gt: 0 } },
+          { prepaidAll: true }
+        ]
+      }
     ]
   };
 
