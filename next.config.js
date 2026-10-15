@@ -45,6 +45,18 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/school',
+        destination: '/school.html',
+      },
+      {
+        source: '/school/',
+        destination: '/school.html',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
