@@ -260,54 +260,93 @@ export function StoreManager({
         </div>
       </div>
 
-      {/* شريط التبويبات الرئيسي المنظم */}
-      <div className="bg-slate-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar border border-slate-200/70">
+      {/* شريط التبويبات الفخم والمتجاوب بالكامل للموبايل والكمبيوتر */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        {/* 1. تبويب المنتجات */}
         <button
+          type="button"
           onClick={() => setActiveTab("products")}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+          className={`p-3 sm:p-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 border select-none active:scale-98 ${
             activeTab === "products"
-              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              ? "bg-white text-[#0B2E8C] border-blue-600 shadow-md shadow-blue-900/10 ring-2 ring-blue-100"
+              : "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/90 shadow-2xs"
           }`}
         >
-          <PackagePlus className="w-4 h-4" />
-          <span>المنتجات ({products.length})</span>
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeTab === "products" ? "bg-blue-50 text-[#0B2E8C]" : "bg-slate-100 text-slate-500"
+          }`}>
+            <PackagePlus className="w-4 h-4" />
+          </div>
+          <span className="truncate">المنتجات</span>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+            activeTab === "products" ? "bg-blue-100/80 text-[#0B2E8C]" : "bg-slate-100 text-slate-500"
+          }`}>
+            {products.length}
+          </span>
         </button>
 
+        {/* 2. تبويب الأقسام والفروع */}
         <button
+          type="button"
           onClick={() => setActiveTab("categories")}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+          className={`p-3 sm:p-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 border select-none active:scale-98 ${
             activeTab === "categories"
-              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              ? "bg-white text-[#0B2E8C] border-blue-600 shadow-md shadow-blue-900/10 ring-2 ring-blue-100"
+              : "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/90 shadow-2xs"
           }`}
         >
-          <FolderPlus className="w-4 h-4" />
-          <span>الأقسام والفروع ({categories.length})</span>
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeTab === "categories" ? "bg-blue-50 text-[#0B2E8C]" : "bg-slate-100 text-slate-500"
+          }`}>
+            <FolderPlus className="w-4 h-4" />
+          </div>
+          <span className="truncate">الأقسام والفروع</span>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+            activeTab === "categories" ? "bg-blue-100/80 text-[#0B2E8C]" : "bg-slate-100 text-slate-500"
+          }`}>
+            {categories.length}
+          </span>
         </button>
 
+        {/* 3. تبويب إعلانات البانر */}
         <button
+          type="button"
           onClick={() => setActiveTab("banners")}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+          className={`p-3 sm:p-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 border select-none active:scale-98 ${
             activeTab === "banners"
-              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              ? "bg-white text-purple-700 border-purple-600 shadow-md shadow-purple-900/10 ring-2 ring-purple-100"
+              : "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/90 shadow-2xs"
           }`}
         >
-          <Megaphone className="w-4 h-4" />
-          <span>إعلانات البانر ({slides.length})</span>
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeTab === "banners" ? "bg-purple-50 text-purple-700" : "bg-slate-100 text-slate-500"
+          }`}>
+            <Megaphone className="w-4 h-4" />
+          </div>
+          <span className="truncate">إعلانات البانر</span>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+            activeTab === "banners" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"
+          }`}>
+            {slides.length}
+          </span>
         </button>
 
+        {/* 4. تبويب هوية وشعار المتجر */}
         <button
+          type="button"
           onClick={() => setActiveTab("profile")}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0 ${
+          className={`p-3 sm:p-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 border select-none active:scale-98 ${
             activeTab === "profile"
-              ? "bg-white text-[#0B2E8C] shadow-sm shadow-slate-300/50"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              ? "bg-white text-[#0B2E8C] border-blue-600 shadow-md shadow-blue-900/10 ring-2 ring-blue-100"
+              : "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/90 shadow-2xs"
           }`}
         >
-          <Settings className="w-4 h-4" />
-          <span>هوية وشعار المتجر</span>
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeTab === "profile" ? "bg-blue-50 text-[#0B2E8C]" : "bg-slate-100 text-slate-500"
+          }`}>
+            <Settings className="w-4 h-4" />
+          </div>
+          <span className="truncate">هوية وشعار المتجر</span>
         </button>
       </div>
 
