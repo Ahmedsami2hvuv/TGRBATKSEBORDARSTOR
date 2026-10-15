@@ -2705,10 +2705,11 @@ export async function syncOldCustomerDebts() {
               });
 
               if (!foundCust) {
+                const custName = order.customerName?.trim() || "زبون";
                 foundCust = await prisma.customer.create({
                   data: {
                     shopId: order.shopId,
-                    name: "زبون",
+                    name: custName,
                     phone: normPhone || phoneLocal,
                     customerRegionId: order.customerRegionId,
                     customerLocationUrl: order.customerLocationUrl || "",
@@ -2725,38 +2726,78 @@ export async function syncOldCustomerDebts() {
             }
           }
 
-          if (!customerId || !customer) continue;
+          if (!customerId && !order.customerPhone) continue;
 
           // 1. البحث عن حساب دفتر الديون للزبون أو إنشائه
-          let cbPartner = await prisma.creditBookPartner.findUnique({
-            where: {
-              type_externalId: {
-                type: "customer",
-                externalId: customerId
+          let cbPartner = null;
+          if (customerId) {
+            cbPartner = await prisma.creditBookPartner.findUnique({
+              where: {
+                type_externalId: {
+                  type: "customer",
+                  externalId: customerId
+                }
+              }
+            });
+          }
+
+          if (!cbPartner && order.customerPhone) {
+            const phoneLocal = order.customerPhone.trim();
+            const normPhone = normalizeIraqMobileLocal11(phoneLocal);
+            const cleanDigits = phoneLocal.replace(/\D/g, "");
+            const phoneVariants = [phoneLocal, cleanDigits];
+            if (normPhone) {
+              phoneVariants.push(normPhone);
+              if (normPhone.startsWith("0")) {
+                phoneVariants.push("964" + normPhone.slice(1));
+                phoneVariants.push(normPhone.slice(1));
               }
             }
-          });
+            const uniqueVariants = Array.from(new Set(phoneVariants.filter(Boolean)));
+
+            cbPartner = await prisma.creditBookPartner.findFirst({
+              where: {
+                type: "customer",
+                phone: { in: uniqueVariants }
+              }
+            });
+            if (cbPartner && customerId && !cbPartner.externalId) {
+              await prisma.creditBookPartner.update({
+                where: { id: cbPartner.id },
+                data: { externalId: customerId }
+              });
+            }
+          }
+
+          const actualCustomerName = (order.customerName && order.customerName.trim()) 
+            || (customer && customer.name && customer.name.trim() !== "زبون" ? customer.name.trim() : "") 
+            || "زبون";
 
           if (!cbPartner) {
             cbPartner = await prisma.creditBookPartner.create({
               data: {
-                name: "زبون",
-                phone: order.customerPhone || customer.phone || null,
+                name: actualCustomerName,
+                phone: order.customerPhone || customer?.phone || null,
                 type: "customer",
-                externalId: customerId,
+                externalId: customerId || null,
                 updatedAt: new Date()
               }
             });
             createdPartnersCount++;
           } else {
+            const shouldUpdateName = (cbPartner.name === "زبون" || !cbPartner.name) && actualCustomerName !== "زبون";
             await prisma.creditBookPartner.update({
               where: { id: cbPartner.id },
-              data: { updatedAt: new Date() }
+              data: {
+                updatedAt: new Date(),
+                ...(shouldUpdateName ? { name: actualCustomerName } : {}),
+                ...(!cbPartner.phone && (order.customerPhone || customer?.phone) ? { phone: order.customerPhone || customer?.phone } : {})
+              }
             });
           }
 
           // 2. التحقق من عدم وجود المعاملة بالفعل لتفادي التكرار
-          const noteTextContains = `#${order.orderNumber} |`;
+          const noteTextContains = `#${order.orderNumber}`;
           const exists = await prisma.creditBookTransaction.findFirst({
             where: {
               partnerId: cbPartner.id,
@@ -2768,9 +2809,12 @@ export async function syncOldCustomerDebts() {
 
           const regionName = order.customerRegion?.name || "غير محدد";
           const courierName = order.courier?.name || "بدون مندوب";
-          const orderType = order.orderType || "غير محدد";
-          const shopName = order.shop?.name || "بدون محل";
-          const noteText = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const orderType = order.orderType || "توصيل";
+          const shopName = order.shop?.name || "المتجر";
+          const phoneDisplay = order.customerPhone || customer?.phone || "بدون هاتف";
+          const nameDisplay = actualCustomerName;
+
+          const noteText = `طلب رقم: #${order.orderNumber} | نطلبه (دين تسليم) | المتجر: ${shopName} | الزبون: ${nameDisplay} (${phoneDisplay}) | المنطقة: ${regionName} | المندوب: ${courierName} | نوع الطلب: ${orderType} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | الوارد المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي بذمته: ${difference.toLocaleString()} د.ع`;
 
           if (!exists) {
             const newTx = await prisma.creditBookTransaction.create({
@@ -2793,11 +2837,12 @@ export async function syncOldCustomerDebts() {
             createdTransactionsCount++;
             totalDebtAmount += difference;
           } else {
-            if (exists.note !== noteText || Number(exists.amount) !== difference) {
+            if (exists.note !== noteText || Number(exists.amount) !== difference || exists.kind !== "gave") {
               await prisma.creditBookTransaction.update({
                 where: { id: exists.id },
                 data: {
                   amount: difference,
+                  kind: "gave",
                   note: noteText
                 }
               });
@@ -2813,22 +2858,44 @@ export async function syncOldCustomerDebts() {
         } catch (syncErr) {
           console.error(`Failed to sync money expectations for order ${order.id} in sync (else):`, syncErr);
         }
-        if (order.customerId) {
-          let cbPartner = await prisma.creditBookPartner.findUnique({
-            where: {
-              type_externalId: {
-                type: "customer",
-                externalId: order.customerId
+        if (order.customerId || order.customerPhone) {
+          let cbPartner = null;
+          if (order.customerId) {
+            cbPartner = await prisma.creditBookPartner.findUnique({
+              where: {
+                type_externalId: {
+                  type: "customer",
+                  externalId: order.customerId
+                }
+              }
+            });
+          }
+          if (!cbPartner && order.customerPhone) {
+            const phoneLocal = order.customerPhone.trim();
+            const normPhone = normalizeIraqMobileLocal11(phoneLocal);
+            const cleanDigits = phoneLocal.replace(/\D/g, "");
+            const phoneVariants = [phoneLocal, cleanDigits];
+            if (normPhone) {
+              phoneVariants.push(normPhone);
+              if (normPhone.startsWith("0")) {
+                phoneVariants.push("964" + normPhone.slice(1));
+                phoneVariants.push(normPhone.slice(1));
               }
             }
-          });
+            const uniqueVariants = Array.from(new Set(phoneVariants.filter(Boolean)));
+            cbPartner = await prisma.creditBookPartner.findFirst({
+              where: {
+                type: "customer",
+                phone: { in: uniqueVariants }
+              }
+            });
+          }
           if (cbPartner) {
-            const noteTextContains = `#${order.orderNumber} |`;
             const exists = await prisma.creditBookTransaction.findFirst({
               where: {
                 partnerId: cbPartner.id,
                 note: {
-                  contains: noteTextContains
+                  contains: `#${order.orderNumber}`
                 }
               }
             });
@@ -2882,17 +2949,20 @@ export async function syncOldCustomerDebts() {
 
           const regionName = order.customerRegion?.name || "غير محدد";
           const courierName = order.courier?.name || "بدون مندوب";
-          const orderType = order.orderType || "غير محدد";
-          const shopName = order.shop?.name || "بدون محل";
+          const orderType = order.orderType || "توصيل";
+          const shopName = order.shop?.name || "المتجر";
+          const phoneDisplay = order.customerPhone || "بدون هاتف";
+          const nameDisplay = order.customerName || "زبون";
           
-          const newNote = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const newNote = `طلب رقم: #${order.orderNumber} | نطلبه (دين تسليم) | المتجر: ${shopName} | الزبون: ${nameDisplay} (${phoneDisplay}) | المنطقة: ${regionName} | المندوب: ${courierName} | نوع الطلب: ${orderType} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | الوارد المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي بذمته: ${difference.toLocaleString()} د.ع`;
 
-          if (tx.note !== newNote || Number(tx.amount) !== difference) {
+          if (tx.note !== newNote || Number(tx.amount) !== difference || tx.kind !== "gave") {
             await prisma.creditBookTransaction.update({
               where: { id: tx.id },
               data: { 
                 note: newNote,
-                amount: difference
+                amount: difference,
+                kind: "gave"
               }
             });
             updatedTxsCount++;

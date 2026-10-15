@@ -7,6 +7,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
     const order = await db.order.findUnique({
       where: { id: orderId },
       include: {
+        customer: { select: { id: true, name: true, phone: true } },
         customerRegion: { select: { name: true } },
         courier: { select: { name: true, vehicleType: true, zeroEarning: true } },
         shop: { select: { name: true } }
@@ -38,8 +39,214 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
     // تم إلغاء أتمتة فتح واستعادة حسابات المحلات التلقائية في دفتر الديون عند تسليم الطلبات
     // لضمان بقاء دفتر الديون محاسبياً ومضبوطاً يدوياً بدون أي ديون عشوائية.
 
-    // تم إلغاء أتمتة حساب وتعديل وحذف ديون الزبائن التلقائية في دفتر الديون عند تسليم الطلبات
-    // لمنع أي تصفير خاطئ للعملاء أو قلب الحسابات بدون إدخال صريح من الإدارة.
+    // أتمتة حساب وتسجيل ديون الزبائن في دفتر الديون إذا تم تسليم الطلب وكان الوارد المستلم أقل من المطلوب
+    try {
+      const isDelivered = order.status === "delivered";
+      let customerId = order.customerId;
+      const customerPhone = order.customerPhone ? order.customerPhone.trim() : "";
+
+      const normPhone = customerPhone ? normalizeIraqMobileLocal11(customerPhone) : null;
+      const cleanDigits = customerPhone ? customerPhone.replace(/\D/g, "") : "";
+      const phoneVariants = [customerPhone, cleanDigits];
+      if (normPhone) {
+        phoneVariants.push(normPhone);
+        if (normPhone.startsWith("0")) {
+          phoneVariants.push("964" + normPhone.slice(1));
+          phoneVariants.push(normPhone.slice(1));
+        }
+      }
+      const uniquePhoneVariants = Array.from(new Set(phoneVariants.filter(Boolean)));
+
+      if (!customerId && customerPhone) {
+        let foundCust = await db.customer.findFirst({
+          where: {
+            phone: { in: uniquePhoneVariants },
+            shopId: order.shopId
+          }
+        });
+
+        if (!foundCust) {
+          const custName = order.customerName?.trim() || "زبون";
+          foundCust = await db.customer.create({
+            data: {
+              shopId: order.shopId,
+              name: custName,
+              phone: normPhone || customerPhone,
+              customerRegionId: order.customerRegionId,
+              customerLocationUrl: order.customerLocationUrl || "",
+              customerLandmark: order.customerLandmark || "",
+            }
+          });
+        }
+
+        customerId = foundCust.id;
+        await db.order.update({
+          where: { id: order.id },
+          data: { customerId: foundCust.id }
+        });
+      }
+
+      if (customerId || uniquePhoneVariants.length > 0) {
+        // حساب المبالغ المستلمة من المندوب للطلبية بنوع التوصيل (delivery_in)
+        const agg = await db.orderCourierMoneyEvent.aggregate({
+          where: {
+            orderId,
+            kind: "delivery_in",
+            deletedAt: null,
+          },
+          _sum: { amountDinar: true },
+        });
+
+        const isPaidAll = Boolean(order.prepaidAll || order.customerPaymentReceivedAt !== null);
+        const expectedDinar = Number(order.totalAmount || 0);
+        const receivedDinar = Number(agg._sum.amountDinar || 0);
+        const difference = expectedDinar - receivedDinar;
+
+        if (isDelivered && difference > 0 && !isPaidAll) {
+          // 1. البحث عن حساب دفتر الديون للزبون أو إنشائه
+          let cbPartner = null;
+          if (customerId) {
+            cbPartner = await db.creditBookPartner.findUnique({
+              where: {
+                type_externalId: {
+                  type: "customer",
+                  externalId: customerId
+                }
+              }
+            });
+          }
+
+          if (!cbPartner && uniquePhoneVariants.length > 0) {
+            cbPartner = await db.creditBookPartner.findFirst({
+              where: {
+                type: "customer",
+                phone: { in: uniquePhoneVariants }
+              }
+            });
+            if (cbPartner && customerId && !cbPartner.externalId) {
+              await db.creditBookPartner.update({
+                where: { id: cbPartner.id },
+                data: { externalId: customerId }
+              });
+            }
+          }
+
+          const actualCustomerName = (order.customerName && order.customerName.trim()) 
+            || (order.customer && order.customer.name && order.customer.name.trim() !== "زبون" ? order.customer.name.trim() : "") 
+            || "زبون";
+
+          if (!cbPartner) {
+            cbPartner = await db.creditBookPartner.create({
+              data: {
+                name: actualCustomerName,
+                phone: order.customerPhone || order.customer?.phone || (normPhone || null),
+                type: "customer",
+                externalId: customerId || null,
+                updatedAt: new Date()
+              }
+            });
+          } else {
+            const shouldUpdateName = (cbPartner.name === "زبون" || !cbPartner.name) && actualCustomerName !== "زبون";
+            await db.creditBookPartner.update({
+              where: { id: cbPartner.id },
+              data: {
+                updatedAt: new Date(),
+                ...(shouldUpdateName ? { name: actualCustomerName } : {}),
+                ...(!cbPartner.phone && (order.customerPhone || order.customer?.phone) ? { phone: order.customerPhone || order.customer?.phone } : {})
+              }
+            });
+          }
+
+          // 2. التحقق من وجود المعاملة بالفعل لتفادي التكرار
+          const exists = await db.creditBookTransaction.findFirst({
+            where: {
+              partnerId: cbPartner.id,
+              note: {
+                contains: `#${order.orderNumber}`
+              }
+            }
+          });
+
+          const regionName = order.customerRegion?.name || "غير محدد";
+          const courierName = order.courier?.name || "بدون مندوب";
+          const orderType = order.orderType || "توصيل";
+          const shopName = order.shop?.name || "المتجر";
+          const phoneDisplay = order.customerPhone || order.customer?.phone || "بدون هاتف";
+          const nameDisplay = actualCustomerName;
+
+          const noteText = `طلب رقم: #${order.orderNumber} | نطلبه (دين تسليم) | المتجر: ${shopName} | الزبون: ${nameDisplay} (${phoneDisplay}) | المنطقة: ${regionName} | المندوب: ${courierName} | نوع الطلب: ${orderType} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | الوارد المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي بذمته: ${difference.toLocaleString()} د.ع`;
+
+          if (exists) {
+            await db.creditBookTransaction.update({
+              where: { id: exists.id },
+              data: {
+                amount: difference,
+                kind: "gave",
+                note: noteText,
+              }
+            });
+          } else {
+            const newTx = await db.creditBookTransaction.create({
+              data: {
+                partnerId: cbPartner.id,
+                amount: difference,
+                kind: "gave", // أعطيته = نطلبه
+                note: noteText,
+                createdAt: order.createdAt
+              }
+            });
+
+            try {
+              const { logTransactionAuthor } = await import("./transaction-logger");
+              await logTransactionAuthor(newTx.id, "create", "النظام");
+            } catch (logErr) {
+              console.error("Failed to log transaction creator as System:", logErr);
+            }
+          }
+        } else {
+          // إذا لم يعد الطلب مسلماً أو تلاشى الفرق (تم استلام الوارد كاملاً) أو أصبح مدفوعاً بالكامل:
+          // نبحث عن أي معاملة قديمة لهذا الطلب ونحذفها لتصفير الدين
+          let cbPartner = null;
+          if (customerId) {
+            cbPartner = await db.creditBookPartner.findUnique({
+              where: {
+                type_externalId: {
+                  type: "customer",
+                  externalId: customerId
+                }
+              }
+            });
+          }
+          if (!cbPartner && uniquePhoneVariants.length > 0) {
+            cbPartner = await db.creditBookPartner.findFirst({
+              where: {
+                type: "customer",
+                phone: { in: uniquePhoneVariants }
+              }
+            });
+          }
+
+          if (cbPartner) {
+            const exists = await db.creditBookTransaction.findFirst({
+              where: {
+                partnerId: cbPartner.id,
+                note: {
+                  contains: `#${order.orderNumber}`
+                }
+              }
+            });
+
+            if (exists) {
+              await db.creditBookTransaction.delete({
+                where: { id: exists.id }
+              });
+            }
+          }
+        }
+      }
+    } catch (customerDebtErr) {
+      console.error("Failed to auto record customer debt on delivery:", customerDebtErr);
+    }
 
     let products: any[] = [];
     if (order.preparerShoppingJson) {

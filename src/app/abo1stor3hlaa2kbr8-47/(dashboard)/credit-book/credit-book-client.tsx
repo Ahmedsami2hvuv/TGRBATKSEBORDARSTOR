@@ -348,6 +348,20 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             )}
           </div>
 
+          {/* زر مزامنة ديون الزبائن السابقة */}
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={handleSyncOldDebts}
+            className="px-3.5 sm:px-4 py-2.5 text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/80 rounded-xl transition shadow-sm flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+            title="فحص ومزامنة ديون الزبائن للطلبات المسلمة غير المستلمة بالكامل"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span className="hidden sm:inline">مزامنة ديون الزبائن</span>
+          </button>
+
           {/* زر إضافة حساب جديد */}
           <button
             type="button"
@@ -355,7 +369,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             className="px-3.5 sm:px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-1.5 shrink-0"
             title="إضافة حساب جديد"
           >
-            <span>➕</span>
+            <span>+</span>
             <span className="hidden sm:inline">إضافة حساب</span>
           </button>
 
@@ -366,8 +380,11 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             className="px-3 sm:px-3.5 py-2.5 text-xs font-black text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition flex items-center gap-1.5 shrink-0"
             title="إعدادات دفتر الديون والعمليات"
           >
-            <span>⚙️</span>
-            <span className="hidden sm:inline">إعدادات دفتر الديون</span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="hidden sm:inline">الإعدادات</span>
           </button>
         </div>
 
