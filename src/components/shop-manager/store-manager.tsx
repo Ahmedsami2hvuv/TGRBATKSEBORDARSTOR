@@ -276,50 +276,7 @@ export function StoreManager({
         </div>
       </div>
 
-      {/* 2. كروت الإحصائيات السريعة */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Tag className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-lg font-black text-slate-900 leading-none">{products.length}</div>
-            <div className="text-[11px] font-bold text-slate-500 mt-1">المنتجات المعروضة</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <FolderPlus className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-lg font-black text-slate-900 leading-none">{categories.length}</div>
-            <div className="text-[11px] font-bold text-slate-500 mt-1">الأقسام الرئيسية</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-lg font-black text-slate-900 leading-none">{branches.length}</div>
-            <div className="text-[11px] font-bold text-slate-500 mt-1">الفروع التابعة</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-            <Megaphone className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-lg font-black text-slate-900 leading-none">{slides.length}</div>
-            <div className="text-[11px] font-bold text-slate-500 mt-1">إعلانات البانر</div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. شريط التبويبات الفخم */}
+      {/* شريط التبويبات الرئيسي المنظم */}
       <div className="bg-slate-100/90 p-1.5 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar border border-slate-200/70">
         <button
           onClick={() => setActiveTab("products")}
