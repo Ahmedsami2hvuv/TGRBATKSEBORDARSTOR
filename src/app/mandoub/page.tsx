@@ -44,8 +44,6 @@ import { filterLedgerByRecentDays } from "@/lib/money-entry-ui";
 import { LEDGER_KIND_TRANSFER_PENDING_IN, LEDGER_KIND_TRANSFER_PENDING_OUT, MISC_LEDGER_KIND_GIVE, MISC_LEDGER_KIND_TAKE, MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { getUISettings } from "@/lib/ui-settings";
 import type { MandoubWalletLedgerLine } from "./mandoub-wallet-client";
-import { getCourierShiftStatus } from "@/lib/courier-shift";
-import { MandoubShiftPresenceButton } from "./mandoub-shift-presence-button";
 
 // هذه الصفحة تعتمد على searchParams + cookies، لذلك يجب أن تكون ديناميكية دائماً.
 export const dynamic = "force-dynamic";
@@ -195,7 +193,6 @@ export default async function MandoubPage({ searchParams }: Props) {
     );
   }
 
-  const shiftStatus = await getCourierShiftStatus(courier.id);
 
   const botToken = await getBotTokenByPurpose("courier");
   let botInfo: any = null;
@@ -1135,14 +1132,6 @@ export default async function MandoubPage({ searchParams }: Props) {
               }}
             />
           </section>
-
-          {/* زر تسجيل الحضور العائم للشفت الصباحي والمسائي */}
-          {shiftStatus.shouldShowButton ? (
-            <MandoubShiftPresenceButton
-              auth={baseAuth}
-              initialShow={shiftStatus.shouldShowButton}
-            />
-          ) : null}
         </div>
       </div>
     );

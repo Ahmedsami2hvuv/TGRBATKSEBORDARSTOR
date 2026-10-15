@@ -2123,7 +2123,7 @@ export async function recordPreparerShiftPresenceAction(
   return { ok: true };
 }
 
-// دالة لتحديد اسم الشفت الحالي للعملية وضمان عدم ضياع أي حركة على مدار الـ 24 ساعة
+// دالة لتحديد اسم الشفت الحالي للعملية بدقة متزامنة مع أوقات الإدارة
 async function determineShiftName(preparerId: string, time: Date): Promise<string> {
   await ensurePreparerSalaryConfigColumnsIfMissing();
 
@@ -2132,26 +2132,24 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
     select: { shift1Start: true, shift1End: true, shift2Start: true, shift2End: true }
   });
 
+  const { parseShiftTimeToMinutes } = await import("@/lib/preparer-shift");
   const logTime = getIraqTime(time);
   const logMinutes = logTime.hours * 60 + logTime.minutes;
 
-  const parseTimeToMinutes = (timeStr: string) => {
-    const [h, m] = (timeStr || "00:00").split(":").map(Number);
-    return h * 60 + m;
-  };
+  const s1Start = parseShiftTimeToMinutes(preparer?.shift1Start || "08:00", false);
+  const s1End = parseShiftTimeToMinutes(preparer?.shift1End || "13:00", false);
+  const s2Start = parseShiftTimeToMinutes(preparer?.shift2Start || "15:30", true);
+  const s2End = parseShiftTimeToMinutes(preparer?.shift2End || "23:59", true);
 
-  const s1End = parseTimeToMinutes(preparer?.shift1End || "13:00");
-  const s2Start = parseTimeToMinutes(preparer?.shift2Start || "15:30");
-
-  // تحديد منتصف الوقت الفاصل بين الشفت الأول والشفت الثاني
-  const midpoint = Math.floor((s1End + s2Start) / 2);
-
-  // أي حركة قبل النقطة الفاصلة تعتبر شفت صباحي، وأي حركة من النقطة الفاصلة تعتبر شفت مسائي
-  if (logMinutes < midpoint) {
+  if (logMinutes >= s1Start && logMinutes <= s1End) {
     return "shift1";
-  } else {
+  } else if (
+    (s2Start <= s2End && logMinutes >= s2Start && logMinutes <= s2End) ||
+    (s2Start > s2End && (logMinutes >= s2Start || logMinutes <= s2End))
+  ) {
     return "shift2";
   }
+  return "";
 }
 
 // دالة احتساب الشفتات المستحقة
@@ -2198,16 +2196,6 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
   const uniqueShifts = new Set<string>();
   let todaySalary = 0;
 
-  const timeToMinutes = (h: number, m: number) => h * 60 + m;
-  const parseTimeToMinutes = (timeStr: string) => {
-    const [h, m] = (timeStr || "00:00").split(":").map(Number);
-    return h * 60 + m;
-  };
-
-  const s1End = parseTimeToMinutes(preparer.shift1End || "13:00");
-  const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
-  const midpoint = Math.floor((s1End + s2Start) / 2);
-
   const dayMap = new Map<string, { morning: boolean; evening: boolean }>();
 
   workLogs.forEach(log => {
@@ -2221,13 +2209,6 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
       isMorning = true;
     } else if ((log as any).shiftName === "shift2") {
       isEvening = true;
-    } else {
-      const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
-      if (logMinutes < midpoint) {
-        isMorning = true;
-      } else {
-        isEvening = true;
-      }
     }
 
     if (isMorning || isEvening) {

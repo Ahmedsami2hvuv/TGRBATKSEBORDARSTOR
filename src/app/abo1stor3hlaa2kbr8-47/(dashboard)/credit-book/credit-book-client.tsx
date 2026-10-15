@@ -308,91 +308,17 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* 1. لوحة الملخص المالي الشفافة (فصل ما نطلبه عما يطلبوننا مع الصافي) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* أ) ما نطلبه (ديون لصالحنا) */}
-        <button
-          type="button"
-          onClick={() => setBalanceFilter(balanceFilter === "owe_us" ? "all" : "owe_us")}
-          className={`p-4 rounded-2xl border text-right transition-all shadow-sm flex flex-col justify-between ${
-            balanceFilter === "owe_us"
-              ? "bg-emerald-100/80 border-emerald-400 ring-2 ring-emerald-500/30"
-              : "bg-emerald-50/70 hover:bg-emerald-100/60 border-emerald-200/80"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full mb-1">
-            <span className="text-xs font-black text-emerald-800 flex items-center gap-1.5">
-              <span>🟢</span> نطلبهم (ديون لنا)
-            </span>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/70 text-emerald-800">
-              {countStats.oweUsCount} حساب
-            </span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums tracking-tight">
-            +{formatDinarAsAlfWithUnit(totalWeOwed)}
-          </div>
-          <div className="text-[10px] font-bold text-emerald-600/90 mt-1">
-            أموال لنا في ذمة الزبائن أو المناديب
-          </div>
-        </button>
-
-        {/* ب) ما يطلبوننا (مستحقات علينا) */}
-        <button
-          type="button"
-          onClick={() => setBalanceFilter(balanceFilter === "we_owe" ? "all" : "we_owe")}
-          className={`p-4 rounded-2xl border text-right transition-all shadow-sm flex flex-col justify-between ${
-            balanceFilter === "we_owe"
-              ? "bg-rose-100/80 border-rose-400 ring-2 ring-rose-500/30"
-              : "bg-rose-50/70 hover:bg-rose-100/60 border-rose-200/80"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full mb-1">
-            <span className="text-xs font-black text-rose-800 flex items-center gap-1.5">
-              <span>🔴</span> يطلبوننا (مستحقات علينا)
-            </span>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-200/70 text-rose-800">
-              {countStats.weOweCount} حساب
-            </span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-rose-700 tabular-nums tracking-tight">
-            -{formatDinarAsAlfWithUnit(totalWeOwe)}
-          </div>
-          <div className="text-[10px] font-bold text-rose-600/90 mt-1">
-            مستحقات بضاعة للمحلات والمجهزين
-          </div>
-        </button>
-
-        {/* ج) صافي المركز المالي العام */}
-        <div
-          className={`p-4 rounded-2xl border text-right transition-all shadow-sm flex flex-col justify-between ${
-            netBalance > 0
-              ? "bg-emerald-50/50 border-emerald-300 text-emerald-900"
-              : netBalance < 0
-              ? "bg-rose-50/50 border-rose-300 text-rose-900"
-              : "bg-slate-50 border-slate-200 text-slate-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full mb-1">
-            <span className="text-xs font-black flex items-center gap-1.5">
-              <span>⚖️</span> الصافي الإجمالي
-            </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
-              {typeLabels[selectedType]?.label || "الكل"}
-            </span>
-          </div>
-          <div className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tight ${
-            netBalance > 0 ? "text-emerald-700" : netBalance < 0 ? "text-rose-700" : "text-slate-700"
-          }`}>
-            {netBalance > 0 ? "+" : ""}{netBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(netBalance))}
-          </div>
-          <div className="text-[10px] font-bold text-slate-500 mt-1">
-            {netBalance < 0 
-              ? "مستحقات المحلات تفوق ديوننا في السوق"
-              : netBalance > 0 
-                ? "ديوننا في السوق تفوق مستحقات المحلات"
-                : "الحسابات متوازنة تماماً"}
-          </div>
-        </div>
+      {/* 1. بطاقة الرصيد الكلي الصافي فقط (رقم كبير جداً بدون أي عناوين أو رتوش) */}
+      <div className={`p-4 sm:p-6 rounded-2xl border text-center transition-all shadow-sm flex items-center justify-center ${
+        netBalance > 0 
+          ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-700" 
+          : netBalance < 0 
+            ? "bg-rose-50/70 border-rose-200/80 text-rose-700" 
+            : "bg-white border-slate-200 text-slate-700"
+      }`}>
+        <span className="text-4xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight">
+          {netBalance > 0 ? "+" : ""}{netBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(netBalance))}
+        </span>
       </div>
 
       {/* 2. شريط البحث والخيارات المنظم */}

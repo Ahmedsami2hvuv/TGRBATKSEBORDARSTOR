@@ -55,23 +55,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // تسجيل لوج عمل للشفت إذا لم يكن مسجلاً خلال آخر 30 دقيقة
-    try {
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      const recentLog = await prisma.companyPreparerWorkLog.findFirst({
-        where: {
-          preparerId: v.preparerId,
-          createdAt: { gte: thirtyMinutesAgo },
-        },
-        select: { id: true },
-      });
-      if (!recentLog) {
-        await recordPreparerWorkLog(v.preparerId, "active_location");
-      }
-    } catch (e) {
-      // عدم تعطيل مسار الرفع إن حدث أي خطأ ثانوي
-    }
-
     return NextResponse.json({ ok: true, serverTime: serverTime.toISOString() });
   } catch (error) {
     return handleResourceDisabledError(error);

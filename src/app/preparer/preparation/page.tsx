@@ -177,6 +177,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         <PreparerShiftPresenceButton
           auth={auth}
           initialShow={shiftStatus.shouldShowButton}
+          shiftLabel={shiftStatus.shiftLabel}
         />
       ) : null}
     </div>

@@ -110,23 +110,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const orderListResetAt = preparer.orderListResetAt;
   const submittableShopIds = preparer.shopLinks.filter((l) => l.canSubmitOrders).map((l) => l.shopId);
 
-  // تسجيل تواجد المجهز في حسابه لاحتساب الشفت إن لم يكن مسجلاً في آخر 30 دقيقة
-  try {
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    const recentLog = await prisma.companyPreparerWorkLog.findFirst({
-      where: {
-        preparerId: preparer.id,
-        createdAt: { gte: thirtyMinutesAgo },
-      },
-      select: { id: true },
-    });
-    if (!recentLog) {
-      await recordPreparerWorkLog(preparer.id, "portal_active");
-    }
-  } catch (e) {
-    // تجاهل أي خطأ ثانوي
-  }
-
   const [couriersForBulkAssign, walletTotals, stats, icons, pendingPreparationCount, shiftStatus] = await Promise.all([
     prisma.courier.findMany({
       where: preparerCourierAssignWhere,
@@ -368,6 +351,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
         <PreparerShiftPresenceButton
           auth={baseAuth}
           initialShow={shiftStatus.shouldShowButton}
+          shiftLabel={shiftStatus.shiftLabel}
         />
       ) : null}
     </div>

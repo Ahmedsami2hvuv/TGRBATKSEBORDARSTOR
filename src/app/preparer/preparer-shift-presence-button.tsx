@@ -7,11 +7,12 @@ import { recordPreparerShiftPresenceAction, type PreparerActionState } from "./a
 type Props = {
   auth: { p: string; exp: string; s: string };
   initialShow: boolean;
+  shiftLabel?: string;
 };
 
 const initial: PreparerActionState = {};
 
-export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
+export function PreparerShiftPresenceButton({ auth, initialShow, shiftLabel }: Props) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(recordPreparerShiftPresenceAction, initial);
   const [visible, setVisible] = useState(initialShow);
@@ -174,7 +175,7 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
             <svg className="h-6 w-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
-            <span>تم تسجيل الشفت بنجاح</span>
+            <span>{shiftLabel ? `تم تسجيل الشفت ${shiftLabel} بنجاح` : "تم تسجيل الشفت بنجاح"}</span>
           </div>
         ) : (
           <button
@@ -207,7 +208,7 @@ export function PreparerShiftPresenceButton({ auth, initialShow }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </span>
-                <span className="text-lg tracking-wide">تسجيل شفت</span>
+                <span className="text-lg tracking-wide">{shiftLabel ? `تسجيل الشفت ${shiftLabel}` : "تسجيل شفت"}</span>
               </>
             )}
           </button>
