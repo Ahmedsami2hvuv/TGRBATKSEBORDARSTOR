@@ -91,7 +91,7 @@ export default async function GeneralReportsPage({ searchParams }: Props) {
     // تجميع شهري
     if (month >= 0 && month < 12) {
       monthlyStats[month].totalOrders += 1;
-      if (order.status === "delivered" || order.status === "completed") {
+      if (order.status === "delivered" || order.status === "completed" || order.status === "archived") {
         monthlyStats[month].deliveredOrders += 1;
       } else if (order.status === "canceled" || order.status === "rejected") {
         monthlyStats[month].canceledOrders += 1;

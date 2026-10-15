@@ -85,7 +85,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       const allOrders = await prisma.order.findMany({
         where: {
           OR: [
-            { status: "delivered" },
+            { status: { in: ["delivered", "archived"] } },
             {
               preparerShoppingJson: { not: null as any },
               status: { notIn: ["cancelled", "rejected"] },
@@ -114,7 +114,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         const d = shiftDate.getUTCDate();
 
         let deliveryProfit = 0;
-        if (order.status === "delivered" && order.deliveryPrice != null) {
+        if ((order.status === "delivered" || order.status === "archived") && order.deliveryPrice != null) {
           let courierEarning = order.courierEarningDinar;
           const isZeroEarning = order.courier?.zeroEarning || false;
 
@@ -303,11 +303,12 @@ export default async function CombinedReportPage({ searchParams }: Props) {
 
     // جلب البيانات المتوازي (تم إزالة الإكراميات)
     const [ordersDelivery, ordersPrep, sidebarPrepOrders] = await Promise.all([
-      // طلبات التوصيل المسلمة
+      // طلبات التوصيل المسلمة أو المؤرشفة
       prisma.order.findMany({
         where: {
-          status: "delivered",
+          status: { in: ["delivered", "archived"] },
           OR: [
+            { createdAt: { gte: from, lte: to } },
             { updatedAt: { gte: from, lte: to } },
             {
               moneyEvents: {

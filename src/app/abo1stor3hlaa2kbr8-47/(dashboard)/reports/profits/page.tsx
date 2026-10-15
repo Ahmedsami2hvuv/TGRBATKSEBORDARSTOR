@@ -45,7 +45,7 @@ export default async function ReportsProfitsPage() {
   const orders = await prisma.order.findMany({
     where: {
       OR: [
-        { status: "delivered" },
+        { status: { in: ["delivered", "archived"] } },
         {
           preparerShoppingJson: { not: null as any },
           status: { notIn: ["cancelled", "rejected"] },
@@ -79,7 +79,7 @@ export default async function ReportsProfitsPage() {
 
     // حساب أرباح التوصيل
     let deliveryProfit = 0;
-    if (order.status === "delivered" && order.deliveryPrice != null) {
+    if ((order.status === "delivered" || order.status === "archived") && order.deliveryPrice != null) {
       let courierEarning = order.courierEarningDinar;
       const isZeroEarning = order.courier?.zeroEarning || false;
 
