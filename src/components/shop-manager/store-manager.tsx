@@ -195,83 +195,67 @@ export function StoreManager({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-800" dir="rtl">
-      {/* 1. البطاقة الترحيبية والهيدر القيادي الفاخر */}
-      <div className="bg-gradient-to-br from-[#0B2E8C] via-[#0E3AA8] to-[#1E40AF] text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-blue-950/15 relative overflow-hidden">
-        {/* زخرفة خفيفة في الخلفية */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-60 h-60 bg-amber-400/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shrink-0 shadow-lg">
-              {storeLogoUrl ? (
-                <img src={storeLogoUrl} alt={shop.name} className="w-full h-full object-cover rounded-xl" />
-              ) : (
-                <Store className="w-8 h-8 md:w-10 md:h-10 text-white" />
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  متجرك الإلكتروني مفعّل ونشط
-                </span>
-              </div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight">
-                إدارة متجر {shop.name}
-              </h1>
-              <p className="text-blue-100/80 text-xs md:text-sm mt-0.5 max-w-md line-clamp-1">
-                {bio || "تحكم بأقسامك ومنتجاتك وعروضك وشارك رابط متجرك مع زبائنك بسهولة"}
-              </p>
-            </div>
+      {/* 1. الشريط العلوي المدمج والأنيق لمتجر المحل */}
+      <div className="bg-gradient-to-r from-[#0B2E8C] via-[#0E3AA8] to-[#1E40AF] text-white rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-md shadow-blue-950/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* معلومات وهوية المتجر */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+            {storeLogoUrl ? (
+              <img src={storeLogoUrl} alt={shop.name} className="w-full h-full object-cover rounded-lg" />
+            ) : (
+              <Store className="w-6 h-6 text-white" />
+            )}
           </div>
 
-          {/* أزرار الإجراءات السريعة */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <Link
-              href={`/shop/${targetToken}`}
-              target="_blank"
-              className="bg-white/15 hover:bg-white/25 text-white border border-white/25 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shadow-sm active:scale-95"
-            >
-              <Eye className="w-4 h-4 text-amber-300" />
-              <span>معاينة متجر الزبائن</span>
-            </Link>
-
-            <button
-              onClick={shareOnWhatsApp}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition flex items-center gap-2 shadow-md shadow-emerald-900/20 active:scale-95"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>مشاركة واتساب</span>
-            </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black truncate">
+                إدارة متجر {shop.name}
+              </h1>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="متجرك مفعّل ونشط" />
+            </div>
+            <p className="text-blue-200 text-xs font-medium truncate mt-0.5">
+              {bio || "إدارة الأقسام والمنتجات والعروض ومشاركة المتجر"}
+            </p>
           </div>
         </div>
 
-        {/* شريط نسخ الرابط المباشر */}
-        <div className="mt-6 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-blue-200 font-bold shrink-0">رابط متجرك المباشر:</span>
-            <span className="bg-black/25 px-3 py-1.5 rounded-xl text-white font-mono text-[11px] md:text-xs truncate select-all border border-white/10">
-              {storeUrl}
-            </span>
-          </div>
+        {/* الأزرار الثلاثة المدمجة: معاينة المتجر، نسخ الرابط، مشاركة واتساب */}
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <Link
+            href={`/shop/${targetToken}`}
+            target="_blank"
+            className="bg-white/15 hover:bg-white/25 text-white border border-white/20 px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-2xs active:scale-95"
+          >
+            <Eye className="w-4 h-4 text-amber-300" />
+            <span>معاينة المتجر</span>
+          </Link>
 
           <button
+            type="button"
             onClick={copyShareMessage}
-            className="bg-white text-[#0B2E8C] hover:bg-blue-50 px-4 py-2 rounded-xl font-black flex items-center justify-center gap-1.5 transition shadow-sm shrink-0 active:scale-95"
+            className="bg-white text-[#0B2E8C] hover:bg-blue-50 px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-2xs active:scale-95"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                <span className="text-emerald-700">تم نسخ الرابط بنجاح!</span>
+                <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                <span className="text-emerald-700">تم النسخ!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-[#0B2E8C]" />
-                <span>نسخ رسالة ورابط المتجر</span>
+                <Copy className="w-4 h-4 text-[#0B2E8C]" />
+                <span>نسخ الرابط</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={shareOnWhatsApp}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-2xs active:scale-95"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>مشاركة واتساب</span>
           </button>
         </div>
       </div>
