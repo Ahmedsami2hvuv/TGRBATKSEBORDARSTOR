@@ -71,6 +71,61 @@ function matchesWalletQuery(line: MandoubWalletLedgerLine, query: string) {
   return tokens.every((token) => searchable.includes(token));
 }
 
+function getBaghdadDateKey(dateIso: string) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Baghdad",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(dateIso));
+  } catch {
+    return new Date(dateIso).toDateString();
+  }
+}
+
+function formatDaySeparator(dateIso: string) {
+  try {
+    const d = new Date(dateIso);
+    const baghdadFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Baghdad",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const now = new Date();
+    const todayKey = baghdadFormatter.format(now);
+    const itemKey = baghdadFormatter.format(d);
+
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayKey = baghdadFormatter.format(yesterday);
+
+    const fullDateStr = d.toLocaleDateString("ar-IQ-u-nu-latn", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Baghdad",
+    });
+
+    if (itemKey === todayKey) {
+      return `اليوم — ${fullDateStr}`;
+    }
+    if (itemKey === yesterdayKey) {
+      return `أمس — ${fullDateStr}`;
+    }
+    return fullDateStr;
+  } catch {
+    return new Date(dateIso).toLocaleDateString("ar-IQ-u-nu-latn", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+}
+
 const EPS = 0.01;
 
 /** علامة تحت زر المسح أو في يسار الحركة: مطابق / أقل / أعلى من المطلوب */
@@ -159,7 +214,11 @@ export function PreparerWalletClient({
       </div>
 
       <ul className="space-y-3 pb-8" style={containerStyle}>
-        {filteredLedger.map((line) => {
+        {filteredLedger.map((line, index) => {
+          const d1 = getBaghdadDateKey(line.createdAt);
+          const prevD = index > 0 ? getBaghdadDateKey(filteredLedger[index - 1].createdAt) : null;
+          const showDaySeparator = index === 0 || d1 !== prevD;
+
           const deleted = line.deletedAt != null;
           const isRejected = line.source === "transfer_rejected";
           const isTransfer = line.source === "transfer_pending" || line.source === "transfer_rejected" || line.miscLabel?.includes("تحويل") || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_in" || line.kind === "transfer_rejected_out";
@@ -185,6 +244,15 @@ export function PreparerWalletClient({
 
           return (
             <li key={`${line.source}-${line.id}`}>
+              {showDaySeparator && (
+                <div className="flex items-center gap-3 my-5 py-1 select-none">
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                  <span className="text-[11px] sm:text-xs font-black px-4 py-1.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-900/50 shadow-xs flex items-center gap-1.5 whitespace-nowrap">
+                    📅 {formatDaySeparator(line.createdAt)}
+                  </span>
+                  <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                </div>
+              )}
               <div className={`relative flex flex-col gap-1.5 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm ${
                 deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
                 isDebt ? "border-yellow-500 bg-yellow-100/95 dark:bg-yellow-950/40 dark:border-yellow-850 text-slate-900 dark:text-yellow-250 ring-2 ring-yellow-400/60" :
