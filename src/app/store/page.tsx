@@ -100,48 +100,76 @@ async function ActiveShopsRow() {
     if (!shopsRaw || shopsRaw.length === 0) return null;
 
     return (
-      <div className="space-y-3 mt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🏪</span>
-            <h2 className="text-xl font-black text-slate-800">متاجر المحلات</h2>
+      <section className="relative isolate mt-7 overflow-hidden rounded-[28px] border border-blue-100 bg-gradient-to-br from-[#eff7ff] via-white to-[#fff9e4] p-4 shadow-[0_10px_35px_rgba(37,99,235,0.10)] sm:p-5">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-blue-200/35 blur-2xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-12 left-4 h-28 w-28 rounded-full bg-yellow-200/40 blur-2xl" />
+        <div className="relative mb-4 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2c84ff] to-[#1260d8] text-white shadow-lg shadow-blue-200/70 ring-4 ring-white">
+              <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
+                <path d="M3.5 10.2 12 3.8l8.5 6.4v9.1a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2v-9.1Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                <path d="M8.5 20.5v-6.8h7v6.8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-yellow-300 px-2.5 py-1 text-[10px] font-black text-slate-900 shadow-sm">اكتشف الجديد</span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-700">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  متاجر متاحة للتسوّق
+                </span>
+              </div>
+              <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">تسوّق من محلات منطقتك</h2>
+              <p className="mt-1 text-xs font-medium leading-5 text-slate-600 sm:text-sm">محلاتك المفضلة ومنتجاتها… بمكان واحد ويا وصلي</p>
+            </div>
           </div>
-          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl">
-            متاجر معتمدة
-          </span>
+          <Link href="/store/categories" className="shrink-0 rounded-full border border-blue-100 bg-white/90 px-3 py-2 text-xs font-black text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300">
+            اكتشف
+            <span className="mr-1" aria-hidden="true">←</span>
+          </Link>
         </div>
 
-        <div className="flex items-stretch gap-3 overflow-x-auto pb-4 pt-1 px-1 hide-scrollbar">
-          {shopsRaw.map((s: any) => (
+        <div className="relative -mx-1 flex items-stretch gap-3 overflow-x-auto px-1 pb-2 pt-1 hide-scrollbar" style={{ touchAction: "pan-x pan-y", WebkitOverflowScrolling: "touch" }}>
+          {shopsRaw.map((s: any, index: number) => (
             <Link
               key={s.id}
               href={`/shop/${s.storeToken || s.id}`}
-              className="min-w-[170px] max-w-[190px] bg-white border border-slate-200 rounded-2xl p-3 shadow-xs hover:shadow-md transition flex flex-col justify-between shrink-0 group active:scale-95"
+              className="group relative flex w-[188px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white bg-white shadow-[0_5px_18px_rgba(15,23,42,0.09)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(37,99,235,0.17)] active:scale-[0.98] sm:w-[210px]"
             >
-              <div>
-                <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center border border-slate-100">
-                  {s.storeLogoUrl || s.photoUrl ? (
-                    <img src={s.storeLogoUrl || s.photoUrl} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <span className="text-4xl">🏪</span>
-                  )}
-                </div>
-                <h3 className="font-black text-xs md:text-sm text-slate-900 truncate">
-                  {s.name}
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  📍 {s.regionName || "البصرة"}
-                </p>
+              <div className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-l from-[#ffd239] via-[#2c84ff] to-[#2c84ff]" />
+              <div className="relative m-2 mb-0 h-[126px] overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-yellow-50">
+                {s.storeLogoUrl || s.photoUrl ? (
+                  <img src={s.storeLogoUrl || s.photoUrl} alt={s.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12 text-blue-500" aria-hidden="true">
+                      <path d="M4 10h16l-1.2-5H5.2L4 10Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
+                      <path d="M5 10v9h14v-9M9 19v-5h6v5M3.5 10a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+                <span className="absolute bottom-2 right-2 rounded-full border border-white/80 bg-white/95 px-2 py-1 text-[10px] font-black text-blue-700 shadow-sm">متجر وصلي</span>
               </div>
-
-              <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-blue-600">
-                <span>{s.productsCount ?? 0} منتج</span>
-                <span className="group-hover:translate-x-1 transition-transform">تصفح ←</span>
+              <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+                <h3 className="truncate text-sm font-black text-slate-900">{s.name}</h3>
+                <p className="mt-1 truncate text-[11px] font-medium text-slate-500">{s.regionName || "البصرة"}</p>
+                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
+                  <span className="text-[11px] font-bold text-slate-500">{s.productsCount ?? 0} منتج</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white shadow-sm transition group-hover:bg-blue-700">
+                    تسوّق
+                    <span className="text-yellow-300 transition-transform group-hover:-translate-x-0.5" aria-hidden="true">←</span>
+                  </span>
+                </div>
               </div>
             </Link>
           ))}
+          <div className="flex w-[96px] shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-white/70 px-3 text-center">
+            <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-yellow-300 text-xl font-black text-blue-900">←</span>
+            <span className="text-xs font-black text-slate-700">اسحب واكتشف</span>
+            <span className="mt-1 text-[10px] leading-4 text-slate-500">محلات أكثر بانتظارك</span>
+          </div>
         </div>
-      </div>
+      </section>
     );
   } catch (error) {
     return null;
