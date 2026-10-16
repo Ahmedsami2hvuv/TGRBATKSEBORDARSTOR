@@ -4,6 +4,7 @@ import { ShopStoreView } from "@/app/store/shop/[shopId]/shop-store-view";
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { Metadata } from "next";
 import Link from "next/link";
+import { getShopStoreMetadata } from "@/lib/store-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -13,27 +14,7 @@ export async function generateMetadata({
   params: Promise<{ shopId: string }>;
 }): Promise<Metadata> {
   const { shopId } = await params;
-  try {
-    const shop = await prisma.shop.findFirst({
-      where: {
-        OR: [{ storeToken: shopId }, { id: shopId }],
-      },
-      select: { name: true, storeBio: true, storeLogoUrl: true, photoUrl: true },
-    });
-    if (!shop) return { title: "متجر المحل | وصلي" };
-    const imgUrl = shop.storeLogoUrl || shop.photoUrl;
-    return {
-      title: `متجر ${shop.name} | وصلي`,
-      description: shop.storeBio || `تسوق من متجر ${shop.name} مع أسرع توصيل عبر وصلي`,
-      openGraph: {
-        title: `متجر ${shop.name}`,
-        description: shop.storeBio || `تسوق من متجر ${shop.name} عبر منصة وصلي`,
-        images: imgUrl ? [{ url: imgUrl }] : [],
-      },
-    };
-  } catch {
-    return { title: "متجر المحل | وصلي" };
-  }
+  return getShopStoreMetadata(shopId);
 }
 
 export default async function DirectShopStorePage({

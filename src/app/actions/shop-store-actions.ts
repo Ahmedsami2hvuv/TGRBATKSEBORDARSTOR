@@ -10,7 +10,7 @@ export async function updateShopStoreProfile(shopId: string, formData: FormData)
     const bio = String(formData.get("bio") ?? "").trim();
     const storeBannerUrl = String(formData.get("storeBannerUrl") ?? "").trim();
 
-    await prisma.shop.update({
+    const updatedShop = await prisma.shop.update({
       where: { id: shopId },
       data: {
         ...(storeLogoUrl ? { storeLogoUrl } : {}),
@@ -18,11 +18,17 @@ export async function updateShopStoreProfile(shopId: string, formData: FormData)
         phone: phone || undefined,
         storeBio: bio,
       },
+      select: { storeToken: true },
     });
 
     revalidatePath(`/shop-manage/${shopId}`);
     revalidatePath(`/store/shop/${shopId}`);
     revalidatePath(`/shop/${shopId}`);
+    if (updatedShop.storeToken) {
+      revalidatePath(`/shop/${updatedShop.storeToken}`);
+      revalidatePath(`/store/shop/${updatedShop.storeToken}`);
+      revalidatePath(`/s/${updatedShop.storeToken}`);
+    }
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message || "فشل تحديث بيانات المتجر" };

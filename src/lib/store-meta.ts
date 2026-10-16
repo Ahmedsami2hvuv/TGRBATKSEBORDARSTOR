@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { prisma } from "./prisma";
+import { getPublicAppUrl } from "./app-url";
 
 const SITE_NAME = "متجر وصلي";
 const DEFAULT_STORE_URL = "https://aboakbr.com/store";
@@ -9,18 +10,21 @@ const DEFAULT_ICON_URL = "https://aboakbr.com/images/wasly-logo.png";
  * تحويل أي رابط صورة (نسبي أو سحابي) إلى رابط مطلق كامل يبدأ بـ https://
  */
 export function getAbsoluteImageUrl(photoUrl?: string | null): string {
+  const base = getPublicAppUrl();
+  const defaultIcon = `${base}/images/wasly-logo.png`;
+
   if (!photoUrl || typeof photoUrl !== "string") {
-    return DEFAULT_ICON_URL;
+    return defaultIcon;
   }
   const clean = photoUrl.trim();
   if (!clean) {
-    return DEFAULT_ICON_URL;
+    return defaultIcon;
   }
   if (clean.startsWith("http://") || clean.startsWith("https://")) {
     return clean;
   }
   const path = clean.startsWith("/") ? clean : `/${clean}`;
-  return `https://aboakbr.com${path}`;
+  return `${base}${path}`;
 }
 
 /**
@@ -369,4 +373,86 @@ export function getDefaultStoreMetadata(customTitle?: string, customDesc?: strin
       images: [imageUrl],
     },
   };
+}
+
+/**
+ * توليد الميتا داتا الكاملة والمعتمدة لمتجر المحل
+ * تضمن ظهور صورة وشعار المتجر الذي يحدده صاحب المحل عند مشاركة الرابط بالواتساب أو بأي تطبيق
+ */
+export async function getShopStoreMetadata(shopIdentifier: string): Promise<Metadata> {
+  const base = getPublicAppUrl();
+  try {
+    const cleanId = (shopIdentifier || "").trim();
+    if (!cleanId) return getDefaultStoreMetadata();
+
+    const shop = await prisma.shop.findFirst({
+      where: {
+        OR: [{ storeToken: cleanId }, { id: cleanId }],
+      },
+      select: {
+        id: true,
+        name: true,
+        storeBio: true,
+        storeLogoUrl: true,
+        storeBannerUrl: true,
+        photoUrl: true,
+        storeToken: true,
+      },
+    });
+
+    if (!shop) {
+      return getDefaultStoreMetadata();
+    }
+
+    // الأولوية لصورة المتجر التي وضعها صاحب المحل: شعار المتجر ثم غلاف المتجر ثم صورة المحل
+    const rawImage =
+      (shop.storeLogoUrl && shop.storeLogoUrl.trim()) ||
+      (shop.storeBannerUrl && shop.storeBannerUrl.trim()) ||
+      (shop.photoUrl && shop.photoUrl.trim()) ||
+      null;
+
+    const fullImageUrl = getAbsoluteImageUrl(rawImage);
+    const targetToken = shop.storeToken || shop.id;
+    const pageUrl = `${base}/shop/${targetToken}`;
+    const pageTitle = `متجر ${shop.name} | وصلي`;
+    const shareTitle = `متجر ${shop.name}`;
+    const shareDesc = shop.storeBio?.trim()
+      ? shop.storeBio.trim()
+      : `تسوق أونلاين من متجر ${shop.name} مع أسرع توصيل لباب بيتك عبر وصلي.`;
+
+    return {
+      metadataBase: new URL(base),
+      title: pageTitle,
+      description: shareDesc,
+      openGraph: {
+        title: shareTitle,
+        description: shareDesc,
+        url: pageUrl,
+        siteName: `متجر ${shop.name}`,
+        locale: "ar_IQ",
+        type: "website",
+        images: [
+          {
+            url: fullImageUrl,
+            secureUrl: fullImageUrl,
+            width: 1200,
+            height: 630,
+            alt: `متجر ${shop.name}`,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: shareTitle,
+        description: shareDesc,
+        images: [fullImageUrl],
+      },
+      other: {
+        "og:image:secure_url": fullImageUrl,
+      },
+    };
+  } catch (err) {
+    console.error("Error generating shop store metadata:", err);
+    return getDefaultStoreMetadata();
+  }
 }
