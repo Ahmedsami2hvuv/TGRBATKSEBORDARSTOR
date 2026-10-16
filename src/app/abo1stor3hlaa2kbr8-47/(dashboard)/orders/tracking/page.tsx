@@ -463,27 +463,27 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
           <div className="flex items-center gap-2">
             <Link
               href={SECRET_ADMIN_PATH}
-              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0A3D2E] border border-[#C9A86A]/60 shadow-2xs hover:bg-[#FFF8F0] transition active:scale-95 text-xs font-black"
+              className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white text-[#0B2E8C] border border-[#D0DDFB] shadow-2xs hover:bg-[#F0F5FF] hover:border-[#BFD5FF] transition active:scale-95 text-xs font-black"
               title="العودة للرئيسية"
             >
               ←
             </Link>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-sm sm:text-base font-black text-[#0A3D2E]">
+              <h1 className="text-sm sm:text-base font-black text-[#0B2E8C]">
                 {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
               </h1>
-              <span className="inline-flex items-center justify-center rounded-full bg-[#0A3D2E]/10 px-2 py-0.5 text-[11px] font-black text-[#0A3D2E]">
+              <span className="inline-flex items-center justify-center rounded-full bg-[#0B2E8C]/10 px-2 py-0.5 text-[11px] font-black text-[#0B2E8C]">
                 {safeTableRows.length}
               </span>
             </div>
           </div>
 
-          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة */}
+          {/* يسار: أرباح اليوم + أزرار الإجراءات الإدارية المدمجة بثيم وصلي الرسمي */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* كبسولة أرباح اليوم الصافية المدمجة */}
+            {/* 1. كبسولة أرباح اليوم الصافية المدمجة بثيم وصلي (ذهبي ملكي مع كحلي) */}
             <Link
               href={`${SECRET_ADMIN_PATH}/reports/couriers`}
-              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 px-2.5 sm:px-3 py-1 text-white shadow-xs border border-amber-300/60 transition hover:brightness-105 active:scale-95"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-[#FFC107] via-[#FFD54F] to-[#FFA000] px-2.5 sm:px-3 py-1 text-[#0B2E8C] shadow-xs border border-[#FFE082] transition hover:brightness-105 active:scale-95"
               title="أرباح اليوم الصافية (انقر لعرض تفاصيل التقارير)"
             >
               <span className="text-xs">💰</span>
@@ -492,35 +492,29 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               </span>
             </Link>
 
-            {/* زر طلب تيست التجريبي السريع */}
+            {/* 2. زر طلب تيست التجريبي السريع بثيم وصلي */}
             <QuickTestOrderButton variant="tracking" />
 
-            {/* زر إضافة طلب من الإدارة */}
+            {/* 3. زر إضافة طلب من الإدارة بثيم وصلي (أزرق كحلي ملكي وإطار ذهبي) */}
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/new`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-[#0A3D2E] shadow-xs border border-[#D8BC7D] transition hover:brightness-105 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #F9E7B9 0%, #E8CA82 45%, #C9A86A 100%)",
-              }}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#FFC107]/50 bg-gradient-to-r from-[#0B2E8C] via-[#1E4DB7] to-[#0B2E8C] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
               title="إضافة طلب من الإدارة"
             >
-              <span>➕</span>
+              <span className="text-[#FFC107] font-black">➕</span>
               <span className="hidden xs:inline">إضافة طلب</span>
             </Link>
 
-            {/* زر الطلبات الجديدة */}
+            {/* 4. زر الطلبات الجديدة المعلقة بثيم وصلي (أزرق ملكي متألق) */}
             <Link
               href={`${SECRET_ADMIN_PATH}/orders/pending`}
-              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#C9A86A] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
-              style={{
-                background: "linear-gradient(180deg, #0F4D3A 0%, #0A3D2E 100%)",
-              }}
+              className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-black text-white shadow-xs border border-[#60A5FA]/40 bg-gradient-to-r from-[#1E4DB7] to-[#0B2E8C] transition hover:brightness-110 active:scale-95 text-center whitespace-nowrap"
               title="الطلبات الجديدة المعلقة"
             >
-              <span className="text-[#F5D77F]">✨</span>
+              <span className="text-[#FFD54F]">✨</span>
               <span className="hidden xs:inline">جديدة</span>
               {pendingTabCount > 0 ? (
-                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F5D77F] text-[#0A3D2E] text-[9px] font-black leading-none">
+                <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#FFC107] text-[#0B2E8C] text-[9px] font-black leading-none">
                   {pendingTabCount > 99 ? "99+" : pendingTabCount}
                 </span>
               ) : null}
