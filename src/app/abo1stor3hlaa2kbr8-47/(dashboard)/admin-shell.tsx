@@ -39,10 +39,10 @@ function getTileClasses(slug: string, active: boolean, isCompact: boolean, butto
   } rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full h-full`;
 
   if (active) {
-    return `${base} bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-[0_4px_16px_rgba(10,61,46,0.3)] ring-1 ring-[#F5D77F]/30 font-black`;
+    return `${base} bg-gradient-to-r from-[#0B2E8C] via-[#1E4DB7] to-[#0B2E8C] text-[#FFC107] border-2 border-[#FFC107] shadow-[0_4px_16px_rgba(11,46,140,0.35)] ring-1 ring-[#FFC107]/40 font-black`;
   }
 
-  return `${base} bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] dark:hover:bg-[#12362a] shadow-2xs font-bold`;
+  return `${base} bg-white dark:bg-[#0E204E]/90 border-2 border-[#D0DDFB] dark:border-[#1E4DB7]/40 text-[#0B2E8C] dark:text-[#93C5FD] hover:border-[#1E4DB7] hover:bg-[#F0F5FF] dark:hover:bg-[#132C6B] shadow-2xs font-bold`;
 }
 
 export function AdminShell({
@@ -571,7 +571,7 @@ export function AdminShell({
         id="navToggleButton"
         type="button"
         onClick={() => setNavOpen((o) => !o)}
-        className="fixed start-4 top-3.5 z-[170] flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-2xl border-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] px-3 text-[#F5D77F] shadow-md shadow-[#0A3D2E]/30 hover:brightness-110 active:scale-95 transition"
+        className="fixed start-4 top-3.5 z-[170] flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-2xl border-2 border-[#FFC107] bg-gradient-to-r from-[#0B2E8C] via-[#1E4DB7] to-[#0B2E8C] px-3 text-[#FFC107] shadow-md shadow-[#0B2E8C]/30 hover:brightness-110 active:scale-95 transition"
         title={navOpen ? "إخفاء القائمة" : "إظهار القائمة"}
       >
         <span className="sr-only">{navOpen ? "إخفاء القائمة" : "إظهار القائمة"}</span>
@@ -582,7 +582,7 @@ export function AdminShell({
       {/* Mobile overlay backdrop (closes on click) */}
       {!isLg && navOpen ? (
         <div
-          className="fixed inset-0 z-[115] bg-black/60 backdrop-blur-sm lg:hidden touch-none"
+          className="fixed inset-0 z-[115] bg-[#0A1840]/60 backdrop-blur-sm lg:hidden touch-none"
           onClick={() => setNavOpen(false)}
         />
       ) : null}
@@ -591,32 +591,32 @@ export function AdminShell({
       <aside
         ref={sidebarRef}
         className={`
-          fixed z-[160] flex flex-col border-e-2 border-[#C9A86A]/60
-          shadow-[4px_0_35px_rgba(10,61,46,0.25)] dark:shadow-[4px_0_35px_rgba(0,0,0,0.85)]
+          fixed z-[160] flex flex-col border-e-2 border-[#D0DDFB] dark:border-[#1E4DB7]/40
+          shadow-[4px_0_35px_rgba(11,46,140,0.12)] dark:shadow-[4px_0_35px_rgba(0,0,0,0.85)]
           ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
           top-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
-          bg-gradient-to-b from-[#FFFFFF] via-[#FFFDF9] to-[#FFF8F0] dark:from-[#081b14] dark:via-[#06140f] dark:to-[#040e0a]
+          bg-gradient-to-b from-[#FFFFFF] via-[#F8FAFF] to-[#F0F5FF] dark:from-[#071330] dark:via-[#09183D] dark:to-[#0A1A45]
         `}
         style={{ 
           width: navWidth
         }}
       >
-        {/* رأس القائمة الملكي */}
-        <div className="flex h-16 w-full items-center justify-between px-4 border-b-2 border-[#C9A86A] bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-white shrink-0 shadow-md">
+        {/* رأس القائمة الملكي بثيم وصلي */}
+        <div className="flex h-16 w-full items-center justify-between px-4 border-b-2 border-[#FFC107] bg-gradient-to-r from-[#071C54] via-[#0B2E8C] to-[#1E4DB7] text-white shrink-0 shadow-md">
           <div className="flex items-center gap-2.5">
             <img 
               src="/images/wasly-logo.png" 
               alt="وصلي" 
-              className="size-9 rounded-full bg-white object-contain shadow-md border border-[#F5D77F]" 
+              className="size-9 rounded-full bg-white object-contain shadow-md border-2 border-[#FFC107]" 
             />
             <div>
-              <span className="text-xs sm:text-sm font-black text-[#F5D77F] block leading-tight">
+              <span className="text-xs sm:text-sm font-black text-[#FFC107] block leading-tight">
                 وصلي
               </span>
-              <span className="text-[10px] font-bold text-emerald-200/80 block">
-                لوحة التحكم الإدارية ⚜️
+              <span className="text-[10px] font-bold text-blue-100/90 block">
+                لوحة التحكم الإدارية
               </span>
             </div>
           </div>
@@ -624,7 +624,7 @@ export function AdminShell({
           <button
             type="button"
             onClick={() => setNavOpen(false)}
-            className="flex size-8 items-center justify-center rounded-full bg-[#0A3D2E] text-[#F5D77F] border border-[#C9A86A] hover:bg-[#C9A86A] hover:text-[#0A3D2E] transition active:scale-90 text-sm font-black shadow-xs lg:hidden"
+            className="flex size-8 items-center justify-center rounded-full bg-[#071C54] text-[#FFC107] border border-[#FFC107]/60 hover:bg-[#FFC107] hover:text-[#071C54] transition active:scale-90 text-sm font-black shadow-xs lg:hidden"
             title="إغلاق القائمة"
           >
             ✕
@@ -639,11 +639,11 @@ export function AdminShell({
             background: transparent;
           }
           .admin-sidebar-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(201, 168, 106, 0.4);
+            background-color: rgba(11, 46, 140, 0.25);
             border-radius: 20px;
           }
           .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(201, 168, 106, 0.7);
+            background-color: rgba(255, 193, 7, 0.6);
           }
         `}} />
         <nav className="admin-sidebar-scroll flex flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-3.5">
@@ -665,8 +665,8 @@ export function AdminShell({
                 onClick={handleLinkClick}
                 className={`inline-flex items-center gap-2 px-3 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full ${
                   navItemActive(pathname, SECRET_ADMIN_PATH)
-                    ? "bg-gradient-to-r from-[#0F4D3A] via-[#0A3D2E] to-[#0F4D3A] text-[#F5D77F] border-2 border-[#C9A86A] shadow-md shadow-[#0A3D2E]/20 ring-1 ring-[#F5D77F]/30 font-black"
-                    : "bg-white dark:bg-[#0c221b]/90 border-2 border-[#C9A86A]/40 text-[#0A3D2E] dark:text-[#F5D77F] hover:border-[#C9A86A] hover:bg-[#FFF8F0] shadow-2xs font-bold"
+                    ? "bg-gradient-to-r from-[#0B2E8C] via-[#1E4DB7] to-[#0B2E8C] text-[#FFC107] border-2 border-[#FFC107] shadow-md shadow-[#0B2E8C]/25 ring-1 ring-[#FFC107]/40 font-black"
+                    : "bg-white dark:bg-[#0E204E]/90 border-2 border-[#D0DDFB] dark:border-[#1E4DB7]/40 text-[#0B2E8C] dark:text-[#93C5FD] hover:border-[#1E4DB7] hover:bg-[#F0F5FF] shadow-2xs font-bold"
                 }`}
                 style={{
                   height: 38 * itemScale,
@@ -689,11 +689,11 @@ export function AdminShell({
 
             {isCompact ? null : (
               <div className="col-span-full mt-2 mb-1 flex items-center gap-2 px-1">
-                <span className="text-xs text-[#C9A86A]">⚜️</span>
-                <span className="text-[11px] font-black tracking-wider text-[#0A3D2E] dark:text-[#F5D77F]">
+                <span className="text-xs text-[#FFC107]">⚜️</span>
+                <span className="text-[11px] font-black tracking-wider text-[#0B2E8C] dark:text-[#93C5FD]">
                   الأقسام والخدمات
                 </span>
-                <div className="flex-1 h-px bg-[#C9A86A]/30" />
+                <div className="flex-1 h-px bg-[#D0DDFB] dark:bg-[#1E4DB7]/40" />
               </div>
             )}
 
@@ -722,7 +722,7 @@ export function AdminShell({
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
                     <DynamicIcon iconKey={tile.iconKey} config={icons} fallback={tile.slug === "credit-book" ? "📘" : "📁"} className="w-5 h-5" />
                     {showPendingBadge ? (
-                      <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[#F5D77F] border border-[#C9A86A] px-1 py-0.2 text-[10px] font-black leading-none text-[#0A3D2E] shadow-sm">
+                      <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-[#FFC107] border border-[#FFA000] px-1 py-0.2 text-[10px] font-black leading-none text-[#0B2E8C] shadow-sm">
                         {pendingCount > 99 ? "99+" : pendingCount}
                       </span>
                     ) : null}
@@ -736,26 +736,26 @@ export function AdminShell({
           </div>
         </nav>
 
-        {/* تذييل القائمة الجانبية الملكي */}
-        <div className="border-t-2 border-[#C9A86A]/30 p-2.5 flex items-center justify-between shrink-0 bg-[#FFF8F0] dark:bg-[#06140f] gap-2">
-          {/* أزرار التكبير والتصغير الملكية */}
-          <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#0a2018] p-1 rounded-2xl border border-[#C9A86A]/50 shadow-2xs h-10">
+        {/* تذييل القائمة الجانبية بثيم وصلي */}
+        <div className="border-t-2 border-[#D0DDFB] dark:border-[#1E4DB7]/40 p-2.5 flex items-center justify-between shrink-0 bg-[#F0F5FF] dark:bg-[#071330] gap-2">
+          {/* أزرار التكبير والتصغير بثيم وصلي */}
+          <div className="flex items-center flex-1 min-w-0 bg-white dark:bg-[#0E204E] p-1 rounded-2xl border border-[#BFD5FF] dark:border-[#1E4DB7]/50 shadow-2xs h-10">
             <div className="flex-1" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
-              className="size-8 flex items-center justify-center rounded-xl hover:bg-rose-50 text-[#0A3D2E] dark:text-[#F5D77F] hover:text-rose-600 transition-colors shrink-0 font-black text-lg active:scale-90"
+              className="size-8 flex items-center justify-center rounded-xl hover:bg-rose-50 text-[#0B2E8C] dark:text-[#93C5FD] hover:text-rose-600 transition-colors shrink-0 font-black text-lg active:scale-90"
               title="تصغير"
             >
               −
             </button>
-            <span className="text-xs font-black text-[#0A3D2E] dark:text-[#F5D77F] min-w-[42px] text-center shrink-0">
+            <span className="text-xs font-black text-[#0B2E8C] dark:text-[#FFC107] min-w-[42px] text-center shrink-0">
               {Math.round(itemScale * 100)}%
             </span>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(3, prev + 0.05)); }}
-              className="size-8 flex items-center justify-center rounded-xl hover:bg-emerald-50 text-[#0A3D2E] dark:text-[#F5D77F] hover:text-emerald-600 transition-colors shrink-0 font-black text-lg active:scale-90"
+              className="size-8 flex items-center justify-center rounded-xl hover:bg-blue-50 text-[#0B2E8C] dark:text-[#93C5FD] hover:text-[#1E4DB7] transition-colors shrink-0 font-black text-lg active:scale-90"
               title="تكبير"
             >
               +
