@@ -731,7 +731,7 @@ ${productsText}`;
     }
   };
 
-  const applyPricingPanel = () => {
+  const applyPricingPanel = async (closeModal = false) => {
     if (editingIndex === null) return;
     let bNum = parseFloat(normalizeNumerals(buyText)) || 0;
     let actBNum = parseFloat(normalizeNumerals(actualBuyText));
@@ -780,13 +780,21 @@ ${productsText}`;
     setProducts(next);
     hasChangedRef.current = true;
 
-    savePricingProgress(orderId, !!isDraft, next, placesCount, noProfit);
+    try {
+      await savePricingProgress(orderId, !!isDraft, next, placesCount, noProfit);
+    } catch (e) {
+      console.error("فشل حفظ التسعير في السيرفر:", e);
+    }
 
-    const nextUnpriced = (isBuyFilled && isSellFilled) ? getNextUnpricedIndex(editingIndex, next) : null;
-    if (nextUnpriced !== null) {
-      setEditingIndex(nextUnpriced);
-    } else {
+    if (closeModal) {
       setEditingIndex(null);
+    } else {
+      const nextUnpriced = (isBuyFilled && isSellFilled) ? getNextUnpricedIndex(editingIndex, next) : null;
+      if (nextUnpriced !== null) {
+        setEditingIndex(nextUnpriced);
+      } else {
+        setEditingIndex(null);
+      }
     }
     setPricingErr("");
   };
@@ -812,7 +820,7 @@ ${productsText}`;
     return prices;
   }, [buyText]);
 
-  const applyPriceDirectly = (sellVal: number) => {
+  const applyPriceDirectly = async (sellVal: number) => {
     if (editingIndex === null) return;
     const rawBuy = normalizeNumerals(buyText).trim();
     const bNum = parseFloat(rawBuy);
@@ -852,6 +860,13 @@ ${productsText}`;
       pricedById: finalPrepId
     };
     setProducts(next);
+    hasChangedRef.current = true;
+
+    try {
+      await savePricingProgress(orderId, !!isDraft, next, placesCount, noProfit);
+    } catch (e) {
+      console.error("فشل حفظ التسعير في السيرفر:", e);
+    }
 
     const nextUnpriced = getNextUnpricedIndex(editingIndex, next);
     if (nextUnpriced !== null) {
@@ -1818,7 +1833,7 @@ ${productsText}`;
                     onKeyDown={(e) => {
                        if (e.key === 'Enter') {
                           e.preventDefault();
-                          applyPricingPanel();
+                          applyPricingPanel(true);
                        }
                     }}
                     dir="ltr"
@@ -1844,21 +1859,22 @@ ${productsText}`;
                 <button
                   type="button"
                   onClick={() => {
-                    applyPricingPanel();
+                    applyPricingPanel(true);
                   }}
-                  className="rounded-xl bg-emerald-600 hover:bg-emerald-700 h-9.5 py-2 text-xs font-black text-white shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1"
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-700 h-9.5 py-2 text-xs font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
+                  title="حفظ التعديل وإغلاق النافذة فوراً"
                 >
-                  حفظ ⬅️
+                  حفظ وإغلاق ✅
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    applyPricingPanel();
-                    cancelPricingPanel();
+                    applyPricingPanel(false);
                   }}
                   className="rounded-xl bg-sky-600 hover:bg-sky-700 h-9.5 py-2 text-xs font-black text-white shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1"
+                  title="حفظ والانتقال للمادة التالية"
                 >
-                  حفظ ✅
+                  حفظ وتالي ⬅️
                 </button>
                 <button
                   type="button"
@@ -1867,6 +1883,7 @@ ${productsText}`;
                     cancelPricingPanel();
                   }}
                   className="rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 h-9.5 py-2 text-xs font-black active:scale-95 transition-all flex items-center justify-center gap-1"
+                  title="مسح التسعير"
                 >
                   مسح 💵
                 </button>
