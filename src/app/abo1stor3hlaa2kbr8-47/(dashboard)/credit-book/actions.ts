@@ -335,11 +335,12 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
-        } else if (p.type === "shop" || p.type === "deleted_shop" || p.externalId) {
+        } else if (p.type === "shop" || p.type === "deleted_shop" || p.externalId || p.name) {
           try {
             let targetShopId = p.externalId;
+            const cleanName = p.name.replace(/\s*\([^)]*\)\s*$/, "").replace(/[\(\)\[\]]/g, "").trim();
+
             if (!targetShopId || p.type !== "shop") {
-              const cleanName = p.name.replace(/\s*\([^)]*\)\s*$/, "").replace(/[\(\)\[\]]/g, "").trim();
               const matchedShop = await prisma.shop.findFirst({
                 where: {
                   OR: [
@@ -348,9 +349,17 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
                     { name: { contains: cleanName, mode: "insensitive" } }
                   ]
                 },
-                select: { id: true }
+                select: { id: true, name: true }
               });
-              if (matchedShop) targetShopId = matchedShop.id;
+              if (matchedShop) {
+                targetShopId = matchedShop.id;
+                if (!p.externalId || p.type !== "shop") {
+                  prisma.creditBookPartner.update({
+                    where: { id: p.id },
+                    data: { externalId: matchedShop.id, type: "shop" }
+                  }).catch(() => {});
+                }
+              }
             }
 
             if (targetShopId) {
@@ -1769,8 +1778,41 @@ export async function syncSystemPartners() {
         }).catch(e => console.error("Err restore shop partner", e));
       }
 
-      // إذا كان المحل مضافاً وموجوداً في الدفتر ولم يُحذف، نحدث بياناته دون إجبار غير المضاف
-      if (exists && !exists.type.startsWith("deleted_")) {
+      if (!exists) {
+        // التحقق أولاً إن كان هناك شريك موجود مسبقاً بنفس الاسم لتفادي التكرار وربطه بالمحل تلقائياً
+        const existingByName = await prisma.creditBookPartner.findFirst({
+          where: {
+            OR: [
+              { name: expectedName },
+              { name: { equals: shop.name.trim(), mode: "insensitive" } },
+              { name: { contains: shop.name.trim(), mode: "insensitive" } }
+            ],
+            NOT: { type: { startsWith: "deleted_" } }
+          }
+        });
+
+        if (existingByName) {
+          await prisma.creditBookPartner.update({
+            where: { id: existingByName.id },
+            data: {
+              type: "shop",
+              externalId: shop.id,
+              phone: existingByName.phone || shop.phone || null,
+              updatedAt: new Date()
+            }
+          }).catch(e => console.error("Err link existing partner to shop", e));
+        } else {
+          await prisma.creditBookPartner.create({
+            data: {
+              name: expectedName,
+              phone: shop.phone || null,
+              type: "shop",
+              externalId: shop.id,
+            },
+          }).catch(e => console.error("Err create shop partner", e));
+          importedCount++;
+        }
+      } else if (!exists.type.startsWith("deleted_")) {
         // تنظيف الاسم إن كان يحتوي اللقب المشوه السابق (محل/مجهز)
         let cleanCurrentName = exists.name;
         if (cleanCurrentName.endsWith(" (محل/مجهز)")) {

@@ -138,20 +138,12 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
       // 1. فحص النوع
       if (selectedType !== "all" && p.type !== selectedType) return false;
 
-      // 2. فحص رصيد الدفتر: عند البحث بالاسم، لا نخفي أي حساب حتى تظهر كافة الحسابات المطابقة
-      const hasSearch = searchQuery.trim().length > 0;
-      if (!hasSearch) {
-        if (balanceFilter === "all" && p.balance === 0) return false;
-        if (balanceFilter === "owe_us" && p.balance <= 0) return false;
-        if (balanceFilter === "we_owe" && p.balance >= 0) return false;
-        if (balanceFilter === "zero" && p.balance !== 0) return false;
-        // خيار show_everything يمرر الجميع
-      } else {
-        // عند البحث بالاسم: نطبق الفلتر فقط إذا اختار المستخدم عمداً فئة معينة، أما إذا كان "all" أو "show_everything" فيظهر كل شيء
-        if (balanceFilter === "owe_us" && p.balance <= 0) return false;
-        if (balanceFilter === "we_owe" && p.balance >= 0) return false;
-        if (balanceFilter === "zero" && p.balance !== 0) return false;
-      }
+      // 2. فحص رصيد الدفتر
+      if (balanceFilter === "active_only" && p.balance === 0) return false;
+      if (balanceFilter === "owe_us" && p.balance <= 0) return false;
+      if (balanceFilter === "we_owe" && p.balance >= 0) return false;
+      if (balanceFilter === "zero" && p.balance !== 0) return false;
+      // خيار all يظهر جميع الحسابات بالكامل مع تصدر الحسابات غير الصفرية في الأعلى
 
       // 3. فحص مصطلح البحث (fuzzy match on name or phone or balance)
       if (!hasSearch) return true;
@@ -411,8 +403,8 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             onChange={(e) => setBalanceFilter(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer truncate"
           >
-            <option value="all">💳 الحسابات النشطة (غير المصفّرة)</option>
-            <option value="show_everything">📋 جميع الحسابات (شاملة المصفّرة 0)</option>
+            <option value="all">📋 جميع الحسابات (مع إبراز الديون أولاً)</option>
+            <option value="active_only">⚡ الحسابات النشطة فقط (غير المصفّرة)</option>
             <option value="owe_us">🟢 نطلبهم (ديون لصالحنا)</option>
             <option value="we_owe">🔴 يطلبوننا (ديون علينا)</option>
             <option value="zero">⚪ الحسابات المصفّرة (0 د.ع)</option>
