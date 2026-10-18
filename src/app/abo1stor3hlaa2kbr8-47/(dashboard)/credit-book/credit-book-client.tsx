@@ -145,6 +145,8 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
       if (balanceFilter === "zero" && p.balance !== 0) return false;
       // خيار all يظهر جميع الحسابات بالكامل مع تصدر الحسابات غير الصفرية في الأعلى
 
+      const hasSearch = searchQuery.trim().length > 0;
+
       // 3. فحص مصطلح البحث (fuzzy match on name or phone or balance)
       if (!hasSearch) return true;
 
