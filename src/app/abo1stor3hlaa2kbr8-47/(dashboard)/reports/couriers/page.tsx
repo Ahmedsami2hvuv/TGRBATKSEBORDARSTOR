@@ -302,13 +302,11 @@ export default async function CombinedReportPage({ searchParams }: Props) {
 
     // جلب البيانات المتوازي (تم إزالة الإكراميات)
     const [ordersDelivery, ordersPrep, sidebarPrepOrders] = await Promise.all([
-      // طلبات التوصيل المسلمة أو المؤرشفة
+      // طلبات التوصيل المسلمة أو المؤرشفة الخاصة باليوم المحدد فقط
       prisma.order.findMany({
         where: {
           status: { in: ["delivered", "archived"] },
           OR: [
-            { createdAt: { gte: from, lte: to } },
-            { updatedAt: { gte: from, lte: to } },
             {
               moneyEvents: {
                 some: {
@@ -318,10 +316,20 @@ export default async function CombinedReportPage({ searchParams }: Props) {
                 },
               },
             },
+            {
+              createdAt: { gte: from, lte: to },
+              moneyEvents: {
+                none: {
+                  kind: MONEY_KIND_DELIVERY,
+                  deletedAt: null,
+                },
+              },
+            },
           ],
         },
         select: {
           id: true,
+          createdAt: true,
           assignedCourierId: true,
           courierEarningForCourierId: true,
           courierEarningForCourier: { select: { name: true, vehicleType: true } },
@@ -332,10 +340,10 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             where: {
               kind: MONEY_KIND_DELIVERY,
               deletedAt: null,
-              createdAt: { gte: from, lte: to },
             },
             orderBy: { createdAt: "desc" },
             select: {
+              createdAt: true,
               courierId: true,
               courier: { select: { name: true, vehicleType: true } },
             },
@@ -376,13 +384,33 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     }
 
     for (const order of ordersDelivery) {
-      const deliveryEv = order.moneyEvents[0];
+      // إيجاد حركة التسليم التي حدثت في هذا اليوم حصراً
+      const deliveryEvInDay = order.moneyEvents.find(
+        (e) => e.createdAt >= from && e.createdAt <= to
+      );
+
+      // إذا كان للطلب حركات تسليم سابقة، ولكن ولا واحدة منها حدثت في هذا اليوم: يتم استبعاده
+      if (order.moneyEvents.length > 0 && !deliveryEvInDay) {
+        continue;
+      }
+
+      // إذا لم يكن للطلب أي حركة تسليم، يجب أن يكون تاريخ إنشائه ضمن هذا اليوم
+      if (order.moneyEvents.length === 0) {
+        if (order.createdAt < from || order.createdAt > to) {
+          continue;
+        }
+      }
+
+      const activeDeliveryEv = deliveryEvInDay || order.moneyEvents[0];
       const earningOwner =
-        order.courierEarningForCourierId ?? deliveryEv?.courierId ?? order.assignedCourierId ?? null;
+        activeDeliveryEv?.courierId ??
+        order.courierEarningForCourierId ??
+        order.assignedCourierId ??
+        null;
       if (!earningOwner) continue;
 
       const courierName =
-        deliveryEv?.courier?.name ||
+        activeDeliveryEv?.courier?.name ||
         order.courierEarningForCourier?.name ||
         order.courier?.name ||
         "مندوب";
@@ -394,9 +422,9 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       // صافي التوصيل للشركة يجب أن يكون متبقي التوصيل وليس التوصيل كله
       if (courierEarning == null || courierEarning.lte(0)) {
         const vehicleType =
+          activeDeliveryEv?.courier?.vehicleType ||
           order.courierEarningForCourier?.vehicleType ||
           order.courier?.vehicleType ||
-          deliveryEv?.courier?.vehicleType ||
           "car";
         courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
       }
