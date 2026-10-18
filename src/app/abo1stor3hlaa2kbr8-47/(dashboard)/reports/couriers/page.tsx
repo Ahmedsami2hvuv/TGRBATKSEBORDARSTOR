@@ -380,7 +380,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           dailySalary: true,
           workLogs: {
             where: { createdAt: { gte: from, lte: to } },
-            select: { id: true, createdAt: true }
+            select: { id: true, shiftName: true, createdAt: true }
           }
         }
       })
@@ -537,22 +537,73 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     // 2. حسابات التجهيز وأجور المجهز
     const totalPrepGross = totalPrepProfit * ALF_PER_DINAR;
 
-    // تحديد المجهزين الذين خرجوا للعمل في هذا اليوم
-    const activeWorkingPreparers = (companyPreparersList || []).filter(p => {
-      const hasLogs = p.workLogs && p.workLogs.length > 0;
-      const hasOrders = ordersPrep.some((o: any) => o.submittedByCompanyPreparerId === p.id);
-      return hasLogs || hasOrders;
-    });
+    // تحديد المجهزين الذين خرجوا للعمل واحتساب أجورهم بدقة حسب الشفتات (نصف الراتب للشفت الواحد، والراتب كاملاً للشفتين)
+    const workingPreparersDetails: Array<{ id: string; name: string; wage: number; shiftsLabel: string }> = [];
 
-    const workingPreparers = activeWorkingPreparers.length > 0
-      ? activeWorkingPreparers
-      : (ordersPrep.length > 0 ? (companyPreparersList || []).filter(p => Number(p.dailySalary) > 0).slice(0, 1) : []);
+    for (const p of companyPreparersList || []) {
+      const fullDailySalary = Number(p.dailySalary || 0);
+      if (fullDailySalary <= 0) continue;
 
-    const totalPreparersWage = workingPreparers.reduce(
-      (sum, p) => sum + Number(p.dailySalary || 0),
-      0
-    );
+      const halfSalary = fullDailySalary / 2;
 
+      // فحص الشفتات المسجلة في سجل العمل لهذا اليوم
+      const hasShift1 = p.workLogs.some((l: any) => l.shiftName === "shift1");
+      const hasShift2 = p.workLogs.some((l: any) => l.shiftName === "shift2");
+
+      let shiftCount = 0;
+      let shiftsLabel = "";
+
+      if (hasShift1 && hasShift2) {
+        shiftCount = 2;
+        shiftsLabel = "شفتين (صباحي + مسائي)";
+      } else if (hasShift1) {
+        shiftCount = 1;
+        shiftsLabel = "شفت صباحي";
+      } else if (hasShift2) {
+        shiftCount = 1;
+        shiftsLabel = "شفت مسائي";
+      } else {
+        // في حال لم تكن هناك تسمية شفت محددة ولكن المجهز لديه سجلات عمل أو طلبات تجهيز اليوم
+        const preparerOrders = ordersPrep.filter((o: any) => o.submittedByCompanyPreparerId === p.id);
+        const hasActivity = (p.workLogs && p.workLogs.length > 0) || preparerOrders.length > 0;
+
+        if (hasActivity) {
+          const activityTimes = [
+            ...p.workLogs.map((l: any) => l.createdAt),
+            ...preparerOrders.map((o: any) => o.createdAt)
+          ];
+          let seenMorning = false;
+          let seenEvening = false;
+          for (const t of activityTimes) {
+            const bhHour = new Date(t.getTime() + 3 * 3600 * 1000).getUTCHours();
+            if (bhHour >= 6 && bhHour < 14) seenMorning = true;
+            if (bhHour >= 14 || bhHour < 4) seenEvening = true;
+          }
+          if (seenMorning && seenEvening) {
+            shiftCount = 2;
+            shiftsLabel = "شفتين (صباحي + مسائي)";
+          } else if (seenEvening) {
+            shiftCount = 1;
+            shiftsLabel = "شفت مسائي";
+          } else {
+            shiftCount = 1;
+            shiftsLabel = "شفت صباحي";
+          }
+        }
+      }
+
+      if (shiftCount > 0) {
+        const earnedWage = shiftCount >= 2 ? fullDailySalary : halfSalary;
+        workingPreparersDetails.push({
+          id: p.id,
+          name: p.name,
+          wage: earnedWage,
+          shiftsLabel
+        });
+      }
+    }
+
+    const totalPreparersWage = workingPreparersDetails.reduce((sum, wp) => sum + wp.wage, 0);
     const totalPreparersWageDinar = new Decimal(totalPreparersWage);
     const netPrepProfitDinar = new Decimal(totalPrepGross).minus(totalPreparersWageDinar);
 
@@ -638,9 +689,9 @@ export default async function CombinedReportPage({ searchParams }: Props) {
               <div className="bg-white/80 rounded-2xl p-3 border border-indigo-100/50">
                 <p className="text-[10px] font-bold text-slate-500">أجور التجهيز 👨‍🍳</p>
                 <p className="text-sm font-black text-amber-600 mt-1">{formatDinarAsAlfWithUnit(totalPreparersWageDinar)}</p>
-                {workingPreparers.length > 0 && (
-                  <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate" title={workingPreparers.map(p => p.name).join("، ")}>
-                    {workingPreparers.map(p => p.name).join("، ")}
+                {workingPreparersDetails.length > 0 && (
+                  <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate" title={workingPreparersDetails.map(p => `${p.name} (${p.shiftsLabel})`).join("، ")}>
+                    {workingPreparersDetails.map(p => `${p.name} (${p.shiftsLabel})`).join("، ")}
                   </p>
                 )}
               </div>
