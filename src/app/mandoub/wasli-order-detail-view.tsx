@@ -23,7 +23,7 @@ import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/ma
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 import Link from "next/link";
-import { ShoppingBag, Pencil, X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
 import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
 
@@ -804,25 +804,21 @@ export function WasliOrderDetailView({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* زر تعديل أسعار التجهيز (يظهر فقط في الطلبات التي جهزت) بنفس أيقونة وحجم الزر خارج الطلب */}
-              {isPreparedOrder && (
-                <Link
-                  href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
-                  className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
-                  title="تعديل تفاصيل وأسعار التجهيز"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-[#0B2E8C]" />
-                </Link>
-              )}
-
-              {/* زر تعديل الطلب (نفسه الموجود خارج الطلب لفتح تعديل الطلب الأصلي) */}
-              <Link
-                href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/edit`}
+              {/* زر تعديل الطلب (يفتح نافذة تعديل بيانات الطلب الخاصة بالمندوب) */}
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, {
+                      detail: { orderId: order.id },
+                    })
+                  );
+                }}
                 className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
-                title="تعديل الطلب"
+                title="تعديل بيانات الطلب"
               >
                 <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
-              </Link>
+              </button>
 
               {/* زر إغلاق الطلب (إكس أحمر) */}
               <button
@@ -1965,6 +1961,11 @@ export function WasliOrderDetailView({
         defaultCustomerLocationUrl={currentCustLocation}
         defaultCustomerLandmark={landmarkVal}
         defaultAlternatePhone={order.alternatePhone || ""}
+        isDoubleRoute={isDoubleRoute}
+        defaultSecondCustomerPhone={(order as any).secondCustomerPhone || ""}
+        defaultSecondCustomerLocationUrl={(order as any).secondCustomerLocationUrl || ""}
+        defaultSecondCustomerLandmark={(order as any).secondCustomerLandmark || ""}
+        defaultSecondAlternatePhone={(order as any).secondAlternatePhone || ""}
         auth={auth}
         nextUrl={nextUrl}
       />
