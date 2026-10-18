@@ -59,6 +59,7 @@ export default async function ReportsProfitsPage() {
       deliveryPrice: true,
       courierEarningDinar: true,
       courier: { select: { zeroEarning: true, vehicleType: true } },
+      courierEarningForCourier: { select: { vehicleType: true } },
       preparerShoppingJson: true,
       shop: { select: { name: true } }
     },
@@ -81,12 +82,10 @@ export default async function ReportsProfitsPage() {
     let deliveryProfit = 0;
     if ((order.status === "delivered" || order.status === "archived") && order.deliveryPrice != null) {
       let courierEarning = order.courierEarningDinar;
-      const isZeroEarning = order.courier?.zeroEarning || false;
 
-      if (isZeroEarning) {
-        courierEarning = new Decimal(0);
-      } else if (courierEarning == null) {
-        const vehicleType = order.courier?.vehicleType || null;
+      // صافي التوصيل للشركة يجب أن يكون متبقي التوصيل وليس التوصيل كله
+      if (courierEarning == null || courierEarning.lte(0)) {
+        const vehicleType = order.courierEarningForCourier?.vehicleType || order.courier?.vehicleType || "car";
         courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
       }
       if (courierEarning != null) {

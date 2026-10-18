@@ -82,28 +82,14 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
 
   for (const o of orders) {
     if (o.deliveryPrice) {
-      let p = new Decimal(0);
-      if (o.courier) {
-        if (o.courier.zeroEarning) {
-          p = o.deliveryPrice;
-        } else {
-          if (o.courierEarningDinar != null) {
-            p = o.deliveryPrice.minus(o.courierEarningDinar);
-          } else {
-            const vehicle = o.courier.vehicleType || "car";
-            const earning = vehicle === "bike"
-              ? o.deliveryPrice.div(2)
-              : o.deliveryPrice.mul(2).div(3);
-            p = o.deliveryPrice.minus(earning);
-          }
-        }
-      } else {
-        if (o.courierEarningDinar != null) {
-          p = o.deliveryPrice.minus(o.courierEarningDinar);
-        } else {
-          p = o.deliveryPrice;
-        }
+      let courierEarning = o.courierEarningDinar;
+      if (courierEarning == null || courierEarning.lte(0)) {
+        const vehicle = o.courier?.vehicleType || "car";
+        courierEarning = vehicle === "bike"
+          ? o.deliveryPrice.div(2)
+          : o.deliveryPrice.mul(2).div(3);
       }
+      const p = o.deliveryPrice.minus(courierEarning);
       todayDeliveryProfit = todayDeliveryProfit.plus(p);
 
       if (o.courier) {
@@ -143,28 +129,14 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
 
   for (const o of allTimeOrders) {
     if (o.deliveryPrice) {
-      let p = new Decimal(0);
-      if (o.courier) {
-        if (o.courier.zeroEarning) {
-          p = o.deliveryPrice;
-        } else {
-          if (o.courierEarningDinar != null) {
-            p = o.deliveryPrice.minus(o.courierEarningDinar);
-          } else {
-            const vehicle = o.courier.vehicleType || "car";
-            const earning = vehicle === "bike"
-              ? o.deliveryPrice.div(2)
-              : o.deliveryPrice.mul(2).div(3);
-            p = o.deliveryPrice.minus(earning);
-          }
-        }
-      } else {
-        if (o.courierEarningDinar != null) {
-          p = o.deliveryPrice.minus(o.courierEarningDinar);
-        } else {
-          p = o.deliveryPrice;
-        }
+      let courierEarning = o.courierEarningDinar;
+      if (courierEarning == null || courierEarning.lte(0)) {
+        const vehicle = o.courier?.vehicleType || "car";
+        courierEarning = vehicle === "bike"
+          ? o.deliveryPrice.div(2)
+          : o.deliveryPrice.mul(2).div(3);
       }
+      const p = o.deliveryPrice.minus(courierEarning);
       totalDeliveryProfit = totalDeliveryProfit.plus(p);
     }
 

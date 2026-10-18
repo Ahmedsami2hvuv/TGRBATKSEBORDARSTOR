@@ -99,6 +99,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           deliveryPrice: true,
           courierEarningDinar: true,
           courier: { select: { zeroEarning: true, vehicleType: true } },
+          courierEarningForCourier: { select: { vehicleType: true } },
           preparerShoppingJson: true,
           shop: { select: { name: true } }
         },
@@ -116,12 +117,10 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         let deliveryProfit = 0;
         if ((order.status === "delivered" || order.status === "archived") && order.deliveryPrice != null) {
           let courierEarning = order.courierEarningDinar;
-          const isZeroEarning = order.courier?.zeroEarning || false;
 
-          if (isZeroEarning) {
-            courierEarning = new Decimal(0);
-          } else if (courierEarning == null) {
-            const vehicleType = order.courier?.vehicleType || null;
+          // صافي التوصيل للشركة يجب أن يكون متبقي التوصيل وليس التوصيل كله
+          if (courierEarning == null || courierEarning.lte(0)) {
+            const vehicleType = order.courierEarningForCourier?.vehicleType || order.courier?.vehicleType || "car";
             courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
           }
           if (courierEarning != null) {
@@ -325,7 +324,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           id: true,
           assignedCourierId: true,
           courierEarningForCourierId: true,
-          courierEarningForCourier: { select: { name: true } },
+          courierEarningForCourier: { select: { name: true, vehicleType: true } },
           courierEarningDinar: true,
           deliveryPrice: true,
           courier: { select: { name: true, vehicleType: true, zeroEarning: true } },
@@ -338,7 +337,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             orderBy: { createdAt: "desc" },
             select: {
               courierId: true,
-              courier: { select: { name: true } },
+              courier: { select: { name: true, vehicleType: true } },
             },
           },
         },
@@ -391,12 +390,14 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       row.ordersCount += 1;
 
       let courierEarning = order.courierEarningDinar;
-      const isZeroEarning = order.courier?.zeroEarning || false;
 
-      if (isZeroEarning) {
-        courierEarning = new Decimal(0);
-      } else if (courierEarning == null) {
-        const vehicleType = (order as any).courierVehicleType || order.courier?.vehicleType || null;
+      // صافي التوصيل للشركة يجب أن يكون متبقي التوصيل وليس التوصيل كله
+      if (courierEarning == null || courierEarning.lte(0)) {
+        const vehicleType =
+          order.courierEarningForCourier?.vehicleType ||
+          order.courier?.vehicleType ||
+          deliveryEv?.courier?.vehicleType ||
+          "car";
         courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
       }
       if (courierEarning == null) continue;
