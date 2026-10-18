@@ -301,7 +301,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     const rangeFrom = new Date(from.getTime() - 20 * 24 * 60 * 60 * 1000);
 
     // جلب البيانات المتوازي (تم إزالة الإكراميات)
-    const [ordersDelivery, ordersPrep, sidebarPrepOrders] = await Promise.all([
+    const [ordersDelivery, ordersPrep, sidebarPrepOrders, companyPreparersList] = await Promise.all([
       // طلبات التوصيل المسلمة أو المؤرشفة الخاصة باليوم المحدد فقط
       prisma.order.findMany({
         where: {
@@ -370,6 +370,19 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           shop: { name: { in: ADMIN_SHOP_NAMES } }
         },
         select: { createdAt: true, preparerShoppingJson: true }
+      }),
+      // جلب المجهزين لمعرفة الراتب اليومي وسجلات العمل لليوم
+      prisma.companyPreparer.findMany({
+        where: { active: true },
+        select: {
+          id: true,
+          name: true,
+          dailySalary: true,
+          workLogs: {
+            where: { createdAt: { gte: from, lte: to } },
+            select: { id: true, createdAt: true }
+          }
+        }
       })
     ]);
 
@@ -518,8 +531,33 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     const totalFishProfit = orderSummaries.reduce((sum, o) => sum + o.fishProfitAlf, 0);
     const totalOtherPrepProfit = totalPrepProfit - totalMeatProfit - totalFishProfit;
 
-    // صافي الشركة الكلي المدمج
-    const totalCompanyCombinedNet = totalCompanyNet.plus(new Decimal(totalPrepProfit * ALF_PER_DINAR));
+    // 1. حسابات التوصيل
+    const totalDeliveryGross = totalCourierEarning.plus(totalCompanyNet);
+
+    // 2. حسابات التجهيز وأجور المجهز
+    const totalPrepGross = totalPrepProfit * ALF_PER_DINAR;
+
+    // تحديد المجهزين الذين خرجوا للعمل في هذا اليوم
+    const activeWorkingPreparers = (companyPreparersList || []).filter(p => {
+      const hasLogs = p.workLogs && p.workLogs.length > 0;
+      const hasOrders = ordersPrep.some((o: any) => o.submittedByCompanyPreparerId === p.id);
+      return hasLogs || hasOrders;
+    });
+
+    const workingPreparers = activeWorkingPreparers.length > 0
+      ? activeWorkingPreparers
+      : (ordersPrep.length > 0 ? (companyPreparersList || []).filter(p => Number(p.dailySalary) > 0).slice(0, 1) : []);
+
+    const totalPreparersWage = workingPreparers.reduce(
+      (sum, p) => sum + Number(p.dailySalary || 0),
+      0
+    );
+
+    const totalPreparersWageDinar = new Decimal(totalPreparersWage);
+    const netPrepProfitDinar = new Decimal(totalPrepGross).minus(totalPreparersWageDinar);
+
+    // 3. الأرباح الكلية الصافية للشركة (صافي التوصيل + صافي التجهيز بعد خصم أجور المجهز)
+    const grandTotalCompanyProfit = totalCompanyNet.plus(netPrepProfitDinar);
 
     return (
       <div className="space-y-6 animate-in fade-in duration-300" dir="rtl">
@@ -558,61 +596,89 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             📈 الرسم البياني (سنوي / شهري / يومي)
           </Link>
         </div>
-        {/* الكروت الإحصائية الشاملة */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-          {/* صافي التوصيل */}
-          <div className="rounded-3xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-sky-700 uppercase tracking-widest">صافي التوصيل (للشركة)</p>
-            <p className="mt-3 text-2xl font-black text-sky-900">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
-            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-sky-100 pt-2">
-              <span>ربح المندوبين الكلي: {formatDinarAsAlfWithUnit(totalCourierEarning)}</span>
+        {/* الكروت الإحصائية الرئيسية الثلاثة */}
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-3">
+          {/* 1. التوصيل الكلي */}
+          <div className="rounded-3xl border border-sky-100 bg-sky-50/50 p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between pb-3 border-b border-sky-100/80">
+              <span className="text-xs font-black text-sky-800 uppercase tracking-wider">🚚 التوصيل الكلي</span>
+              <span className="text-[11px] font-bold text-sky-600 bg-sky-100/70 px-2.5 py-0.5 rounded-full">{totalOrders} طلب</span>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-[11px] font-bold text-sky-600">الكلي</p>
+              <p className="text-3xl font-black text-sky-950 mt-1">{formatDinarAsAlfWithUnit(totalDeliveryGross)}</p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 pt-4 border-t border-sky-100/80">
+              <div className="bg-white/80 rounded-2xl p-3 border border-sky-100/50">
+                <p className="text-[10px] font-bold text-slate-500">للمندوبين 🛵</p>
+                <p className="text-sm font-black text-emerald-600 mt-1">{formatDinarAsAlfWithUnit(totalCourierEarning)}</p>
+              </div>
+              <div className="bg-white/80 rounded-2xl p-3 border border-sky-100/50">
+                <p className="text-[10px] font-bold text-slate-500">للشركة 🏢</p>
+                <p className="text-sm font-black text-sky-900 mt-1">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
+              </div>
             </div>
           </div>
 
-          {/* أرباح التجهيز الكلية */}
-          <div className="rounded-3xl border border-indigo-100 bg-indigo-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-indigo-700 uppercase tracking-widest">أرباح التجهيز الكلية 🔪</p>
-            <p className="mt-3 text-2xl font-black text-indigo-900">{formatDinarAsAlfWithUnit(totalPrepProfit * ALF_PER_DINAR)}</p>
-            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-indigo-100 pt-2">
-              مجموع مبيعات المحلات
+          {/* 2. التجهيز الكلي */}
+          <div className="rounded-3xl border border-indigo-100 bg-indigo-50/50 p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between pb-3 border-b border-indigo-100/80">
+              <span className="text-xs font-black text-indigo-800 uppercase tracking-wider">🔪 التجهيز الكلي</span>
+              <span className="text-[11px] font-bold text-indigo-600 bg-indigo-100/70 px-2.5 py-0.5 rounded-full">{ordersPrep.length} طلب</span>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-[11px] font-bold text-indigo-600">التجهيز الكلي</p>
+              <p className="text-3xl font-black text-indigo-950 mt-1">{formatDinarAsAlfWithUnit(totalPrepGross)}</p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 pt-4 border-t border-indigo-100/80">
+              <div className="bg-white/80 rounded-2xl p-3 border border-indigo-100/50">
+                <p className="text-[10px] font-bold text-slate-500">أجور التجهيز 👨‍🍳</p>
+                <p className="text-sm font-black text-amber-600 mt-1">{formatDinarAsAlfWithUnit(totalPreparersWageDinar)}</p>
+                {workingPreparers.length > 0 && (
+                  <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate" title={workingPreparers.map(p => p.name).join("، ")}>
+                    {workingPreparers.map(p => p.name).join("، ")}
+                  </p>
+                )}
+              </div>
+              <div className="bg-white/80 rounded-2xl p-3 border border-indigo-100/50">
+                <p className="text-[10px] font-bold text-slate-500">صافي التجهيز للشركة 🏢</p>
+                <p className={`text-sm font-black mt-1 ${netPrepProfitDinar.gte(0) ? "text-indigo-950" : "text-rose-600"}`}>
+                  {formatDinarAsAlfWithUnit(netPrepProfitDinar)}
+                </p>
+                <p className="text-[9px] font-bold text-slate-400 mt-0.5">بعد خصم أجور المجهز</p>
+              </div>
             </div>
           </div>
 
-          {/* أرباح القصاب */}
-          <div className="rounded-3xl border border-red-100 bg-red-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-red-700 uppercase tracking-widest">أرباح اللحوم (القصاب) 🥩</p>
-            <p className="mt-3 text-2xl font-black text-red-900">{formatDinarAsAlfWithUnit(totalMeatProfit * ALF_PER_DINAR)}</p>
-            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-red-100 pt-2">
-              مبيعات اللحوم الصافية
-            </div>
-          </div>
+          {/* 3. الأرباح الكلية */}
+          <div className="rounded-3xl bg-slate-900 text-white p-6 shadow-xl relative overflow-hidden border-b-4 border-slate-700 hover:shadow-2xl transition-all">
+            <div className="absolute left-2 -bottom-2 opacity-10 text-[95px] pointer-events-none leading-none select-none">💰</div>
 
-          {/* أرباح السماك */}
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">أرباح الأسماك (السماك) 🐟</p>
-            <p className="mt-3 text-2xl font-black text-emerald-950">{formatDinarAsAlfWithUnit(totalFishProfit * ALF_PER_DINAR)}</p>
-            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-emerald-100 pt-2">
-              مبيعات الأسماك الصافية
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <span className="text-xs font-black text-amber-400 uppercase tracking-wider">💰 الأرباح الكلية</span>
+              <span className="text-[11px] font-bold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full">صافي الشركة</span>
             </div>
-          </div>
 
-          {/* أرباح المنتجات الأخرى */}
-          <div className="rounded-3xl border border-amber-100 bg-amber-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">أرباح المواد الأخرى 📦</p>
-            <p className="mt-3 text-2xl font-black text-amber-950">{formatDinarAsAlfWithUnit(totalOtherPrepProfit * ALF_PER_DINAR)}</p>
-            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-amber-100 pt-2">
-              باقي منتجات التجهيز
+            <div className="mt-4 relative z-10">
+              <p className="text-[11px] font-bold text-slate-400">الأرباح الكلية للشركة</p>
+              <p className="text-3xl font-black text-amber-400 mt-1">{formatDinarAsAlfWithUnit(grandTotalCompanyProfit)}</p>
             </div>
-          </div>
 
-          {/* صافي الأرباح الكلي للشركة */}
-          <div className="rounded-3xl bg-slate-900 text-white p-5 shadow-lg relative overflow-hidden border-b-4 border-slate-700">
-            <div className="absolute right-0 bottom-0 opacity-10 text-[80px] pointer-events-none leading-none select-none">💰</div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">صافي الأرباح الكلي للشركة</p>
-            <p className="mt-3 text-2xl font-black text-amber-400">{formatDinarAsAlfWithUnit(totalCompanyCombinedNet)}</p>
-            <div className="mt-2 flex items-center justify-between text-[9px] text-slate-400 font-bold border-t border-slate-800 pt-2">
-              <span>التوصيل: {formatDinarAsAlfWithUnit(totalCompanyNet)}</span>
-              <span>التجهيز: {formatDinarAsAlfWithUnit(totalPrepProfit * ALF_PER_DINAR)}</span>
+            <div className="mt-5 grid grid-cols-2 gap-3 pt-4 border-t border-slate-800 relative z-10">
+              <div className="bg-slate-800/80 rounded-2xl p-3 border border-slate-700/80">
+                <p className="text-[10px] font-bold text-slate-400">التوصيل 🚚</p>
+                <p className="text-sm font-black text-sky-400 mt-1">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
+              </div>
+              <div className="bg-slate-800/80 rounded-2xl p-3 border border-slate-700/80">
+                <p className="text-[10px] font-bold text-slate-400">التجهيز الصافي 🔪</p>
+                <p className={`text-sm font-black mt-1 ${netPrepProfitDinar.gte(0) ? "text-emerald-400" : "text-rose-400"}`}>
+                  {formatDinarAsAlfWithUnit(netPrepProfitDinar)}
+                </p>
+              </div>
             </div>
           </div>
         </div>
