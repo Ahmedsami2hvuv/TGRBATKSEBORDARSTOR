@@ -12,8 +12,11 @@ import { revalidatePath } from "next/cache";
 export type ShopFormState = { error?: string; ok?: boolean };
 
 function normalizeUrl(raw: string): string {
-  const t = raw.trim();
+  let t = raw.trim();
   if (!t) return t;
+  while (t.startsWith("/")) {
+    t = t.slice(1).trim();
+  }
   if (/^https?:\/\//i.test(t)) return t;
   return `https://${t}`;
 }
@@ -90,6 +93,10 @@ export async function createShop(
   if (!uploaded.ok) return { error: uploaded.error };
 
   try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "hideFromCreditBook" BOOLEAN DEFAULT false;`
+    ).catch(() => {});
+
     await prisma.$transaction(async (tx) => {
       const shop = await tx.shop.create({
         data: {
@@ -127,9 +134,10 @@ export async function createShop(
 
     revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     console.error("Create shop error:", e);
-    return { error: "فشل في إنشاء المحل والعميل" };
+    const detail = e?.message ? ` (${e.message})` : "";
+    return { error: `فشل في إنشاء المحل والعميل${detail}` };
   }
 }
 
