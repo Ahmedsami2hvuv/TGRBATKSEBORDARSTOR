@@ -3124,5 +3124,68 @@ export async function updatePartnerDetails(partnerId: string, newName: string, n
   }
 }
 
+// 17. تصفير دفتر الديون بالكامل وبدء صفحة جديدة نظيفة (0 د.ع) مع إبقاء الآلية التلقائية لطلبات الغد
+export async function resetAndZeroCreditBookCompletely() {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const now = new Date();
+
+    // 1. حذف كافة المعاملات اليدوية السابقة
+    await prisma.creditBookTransaction.deleteMany({});
+
+    // 2. حذف كافة الحسابات اليدوية غير المربوطة بالنظام (مثل حساب الموجود أو حسابات تجريبية)
+    await prisma.creditBookPartner.deleteMany({
+      where: {
+        externalId: null
+      }
+    });
+
+    // 3. تأشير كافة الطلبات السابقة حتى هذه اللحظة بأن تكلفة المحل مسددة لكي لا تعود ديونها القديمة
+    await prisma.order.updateMany({
+      where: {
+        status: { in: ["delivered", "archived"] },
+        shopCostPaidAt: null,
+      },
+      data: {
+        shopCostPaidAt: now,
+      }
+    });
+
+    // 4. تصفير مستحقات المناديب السابقة لبدء حسابات جديدة من الآن
+    await prisma.courier.updateMany({
+      data: {
+        mandoubTotalsResetAt: now,
+      }
+    });
+
+    // 5. تصفير مستحقات وقوائم المجهزين القديمة
+    await prisma.companyPreparer.updateMany({
+      data: {
+        orderListResetAt: now,
+      }
+    });
+
+    // 6. مسح سجلات التعديلات القديمة
+    try {
+      await clearTransactionLogs();
+    } catch (e) {
+      console.error("Failed to clear logs during reset:", e);
+    }
+
+    // 7. مزامنة أطراف النظام من جديد لتظهر كل المحلات والمناديب والمجهزين والزبائن مصفّرة وجاهزة لطلبات الغد
+    await syncSystemPartners();
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in resetAndZeroCreditBookCompletely:", error);
+    return { success: false, error: error.message || "حدث خطأ أثناء تصفير دفتر الديون" };
+  }
+}
+
 
 

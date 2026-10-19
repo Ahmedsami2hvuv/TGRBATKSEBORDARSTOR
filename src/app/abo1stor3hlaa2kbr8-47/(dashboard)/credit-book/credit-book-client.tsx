@@ -17,7 +17,8 @@ import {
   clearTransactionLogs,
   getAccountants,
   createAccountantLink,
-  revokeAccountantAccess
+  revokeAccountantAccess,
+  resetAndZeroCreditBookCompletely
 } from "./actions";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -249,6 +250,22 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
         refreshList();
       } else {
         alert(res.error || "فشلت المزامنة التاريخية للزبائن");
+      }
+    });
+  };
+
+  // تصفير دفتر الديون بالكامل وبدء صفحة جديدة نظيفة (0 د.ع)
+  const handleResetCompletely = () => {
+    if (!confirm("⚠️ تحذير مهم جداً!\n\nهل أنت متأكد من رغبتك في تصفير دفتر الديون بالكامل الآن وبدء صفحة جديدة نظيفة (0 د.ع)؟\n\n• سيتم مسح كافة المعاملات السابقة وحساب الموجود.\n• سيتم تصفير حسابات المحلات والمناديب والمجهزين إلى 0.00 د.ع.\n• ستبقى الأتمتة شغالة لطلبات الغد وما بعده لتسجيل كل حركة جديدة تلقائياً.")) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await resetAndZeroCreditBookCompletely();
+      if (res.success) {
+        alert("✅ تم تصفير دفتر الديون بالكامل بنجاح!\nالدفتر الآن مصفّر ونظيف (0 د.ع)، والآلية التلقائية جاهزة وشغالة لطلبات الغد.");
+        refreshList();
+      } else {
+        alert(res.error || "فشل تصفير الدفتر");
       }
     });
   };
@@ -703,6 +720,25 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
                   </div>
                   <span className="text-slate-400">⬅️</span>
                 </Link>
+              )}
+
+              {/* زر تصفير دفتر الديون بالكامل */}
+              {!isAccountant && (
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    handleResetCompletely();
+                  }}
+                  className="w-full p-3 rounded-xl bg-rose-50 hover:bg-rose-100/90 border border-rose-200/90 text-right flex items-center justify-between text-xs font-black text-rose-700 transition disabled:opacity-50 mt-1 shadow-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>🧹</span>
+                    <span>تصفير الدفتر بالكامل وبدء صفحة جديدة (0 د.ع)</span>
+                  </div>
+                  <span className="text-[10px] text-rose-500 font-bold">مسح وتصفير</span>
+                </button>
               )}
             </div>
 
