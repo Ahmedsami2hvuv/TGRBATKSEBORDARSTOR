@@ -22,41 +22,32 @@ import {
   type PartnerType
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { smartMatches } from "@/lib/credit-book-search";
 import { useRouter } from "next/navigation";
 
-// دالة البحث الذكي الفوري بالتقارب اللفظي للمفاتيح
-function fuzzyMatchTx(tx: Transaction, query: string): boolean {
-  if (!query) return true;
-  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return true;
+// دالة البحث الذكي الدقيق في المعاملات المالية
+function smartMatchTx(tx: Transaction, query: string): boolean {
+  if (!query || !query.trim()) return true;
 
-  const amountStr = String(tx.amount);
-  const amountAlfStr = String(tx.amount / 1000);
-  const noteStr = (tx.note || "").toLowerCase();
-  const kindStr = tx.kind === "gave" ? "أعطيت" : "أخذت";
-  
   const txDate = new Date(tx.createdAt);
-  const dateStr = txDate.toLocaleDateString("ar-EG").toLowerCase();
-  const isoDateStr = txDate.toISOString().substring(0, 10);
-  
-  return tokens.every(token => {
-    if (amountStr.includes(token)) return true;
-    if (amountAlfStr.includes(token)) return true;
-    if (noteStr.includes(token)) return true;
-    if (kindStr.includes(token)) return true;
-    if (dateStr.includes(token)) return true;
-    if (isoDateStr.includes(token)) return true;
-    
-    // تطابق الأحرف المتقاربة بالترتيب
-    let charIdx = 0;
-    for (let i = 0; i < noteStr.length; i++) {
-      if (noteStr[i] === token[charIdx]) {
-        charIdx++;
-        if (charIdx === token.length) return true;
-      }
-    }
-    return false;
-  });
+  const arabicDate = txDate.toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+  const shortDate = txDate.toLocaleDateString("ar-EG");
+  const isoDate = txDate.toISOString().substring(0, 10);
+  const kindStr = tx.kind === "gave" ? "أعطيت واصل دفع دفعنا سدد" : tx.kind === "took" ? "أخذت استلم قبض دين علينا" : "مصروفات مصاريف صرف";
+  const amountAlf = String(tx.amount / 1000);
+
+  const target = [
+    tx.note || "",
+    String(tx.amount || 0),
+    amountAlf,
+    `${amountAlf} الف`,
+    kindStr,
+    arabicDate,
+    shortDate,
+    isoDate,
+  ].join(" ");
+
+  return smartMatches(target, query);
 }
 
 // تعريف الواجهات البرمجية
@@ -225,13 +216,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
     }
   };
 
-  // اقتراحات الحسابات الأخرى
+  // اقتراحات الحسابات الأخرى المطابقة لبحث الاسم أو الهاتف
   const matchingPartners = searchQuery.trim() === ""
     ? []
     : allActivePartners.filter(p =>
         p.id !== partner.id &&
-        p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
-      ).slice(0, 3);
+        smartMatches(`${p.name} ${p.phone || ""}`, searchQuery)
+      ).slice(0, 4);
   
   const [authors, setAuthors] = useState<Record<string, { createdBy: string; modifiedBy?: string }>>({});
 
@@ -1093,45 +1084,20 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           </div>
         </div>
 
-        {searchQuery.trim() !== "" && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-150/50 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5">
-            {/* 1. حسابات مطابقة */}
-            {matchingPartners.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-black text-slate-400">📌 الانتقال لحساب آخر يتطابق مع بحثك:</span>
-                <div className="flex flex-wrap gap-2">
-                  {matchingPartners.map(p => (
-                    <Link
-                      key={p.id}
-                      href={`/abo1stor3hlaa2kbr8-47/credit-book/${p.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-150 dark:border-indigo-900/40 rounded-xl hover:bg-indigo-100 transition"
-                    >
-                      👤 {p.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* 2. اقتراح إنشاء حساب جديد */}
-            {(matchingPartners.length === 0 && !/\d/.test(searchQuery.trim()) && searchQuery.trim().length >= 2) && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs text-slate-500 font-bold">💡 لا يوجد حساب باسم "{searchQuery.trim()}" في الدفتر.</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewPartnerName(searchQuery.trim());
-                    setNewPartnerPhone("");
-                    setNewPartnerType("external");
-                    setSelectedSystemPartnerId("");
-                    setShowAddPartnerModal(true);
-                  }}
-                  className="inline-flex items-center justify-center px-3.5 py-1.5 text-[11px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm self-end sm:self-auto"
+        {searchQuery.trim() !== "" && matchingPartners.length > 0 && (
+          <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/50 rounded-2xl flex flex-col gap-1.5 animate-in fade-in duration-150">
+            <span className="text-[11px] font-black text-indigo-900 dark:text-indigo-300">📌 الانتقال لحساب آخر في الدفتر يتطابق مع بحثك:</span>
+            <div className="flex flex-wrap gap-2">
+              {matchingPartners.map(p => (
+                <Link
+                  key={p.id}
+                  href={`/abo1stor3hlaa2kbr8-47/credit-book/${p.id}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-50 transition shadow-xs"
                 >
-                  ➕ إنشاء حساب جديد لـ "{searchQuery.trim()}"
-                </button>
-              </div>
-            )}
+                  👤 {p.name}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1174,7 +1140,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               runningBalance: balanceMap.get(tx.id) ?? 0
             }));
 
-            const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
+            const filteredTxs = txsWithRunningBalance.filter(tx => smartMatchTx(tx, searchQuery));
 
             // عرض كافة المعاملات في الكشف الرئيسي ليتطابق الرصيد التراكمي في آخر حركة مع رصيد البطاقة 100%
             const displayTxs = filteredTxs;

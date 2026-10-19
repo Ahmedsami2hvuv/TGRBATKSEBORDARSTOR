@@ -21,6 +21,7 @@ import {
 } from "./actions";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { smartMatches } from "@/lib/credit-book-search";
 
 // أنواع التسميات باللغة العربية مع الأيقونات
 const typeLabels: Record<PartnerType, { label: string; icon: string }> = {
@@ -147,35 +148,26 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
 
       const hasSearch = searchQuery.trim().length > 0;
 
-      // 3. فحص مصطلح البحث (fuzzy match on name or phone or balance)
+      // 3. فحص مصطلح البحث الذكي والشامل (الاسم، الهاتف، النوع، الرصيد، تفاصيل وملاحظات المعاملات)
       if (!hasSearch) return true;
 
-      const tokens = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      if (tokens.length === 0) return true;
+      const typeInfo = typeLabels[p.type]?.label || p.type || "";
+      const statusText = p.balance > 0 ? "نطلبه باقي لصالحنا عليه دين" : p.balance < 0 ? "يطلبنا باقي علينا له دائن" : "مصفر صفر مسدد";
+      const balanceK = Math.abs(p.balance || 0) / 1000;
 
-      const nameStr = (p.name || "").toLowerCase();
-      const phoneStr = (p.phone || "").toLowerCase();
-      const typeStr = (typeLabels[p.type]?.label || p.type || "").toLowerCase();
-      const balanceStr = String(Math.abs(p.balance || 0));
-      const balanceAlfStr = String(Math.abs(p.balance || 0) / 1000);
+      const searchTarget = [
+        p.name,
+        p.phone || "",
+        typeInfo,
+        String(p.balance || 0),
+        String(Math.abs(p.balance || 0)),
+        String(balanceK),
+        `${balanceK} الف`,
+        statusText,
+        p.notesSummary || "",
+      ].join(" ");
 
-      return tokens.every((token) => {
-        if (nameStr.includes(token)) return true;
-        if (phoneStr.includes(token)) return true;
-        if (typeStr.includes(token)) return true;
-        if (balanceStr.includes(token)) return true;
-        if (balanceAlfStr.includes(token)) return true;
-
-        // التقارب اللفظي وترتيب الحروف بالاسم
-        let charIdx = 0;
-        for (let i = 0; i < nameStr.length; i++) {
-          if (nameStr[i] === token[charIdx]) {
-            charIdx++;
-            if (charIdx === token.length) return true;
-          }
-        }
-        return false;
-      });
+      return smartMatches(searchTarget, searchQuery);
     });
   }, [allPartners, searchQuery, selectedType, balanceFilter]);
 

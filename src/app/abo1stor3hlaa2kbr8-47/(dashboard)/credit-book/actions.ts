@@ -29,6 +29,7 @@ export interface PartnerWithBalance {
   totalTook: number;
   walletRemain?: number; // متبقي المحفظة للمندوب/المجهز (من النظام)
   orderCount?: number; // عدد الطلبات التراكمية للمحل/الشريك
+  notesSummary?: string; // ملخص تفاصيل وملاحظات المعاملات للبحث الشامل السريع
 }
 
 // دالة مساعدة لاستخراج تاريخ آخر تصفير للشريك من سجل معاملاته
@@ -377,6 +378,10 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         // تم إلغاء الإخفاء التلقائي للمحلات المصفرة لكي لا تختفي الحسابات وتاريخ معاملاتها فجأة دون علم المستخدم
 
+        const notesSummary = p.transactions
+          ? p.transactions.map((t) => t.note).filter(Boolean).join(" ")
+          : "";
+
         return {
           id: p.id,
           name: p.name,
@@ -391,7 +396,8 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           totalGave,
           totalTook,
           walletRemain,
-          orderCount: shopOrderCount
+          orderCount: shopOrderCount,
+          notesSummary: notesSummary.slice(0, 5000),
         };
       })
     );
