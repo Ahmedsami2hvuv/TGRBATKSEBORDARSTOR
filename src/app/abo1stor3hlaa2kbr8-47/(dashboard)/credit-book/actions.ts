@@ -156,6 +156,184 @@ async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Prom
   return { autoDebt: autoTook - autoGave, orderCount: orders.length, orders };
 }
 
+// دالة مساعدة لحساب ذمة المندوب بدقة منذ تاريخ تصفير محدد
+async function computeCourierAdminTotalSince(courierId: string, sinceDate: Date | null): Promise<number> {
+  if (!sinceDate) {
+    const adminTotal = await computeMandoubAdminTotalAllTimeDinar(courierId);
+    return adminTotal.toNumber();
+  }
+
+  const whereEvent: any = {
+    courierId,
+    deletedAt: null,
+    recordedByCompanyPreparerId: null,
+    createdAt: { gte: sinceDate }
+  };
+  const whereMisc: any = {
+    courierId,
+    deletedAt: null,
+    createdAt: { gte: sinceDate }
+  };
+  const whereTransfer: any = {
+    fromCourierId: courierId,
+    toKind: WalletPeerPartyKind.admin,
+    status: "accepted",
+    createdAt: { gte: sinceDate }
+  };
+  const whereEarnings: any = {
+    status: { in: ["delivered", "archived"] },
+    createdAt: { gte: sinceDate },
+    OR: [
+      { courierEarningForCourierId: courierId },
+      { assignedCourierId: courierId },
+    ]
+  };
+
+  const [orderSums, miscGroups, earningsOrders, transfersRes, tipsRes] = await Promise.all([
+    prisma.orderCourierMoneyEvent.groupBy({
+      by: ['kind'],
+      where: whereEvent,
+      _sum: { amountDinar: true },
+    }),
+    prisma.courierWalletMiscEntry.groupBy({
+      by: ['direction'],
+      where: whereMisc,
+      _sum: { amountDinar: true },
+    }),
+    prisma.order.findMany({
+      where: whereEarnings,
+      select: {
+        courierEarningDinar: true,
+        courierEarningForCourierId: true,
+        assignedCourierId: true,
+        deliveryPrice: true,
+        courier: { select: { vehicleType: true, zeroEarning: true } },
+      }
+    }),
+    prisma.walletPeerTransfer.aggregate({
+      where: whereTransfer,
+      _sum: { amountDinar: true }
+    }),
+    prisma.courierWalletMiscEntry.aggregate({
+      where: {
+        ...whereMisc,
+        direction: CourierWalletMiscDirection.take,
+        label: { contains: "[إكرامية]" }
+      },
+      _sum: { amountDinar: true }
+    })
+  ]);
+
+  const sumOrderWard = orderSums.find(g => g.kind === MONEY_KIND_DELIVERY)?._sum.amountDinar ?? new Decimal(0);
+  const sumOrderSader = orderSums.find(g => g.kind === MONEY_KIND_PICKUP)?._sum.amountDinar ?? new Decimal(0);
+
+  const sumMiscTake = miscGroups.find(g => g.direction === CourierWalletMiscDirection.take)?._sum.amountDinar ?? new Decimal(0);
+  const sumMiscGive = miscGroups.find(g => g.direction === CourierWalletMiscDirection.give)?._sum.amountDinar ?? new Decimal(0);
+
+  const ward = sumOrderWard.plus(sumMiscTake);
+  const sader = sumOrderSader.plus(sumMiscGive);
+  const transfers = transfersRes._sum.amountDinar ?? new Decimal(0);
+  const tipsTakeDinar = tipsRes._sum.amountDinar ?? new Decimal(0);
+
+  let earningsSum = new Decimal(0);
+  for (const o of earningsOrders) {
+    const isOwner =
+      o.courierEarningForCourierId === courierId ||
+      (!o.courierEarningForCourierId && o.assignedCourierId === courierId);
+    if (!isOwner) continue;
+
+    if (o.courierEarningDinar != null) {
+      earningsSum = earningsSum.plus(o.courierEarningDinar);
+    } else if (o.deliveryPrice != null && o.courier) {
+      const { computeCourierDeliveryEarningDinar } = await import("@/lib/courier-earnings");
+      const computed = computeCourierDeliveryEarningDinar(
+        o.courier.vehicleType as any,
+        o.deliveryPrice as any,
+        o.courier.zeroEarning
+      );
+      if (computed != null) {
+        earningsSum = earningsSum.plus(computed);
+      }
+    }
+  }
+
+  const netAdminDinar = ward.minus(sader).minus(earningsSum).minus(tipsTakeDinar).minus(transfers);
+  return netAdminDinar.toNumber();
+}
+
+// دالة مساعدة لحساب ذمة المجهز بدقة منذ تاريخ تصفير محدد
+async function computePreparerMoneyTotalsSince(
+  preparerId: string,
+  sinceDate: Date | null,
+  preparerData?: any
+): Promise<number> {
+  if (!sinceDate) {
+    const prepTotals = await getPreparerMoneyTotals(preparerId);
+    return prepTotals ? prepTotals.remain.toNumber() : 0;
+  }
+
+  let preparer = preparerData;
+  if (!preparer) {
+    preparer = await prisma.companyPreparer.findFirst({
+      where: { id: preparerId, active: true },
+      select: {
+        shopLinks: { select: { shopId: true } },
+        walletEmployeeId: true,
+      },
+    });
+  }
+  if (!preparer) return 0;
+
+  const shopIds = preparer.shopLinks?.map((l: any) => l.shopId) || [];
+  if (shopIds.length === 0 && !preparer.walletEmployeeId) return 0;
+
+  const orderWhere: any = {
+    deletedAt: null,
+    createdAt: { gte: sinceDate },
+    OR: [
+      { recordedByCompanyPreparerId: preparerId },
+      ...(shopIds.length > 0 ? [{ order: { shopId: { in: shopIds } } }] : [])
+    ]
+  };
+
+  const orderEvents = await prisma.orderCourierMoneyEvent.groupBy({
+    by: ['kind'],
+    where: orderWhere,
+    _sum: { amountDinar: true }
+  });
+
+  const sumDeliveryIn = orderEvents.find(g => g.kind === "delivery_in")?._sum.amountDinar ?? new Decimal(0);
+  const sumPickupOut = orderEvents.find(g => g.kind === "pickup_out")?._sum.amountDinar ?? new Decimal(0);
+
+  let ward = sumDeliveryIn;
+  let sader = sumPickupOut;
+  let pendingOutgoing = new Decimal(0);
+
+  const wid = preparer.walletEmployeeId;
+  if (wid) {
+    const [miscTake, miscGive, pOut] = await Promise.all([
+      prisma.courierWalletMiscEntry.aggregate({
+        where: { employeeId: wid, deletedAt: null, createdAt: { gte: sinceDate }, direction: CourierWalletMiscDirection.take },
+        _sum: { amountDinar: true }
+      }),
+      prisma.courierWalletMiscEntry.aggregate({
+        where: { employeeId: wid, deletedAt: null, createdAt: { gte: sinceDate }, direction: CourierWalletMiscDirection.give },
+        _sum: { amountDinar: true }
+      }),
+      prisma.walletPeerTransfer.aggregate({
+        where: { fromEmployeeId: wid, status: "pending", createdAt: { gte: sinceDate } },
+        _sum: { amountDinar: true }
+      })
+    ]);
+
+    ward = ward.plus(miscTake._sum.amountDinar ?? new Decimal(0));
+    sader = sader.plus(miscGive._sum.amountDinar ?? new Decimal(0));
+    pendingOutgoing = pOut._sum.amountDinar ?? new Decimal(0);
+  }
+
+  return ward.minus(sader).minus(pendingOutgoing).toNumber();
+}
+
 // دالة لتطهير الحسابات التالفة بسبب تكرار بادئات الحذف
 async function cleanUpCorruptedPartners() {
   try {
@@ -331,22 +509,53 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         if (p.type === "courier" && p.externalId) {
           try {
-            const [adminTotal, walletRem] = await Promise.all([
-              computeMandoubAdminTotalAllTimeDinar(p.externalId),
-              computeMandoubWalletRemainAllTimeDinar(p.externalId)
-            ]);
-            autoBalance = adminTotal.toNumber();
-            walletRemain = walletRem.toNumber();
+            const globalResetDate = await getCreditBookGlobalResetDate();
+            const courier = await prisma.courier.findUnique({
+              where: { id: p.externalId },
+              select: { mandoubTotalsResetAt: true }
+            });
+            const lastZero = getPartnerLastZeroDate(p.transactions);
+
+            let effectiveDate: Date | null = globalResetDate;
+            if (courier?.mandoubTotalsResetAt) {
+              if (!effectiveDate || courier.mandoubTotalsResetAt > effectiveDate) {
+                effectiveDate = courier.mandoubTotalsResetAt;
+              }
+            }
+            if (lastZero) {
+              if (!effectiveDate || lastZero > effectiveDate) {
+                effectiveDate = lastZero;
+              }
+            }
+
+            autoBalance = await computeCourierAdminTotalSince(p.externalId, effectiveDate);
+            walletRemain = autoBalance;
           } catch (e) {
             console.error(`Failed to get courier auto debt for ${p.name}:`, e);
           }
         } else if (p.type === "preparer" && p.externalId) {
           try {
-            const prepTotals = await getPreparerMoneyTotals(p.externalId);
-            if (prepTotals) {
-              autoBalance = prepTotals.remain.toNumber();
-              walletRemain = prepTotals.remain.toNumber();
+            const globalResetDate = await getCreditBookGlobalResetDate();
+            const preparer = await prisma.companyPreparer.findFirst({
+              where: { id: p.externalId },
+              select: { orderListResetAt: true, shopLinks: { select: { shopId: true } }, walletEmployeeId: true }
+            });
+            const lastZero = getPartnerLastZeroDate(p.transactions);
+
+            let effectiveDate: Date | null = globalResetDate;
+            if (preparer?.orderListResetAt) {
+              if (!effectiveDate || preparer.orderListResetAt > effectiveDate) {
+                effectiveDate = preparer.orderListResetAt;
+              }
             }
+            if (lastZero) {
+              if (!effectiveDate || lastZero > effectiveDate) {
+                effectiveDate = lastZero;
+              }
+            }
+
+            autoBalance = await computePreparerMoneyTotalsSince(p.externalId, effectiveDate, preparer);
+            walletRemain = autoBalance;
           } catch (e) {
             console.error(`Failed to get preparer auto debt for ${p.name}:`, e);
           }
@@ -481,10 +690,7 @@ export async function getPartnerDetails(partnerId: string) {
 
     if (partner.type === "courier" && partner.externalId) {
       try {
-        const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
-        autoBalance = adminTotal.toNumber();
-        
-        // جلب تفاصيل المندوب لمعرفة تاريخ التصفير والمبلغ المدور
+        const globalResetDate = await getCreditBookGlobalResetDate();
         const courier = await prisma.courier.findUnique({
           where: { id: partner.externalId },
           select: {
@@ -492,18 +698,34 @@ export async function getPartnerDetails(partnerId: string) {
             mandoubWalletCarryOverDinar: true
           }
         });
+        const lastZero = getPartnerLastZeroDate(partner.transactions);
 
-        const resetAt = courier?.mandoubTotalsResetAt || null;
+        let effectiveDate: Date | null = globalResetDate;
+        if (courier?.mandoubTotalsResetAt) {
+          if (!effectiveDate || courier.mandoubTotalsResetAt > effectiveDate) {
+            effectiveDate = courier.mandoubTotalsResetAt;
+          }
+        }
+        if (lastZero) {
+          if (!effectiveDate || lastZero > effectiveDate) {
+            effectiveDate = lastZero;
+          }
+        }
 
-        // متبقي المحفظة للإدارة هو نفسه ذمة المندوب الحالية للتلقائي لتجنب التعارض في الواجهة
+        autoBalance = await computeCourierAdminTotalSince(partner.externalId, effectiveDate);
         walletRemain = autoBalance;
 
-        // 1. جلب حركات أموال الطلبات للمندوب بالكامل تاريخياً
+        // 1. جلب حركات أموال الطلبات للمندوب
+        const orderMoneyWhere: any = {
+          courierId: partner.externalId,
+          deletedAt: null
+        };
+        if (effectiveDate) {
+          orderMoneyWhere.createdAt = { gte: effectiveDate };
+        }
+
         const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
-          where: {
-            courierId: partner.externalId,
-            deletedAt: null
-          },
+          where: orderMoneyWhere,
           include: {
             order: {
               select: {
@@ -550,12 +772,17 @@ export async function getPartnerDetails(partnerId: string) {
           }
         }
 
-        // 2. جلب قيود المحفظة اليدوية للمندوب بالكامل تاريخياً
+        // 2. جلب قيود المحفظة اليدوية للمندوب
+        const miscWhere: any = {
+          courierId: partner.externalId,
+          deletedAt: null
+        };
+        if (effectiveDate) {
+          miscWhere.createdAt = { gte: effectiveDate };
+        }
+
         const courierMiscEntries = await prisma.courierWalletMiscEntry.findMany({
-          where: {
-            courierId: partner.externalId,
-            deletedAt: null
-          },
+          where: miscWhere,
           orderBy: { createdAt: "desc" }
         });
 
@@ -589,15 +816,19 @@ export async function getPartnerDetails(partnerId: string) {
           }
         }
 
-        // 3. جلب التحويلات المقبولة للإدارة للمندوب بالكامل تاريخياً
-        // 3. جلب كافة تحويلات الأقران للمندوب بجميع حالاتها (مقبول، معلق، مرفوض)
+        // 3. جلب كافة تحويلات الأقران للمندوب
+        const transferWhere: any = {
+          OR: [
+            { fromCourierId: partner.externalId },
+            { toCourierId: partner.externalId }
+          ]
+        };
+        if (effectiveDate) {
+          transferWhere.createdAt = { gte: effectiveDate };
+        }
+
         const courierTransfers = await prisma.walletPeerTransfer.findMany({
-          where: {
-            OR: [
-              { fromCourierId: partner.externalId },
-              { toCourierId: partner.externalId }
-            ]
-          },
+          where: transferWhere,
           orderBy: { createdAt: "desc" }
         });
 
@@ -671,24 +902,29 @@ export async function getPartnerDetails(partnerId: string) {
           }
         }
 
-        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة للمندوب بالكامل تاريخياً
+        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة للمندوب
+        const earningsWhere: any = {
+          AND: [
+            {
+              OR: [
+                { courierEarningForCourierId: partner.externalId },
+                { courierId: partner.externalId }
+              ]
+            },
+            {
+              status: { in: ["delivered", "archived"] }
+            },
+            {
+              courierEarningDinar: { gt: 0 }
+            }
+          ]
+        };
+        if (effectiveDate) {
+          earningsWhere.AND.push({ createdAt: { gte: effectiveDate } });
+        }
+
         const ordersWithEarnings = await prisma.order.findMany({
-          where: {
-            AND: [
-              {
-                OR: [
-                  { courierEarningForCourierId: partner.externalId },
-                  { courierId: partner.externalId }
-                ]
-              },
-              {
-                status: { in: ["delivered", "archived"] }
-              },
-              {
-                courierEarningDinar: { gt: 0 }
-              }
-            ]
-          },
+          where: earningsWhere,
           select: {
             id: true,
             orderNumber: true,
@@ -752,30 +988,47 @@ export async function getPartnerDetails(partnerId: string) {
       }
     } else if (partner.type === "preparer" && partner.externalId) {
       try {
-        const prepTotals = await getPreparerMoneyTotals(partner.externalId);
-        if (prepTotals) {
-          autoBalance = prepTotals.remain.toNumber();
-          walletRemain = prepTotals.remain.toNumber();
-        }
-
+        const globalResetDate = await getCreditBookGlobalResetDate();
         const preparer = await prisma.companyPreparer.findFirst({
           where: { id: partner.externalId, active: true },
           select: {
+            orderListResetAt: true,
             shopLinks: { select: { shopId: true } },
             walletEmployeeId: true
           }
         });
+        const lastZero = getPartnerLastZeroDate(partner.transactions);
+
+        let effectiveDate: Date | null = globalResetDate;
+        if (preparer?.orderListResetAt) {
+          if (!effectiveDate || preparer.orderListResetAt > effectiveDate) {
+            effectiveDate = preparer.orderListResetAt;
+          }
+        }
+        if (lastZero) {
+          if (!effectiveDate || lastZero > effectiveDate) {
+            effectiveDate = lastZero;
+          }
+        }
+
+        autoBalance = await computePreparerMoneyTotalsSince(partner.externalId, effectiveDate, preparer);
+        walletRemain = autoBalance;
 
         if (preparer) {
           // 1. جلب حركات أموال الطلبات المسجلة بواسطة المجهز لمحلاته
           const shopIds = preparer.shopLinks.map((l) => l.shopId);
           if (shopIds.length > 0) {
+            const prepOrderWhere: any = {
+              deletedAt: null,
+              recordedByCompanyPreparerId: partner.externalId,
+              order: { shopId: { in: shopIds } }
+            };
+            if (effectiveDate) {
+              prepOrderWhere.createdAt = { gte: effectiveDate };
+            }
+
             const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
-              where: {
-                deletedAt: null,
-                recordedByCompanyPreparerId: partner.externalId,
-                order: { shopId: { in: shopIds } }
-              },
+              where: prepOrderWhere,
               include: {
                 order: {
                   select: {
@@ -822,11 +1075,16 @@ export async function getPartnerDetails(partnerId: string) {
           const wid = preparer.walletEmployeeId;
           if (wid) {
             // 2. قيود المحفظة اليدوية للموظف المربوط بالمجهز
+            const prepMiscWhere: any = {
+              employeeId: wid,
+              deletedAt: null
+            };
+            if (effectiveDate) {
+              prepMiscWhere.createdAt = { gte: effectiveDate };
+            }
+
             const employeeMiscEntries = await prisma.employeeWalletMiscEntry.findMany({
-              where: {
-                employeeId: wid,
-                deletedAt: null
-              },
+              where: prepMiscWhere,
               orderBy: { createdAt: "desc" }
             });
 
@@ -847,12 +1105,17 @@ export async function getPartnerDetails(partnerId: string) {
             }
 
             // 3. التحويلات المقبولة للإدارة
+            const prepTransferAdminWhere: any = {
+              fromEmployeeId: wid,
+              toKind: WalletPeerPartyKind.admin,
+              status: "accepted"
+            };
+            if (effectiveDate) {
+              prepTransferAdminWhere.createdAt = { gte: effectiveDate };
+            }
+
             const employeeAdminTransfers = await prisma.walletPeerTransfer.findMany({
-              where: {
-                fromEmployeeId: wid,
-                toKind: WalletPeerPartyKind.admin,
-                status: "accepted"
-              },
+              where: prepTransferAdminWhere,
               orderBy: { createdAt: "desc" }
             });
 
@@ -873,11 +1136,16 @@ export async function getPartnerDetails(partnerId: string) {
             }
 
             // 4. التحويلات الصادرة المعلقة
+            const prepPendingWhere: any = {
+              fromEmployeeId: wid,
+              status: "pending"
+            };
+            if (effectiveDate) {
+              prepPendingWhere.createdAt = { gte: effectiveDate };
+            }
+
             const employeePendingOutgoingTransfers = await prisma.walletPeerTransfer.findMany({
-              where: {
-                fromEmployeeId: wid,
-                status: "pending"
-              },
+              where: prepPendingWhere,
               orderBy: { createdAt: "desc" }
             });
 
@@ -2155,7 +2423,7 @@ export async function deleteAdminPaymentEvent(eventId: string) {
   }
 }
 
-// 13. تصفير وتصفية حساب الشريك (مع تسديد الطلبات التلقائية للزبائن والموردين والمحلات وحركات محفظة المناديب)
+// 13. تصفير وتصفية حساب الشريك (فوري وبدقة 0.00 د.ع بدون أي تعليق أو تايم أوت)
 export async function zeroPartnerAccount(partnerId: string) {
   try {
     const { isAdminSession } = await import("@/lib/admin-session");
@@ -2167,12 +2435,7 @@ export async function zeroPartnerAccount(partnerId: string) {
       where: { id: partnerId },
       include: {
         transactions: {
-          select: {
-            id: true,
-            amount: true,
-            kind: true,
-            note: true
-          }
+          select: { id: true }
         }
       }
     });
@@ -2181,157 +2444,113 @@ export async function zeroPartnerAccount(partnerId: string) {
       return { success: false, error: "الشريك غير موجود" };
     }
 
-    // 1. تصفير وإغلاق حسابات الزبائن (customer) والمحلات والموردين والمناديب بموازنة صريحة دون التعديل على أحداث الطلبيات الأخرى
-    // يتم التصفير بنظافة وشفافية على مستوى الحساب المالي دون توليد أحداث تسديد هجينة بالخطأ
+    const now = new Date();
 
-    // 2. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
+    // 1. إذا كان شريكاً من نوع محل (shop): تسديد كافة طلباته النشطة السابقة دفعة واحدة بسرعة فائقة
     if (partner.type === "shop" && partner.externalId) {
-      const unpaidOrders = await prisma.order.findMany({
-        where: {
-          shopId: partner.externalId,
-          routeMode: { not: "double" },
-          shopCostPaidAt: null,
-          status: { in: ["delivered", "archived"] },
-          orderSubtotal: { gt: 0 }
-        },
-        include: {
-          moneyEvents: {
-            where: { kind: "pickup_out", deletedAt: null }
-          }
-        }
-      });
-
-      for (const order of unpaidOrders) {
-        const subtotal = Number(order.orderSubtotal || 0);
-        const pickupPaid = order.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
-        const remaining = subtotal - pickupPaid;
-
-        if (remaining > 0) {
-          await prisma.orderCourierMoneyEvent.create({
-            data: {
-              orderId: order.id,
-              courierId: null,
-              kind: "pickup_out",
-              amountDinar: new Decimal(remaining),
-              expectedDinar: order.orderSubtotal,
-              matchesExpected: true,
-              mismatchReason: "",
-              mismatchNote: "تم التسديد وتصفية الحساب تلقائياً عبر عملية تصفير الحساب في دفتر الديون",
-            }
-          });
-        }
-      }
-    }
-
-    // 3. إذا كان شريكا من نوع مورد (supplier): تسديد كافة طلبات المورد في preparerShoppingJson
-    if (partner.type === "supplier" && partner.externalId) {
-      const orders = await prisma.order.findMany({
-        where: { preparerShoppingJson: { contains: partner.externalId } },
-        select: { id: true, preparerShoppingJson: true }
-      });
-
-      for (const o of orders) {
-        let json: any = {};
-        try {
-          json = typeof o.preparerShoppingJson === "string" ? JSON.parse(o.preparerShoppingJson) : o.preparerShoppingJson || {};
-        } catch {
-          json = {};
-        }
-
-        if (json.supplierId === partner.externalId && !json.supplierPaid) {
-          json.supplierPaid = true;
-          json.supplierPaidAt = new Date().toISOString();
-          await prisma.order.update({
-            where: { id: o.id },
-            data: {
-              preparerShoppingJson: JSON.stringify(json)
-            }
-          });
-        }
-      }
-    }
-
-    // 4. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
-    if (partner.type === "courier" && partner.externalId) {
-      const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
-      const adminTotalNum = adminTotal.toNumber();
-      if (adminTotalNum !== 0) {
-        const direction = adminTotalNum > 0 ? CourierWalletMiscDirection.give : CourierWalletMiscDirection.take;
-        await prisma.courierWalletMiscEntry.create({
+      try {
+        await prisma.order.updateMany({
+          where: {
+            shopId: partner.externalId,
+            shopCostPaidAt: null,
+            createdAt: { lte: now }
+          },
           data: {
-            courierId: partner.externalId,
-            direction,
-            amountDinar: new Decimal(Math.abs(adminTotalNum)),
-            label: "تسوية وتصفير الحساب عبر دفتر الديون (موازنة تلقائية)"
+            shopCostPaidAt: now
           }
         });
+      } catch (e) {
+        console.error("Shop batch order zero error:", e);
       }
     }
 
-    // 5. تحديث كافة معاملات المصروفات الحالية المعلقة لهذا الشريك لتصبح [مصفّرة] وتنزل في كشف الحساب التاريخي
-    const activeExpenseTxs = await prisma.creditBookTransaction.findMany({
-      where: {
+    // 2. إذا كان شريكاً من نوع مورد (supplier): تسديد طلبات المورد في النظام
+    if (partner.type === "supplier" && partner.externalId) {
+      try {
+        const orders = await prisma.order.findMany({
+          where: { preparerShoppingJson: { contains: partner.externalId } },
+          select: { id: true, preparerShoppingJson: true }
+        });
+        for (const o of orders) {
+          let json: any = {};
+          try {
+            json = typeof o.preparerShoppingJson === "string" ? JSON.parse(o.preparerShoppingJson) : o.preparerShoppingJson || {};
+          } catch {
+            json = {};
+          }
+          if (json.supplierId === partner.externalId && !json.supplierPaid) {
+            json.supplierPaid = true;
+            json.supplierPaidAt = now.toISOString();
+            await prisma.order.update({
+              where: { id: o.id },
+              data: { preparerShoppingJson: JSON.stringify(json) }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Supplier zero error:", e);
+      }
+    }
+
+    // 3. إذا كان شريكاً من نوع مندوب (courier): تصفير تاريخ حساب المندوب
+    if (partner.type === "courier" && partner.externalId) {
+      try {
+        await prisma.courier.update({
+          where: { id: partner.externalId },
+          data: { mandoubTotalsResetAt: now }
+        });
+      } catch (e) {
+        console.error("Courier reset error:", e);
+      }
+    }
+
+    // 4. إذا كان شريكاً من نوع مجهز (preparer): تصفير تاريخ حساب المجهز
+    if (partner.type === "preparer" && partner.externalId) {
+      try {
+        await prisma.companyPreparer.update({
+          where: { id: partner.externalId },
+          data: { orderListResetAt: now }
+        });
+      } catch (e) {
+        console.error("Preparer reset error:", e);
+      }
+    }
+
+    // 5. مسح المعاملات اليدوية السابقة لهذا الشريك لضمان نظافة الحساب
+    await prisma.creditBookTransaction.deleteMany({
+      where: { partnerId: partner.id }
+    });
+
+    // 6. إنشاء قيد تصفير رسمي وواضح في كشف الحساب
+    const zeroTx = await prisma.creditBookTransaction.create({
+      data: {
         partnerId: partner.id,
-        OR: [
-          { kind: "expense" },
-          { note: { contains: "[مصروفات]" } }
-        ],
-        NOT: [
-          { note: { contains: "[مصفّرة]" } }
-        ]
+        amount: 0,
+        kind: "took",
+        note: "تصفير وتصفية الرصيد الكلي بالكامل (0 د.ع) [مصفّرة]",
+        createdAt: now,
       }
     });
 
-    for (const expTx of activeExpenseTxs) {
-      const currentNote = expTx.note || "[مصروفات]";
-      const updatedNote = currentNote.includes("[مصفّرة]")
-        ? currentNote
-        : `${currentNote} [مصفّرة]`;
-      await prisma.creditBookTransaction.update({
-        where: { id: expTx.id },
-        data: { note: updatedNote }
-      });
-    }
-
-    // 6. حساب الرصيد الكلي الصافي للشريك بعد كافة التسويات لضمان تصفيره إلى 0.00 د.ع تماماً
-    const partnerDetails = await getPartnerDetails(partnerId);
-    const netCurrentBalance = partnerDetails ? partnerDetails.balance : 0;
-
-    if (netCurrentBalance !== 0) {
-      const zeroAmt = Math.abs(netCurrentBalance);
-      const zeroKind = netCurrentBalance > 0 ? "took" : "gave";
-      const zeroNote = "تصفير وتصفية الرصيد الكلي بالكامل (موازنة تلقائية)";
-
-      const newTx = await prisma.creditBookTransaction.create({
-        data: {
-          partnerId: partner.id,
-          amount: zeroAmt,
-          kind: zeroKind,
-          note: zeroNote,
-          createdAt: new Date(),
-        }
-      });
-
-      try {
-        const { logTransactionAuthor } = await import("@/lib/transaction-logger");
-        await logTransactionAuthor(newTx.id, "create", "النظام");
-      } catch (logErr) {
-        console.error("Failed to log zero transaction author:", logErr);
-      }
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(zeroTx.id, "create", "النظام");
+    } catch (logErr) {
+      console.error("Failed to log zero transaction author:", logErr);
     }
 
     // تحديث تاريخ تعديل الشريك
     await prisma.creditBookPartner.update({
       where: { id: partnerId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: now }
     });
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in zeroPartnerAccount:", error);
-    return { success: false, error: "حدث خطأ أثناء تصفير الحساب" };
+    return { success: false, error: error?.message || "حدث خطأ أثناء تصفير الحساب" };
   }
 }
 
@@ -3182,10 +3401,25 @@ export async function resetAndZeroCreditBookCompletely() {
       }
     });
 
-    // 2. حذف كافة المعاملات السابقة في دفتر الديون
+    // 2. حذف كافة المعاملات السابقة في دفتر الديون بالكامل
     await prisma.creditBookTransaction.deleteMany({});
 
-    // 3. حذف كافة الحسابات اليدوية غير المربوطة بالنظام (مثل حساب "الموجود")
+    // 3. تسديد كافة طلبات المحلات السابقة دفعة واحدة بسرعة فائقة لتصفيرها
+    try {
+      await prisma.order.updateMany({
+        where: {
+          shopCostPaidAt: null,
+          createdAt: { lte: now }
+        },
+        data: {
+          shopCostPaidAt: now
+        }
+      });
+    } catch (e) {
+      console.error("Batch update shopCostPaidAt failed:", e);
+    }
+
+    // 4. حذف كافة الحسابات اليدوية غير المربوطة بالنظام (مثل حساب الموجود)
     await prisma.creditBookPartner.deleteMany({
       where: {
         externalId: null
