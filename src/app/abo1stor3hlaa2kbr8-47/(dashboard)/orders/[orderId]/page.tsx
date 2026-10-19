@@ -298,6 +298,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           secondPhoneProfile={safeSecondProfile}
           customerDebt={typeof customerDebtVal === "number" ? customerDebtVal : null}
           customWaButtons={safeWaButtonSettings}
+          isAdmin={true}
+          adminEditHref={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
         />
       </div>
     );

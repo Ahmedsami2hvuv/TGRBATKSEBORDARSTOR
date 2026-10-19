@@ -71,6 +71,8 @@ type Props = {
   isModal?: boolean;
   customerDebt?: number | null;
   customWaButtons?: any[];
+  isAdmin?: boolean;
+  adminEditHref?: string;
 };
 
 export function WasliOrderDetailView({
@@ -88,6 +90,8 @@ export function WasliOrderDetailView({
   isModal = false,
   customerDebt = null,
   customWaButtons,
+  isAdmin = false,
+  adminEditHref,
 }: Props) {
   // حالة المودالات والمعاينة
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -422,7 +426,12 @@ export function WasliOrderDetailView({
   // تحديد دور المستخدم بدقة استناداً للمسار والصلاحية
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
   const isMandoubView = pathname.includes("/mandoub") || Boolean(viewerCourierId && viewerCourierId !== "admin");
-  const currentUserRole: "admin" | "mandoub" = isMandoubView ? "mandoub" : "admin";
+  const isAdminUser = Boolean(
+    isAdmin ||
+    auth?.c === "admin" ||
+    (!isMandoubView && pathname.includes("/abo1stor3hlaa2kbr8-47"))
+  );
+  const currentUserRole: "admin" | "mandoub" = isAdminUser ? "admin" : (isMandoubView ? "mandoub" : "admin");
   const currentOrderStatus = (order.status || "").toLowerCase().trim();
 
   // خريطة مرادفات حالات الطلب (عربي + إنجليزي) لضمان عدم فشل المطابقة
@@ -804,21 +813,31 @@ export function WasliOrderDetailView({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* زر تعديل الطلب (يفتح نافذة تعديل بيانات الطلب الخاصة بالمندوب) */}
-              <button
-                type="button"
-                onClick={() => {
-                  window.dispatchEvent(
-                    new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, {
-                      detail: { orderId: order.id },
-                    })
-                  );
-                }}
-                className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
-                title="تعديل بيانات الطلب"
-              >
-                <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
-              </button>
+              {/* زر تعديل الطلب (للإدارة يفتح صفحة تعديل الطلب الشاملة، وللمندوب يفتح نافذة التعديل السريع) */}
+              {isAdminUser ? (
+                <Link
+                  href={adminEditHref || `/abo1stor3hlaa2kbr8-47/orders/${order.id}/edit`}
+                  className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                  title="تعديل بيانات الطلب (لوحة الإدارة)"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, {
+                        detail: { orderId: order.id },
+                      })
+                    );
+                  }}
+                  className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
+                  title="تعديل بيانات الطلب"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
+                </button>
+              )}
 
               {/* زر إغلاق الطلب (إكس أحمر) */}
               <button
@@ -1953,22 +1972,24 @@ export function WasliOrderDetailView({
         </main>
       </div>
 
-      {/* مودال تعديل بيانات الزبون السريع */}
-      <MandoubCustomerEditForm
-        orderId={order.id}
-        defaultOrderStatus={order.status}
-        defaultCustomerPhone={order.customerPhone}
-        defaultCustomerLocationUrl={currentCustLocation}
-        defaultCustomerLandmark={landmarkVal}
-        defaultAlternatePhone={order.alternatePhone || ""}
-        isDoubleRoute={isDoubleRoute}
-        defaultSecondCustomerPhone={(order as any).secondCustomerPhone || ""}
-        defaultSecondCustomerLocationUrl={(order as any).secondCustomerLocationUrl || ""}
-        defaultSecondCustomerLandmark={(order as any).secondCustomerLandmark || ""}
-        defaultSecondAlternatePhone={(order as any).secondAlternatePhone || ""}
-        auth={auth}
-        nextUrl={nextUrl}
-      />
+      {/* مودال تعديل بيانات الزبون السريع (خاص بالمندوب فقط ولا يظهر للإدارة) */}
+      {!isAdminUser && (
+        <MandoubCustomerEditForm
+          orderId={order.id}
+          defaultOrderStatus={order.status}
+          defaultCustomerPhone={order.customerPhone}
+          defaultCustomerLocationUrl={currentCustLocation}
+          defaultCustomerLandmark={landmarkVal}
+          defaultAlternatePhone={order.alternatePhone || ""}
+          isDoubleRoute={isDoubleRoute}
+          defaultSecondCustomerPhone={(order as any).secondCustomerPhone || ""}
+          defaultSecondCustomerLocationUrl={(order as any).secondCustomerLocationUrl || ""}
+          defaultSecondCustomerLandmark={(order as any).secondCustomerLandmark || ""}
+          defaultSecondAlternatePhone={(order as any).secondAlternatePhone || ""}
+          auth={auth}
+          nextUrl={nextUrl}
+        />
+      )}
 
       {/* مودال معاينة الصور التفاعلي */}
       {previewImageUrl && (
