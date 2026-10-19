@@ -294,17 +294,52 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* 1. بطاقة الرصيد الكلي الصافي فقط (رقم كبير جداً بدون أي عناوين أو رتوش) */}
-      <div className={`p-4 sm:p-6 rounded-2xl border text-center transition-all shadow-sm flex items-center justify-center ${
+      {/* 1. بطاقة الرصيد الكلي الصافي وتفكيك المبالغ لتوضيح الحسابات بدقة */}
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all shadow-sm flex flex-col items-center justify-center gap-2.5 ${
         netBalance > 0 
-          ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-700" 
+          ? "bg-emerald-50/80 border-emerald-200/90 text-emerald-800" 
           : netBalance < 0 
-            ? "bg-rose-50/70 border-rose-200/80 text-rose-700" 
+            ? "bg-rose-50/80 border-rose-200/90 text-rose-800" 
             : "bg-white border-slate-200 text-slate-700"
       }`}>
-        <span className="text-4xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight">
+        <div className="flex items-center gap-2 text-xs font-black opacity-90">
+          <span>{netBalance < 0 ? "🔴 صافي الديون المستحقة علينا للموردين والمحلات" : netBalance > 0 ? "🟢 صافي الديون لصالحنا في السوق" : "⚪ صافي الدفتر متوازن تماماً"}</span>
+        </div>
+
+        <span className="text-4xl sm:text-5xl font-black tabular-nums tracking-tight">
           {netBalance > 0 ? "+" : ""}{netBalance < 0 ? "-" : ""}{formatDinarAsAlfWithUnit(Math.abs(netBalance))}
         </span>
+
+        {/* تفكيك الأرقام: كم نطلب وكم يطلبونا */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 pt-1 w-full max-w-md">
+          <div className="flex-1 px-3 py-1.5 bg-white/80 dark:bg-slate-900/60 rounded-xl border border-emerald-200 text-center shadow-xs">
+            <div className="text-[10px] font-bold text-slate-500">🟢 نطلبهم في السوق</div>
+            <div className="text-xs sm:text-sm font-black text-emerald-700 tabular-nums">
+              +{formatDinarAsAlfWithUnit(totalWeOwed)}
+            </div>
+          </div>
+
+          <div className="flex-1 px-3 py-1.5 bg-white/80 dark:bg-slate-900/60 rounded-xl border border-rose-200 text-center shadow-xs">
+            <div className="text-[10px] font-bold text-slate-500">🔴 يطلبونا (موردين ومحلات)</div>
+            <div className="text-xs sm:text-sm font-black text-rose-700 tabular-nums">
+              -{formatDinarAsAlfWithUnit(totalWeOwe)}
+            </div>
+          </div>
+        </div>
+
+        {/* زر سريع لكشف من يطلبنا فوراً في القائمة بالأسفل */}
+        {totalWeOwe > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setBalanceFilter("we_owe");
+              setSelectedType("all");
+            }}
+            className="mt-1 px-3.5 py-1 text-[11px] font-black text-rose-700 hover:text-rose-800 bg-white hover:bg-rose-100/60 rounded-xl border border-rose-200/80 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🔍 اضغط هنا لكشف وتفصيل من يطلبنا بالاسم والمبلغ</span>
+          </button>
+        )}
       </div>
 
       {/* 2. شريط البحث والخيارات المنظم */}
