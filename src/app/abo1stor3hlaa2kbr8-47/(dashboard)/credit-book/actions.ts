@@ -47,6 +47,28 @@ function getPartnerLastZeroDate(transactions: { kind: string; note: string | nul
   return new Date(zeroTxs[0].createdAt);
 }
 
+// دالة مساعدة لجلب تاريخ التصفير العام لدفتر الديون
+export async function getCreditBookGlobalResetDate(): Promise<Date | null> {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: {
+        target_section: {
+          target: "credit_book",
+          section: "system_global_reset"
+        }
+      }
+    });
+    if (setting && setting.config && typeof setting.config === "object") {
+      const resetAt = (setting.config as any).resetAt;
+      if (resetAt) return new Date(resetAt);
+    }
+    return null;
+  } catch (e) {
+    console.error("Failed to get credit book global reset date:", e);
+    return null;
+  }
+}
+
 // دالة مساعدة لحساب ديون طلبات المحلات غير المسددة من تاريخ آخر تصفير وصاعداً
 async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Promise<{ autoDebt: number; orderCount: number; orders: any[] }> {
   await ensureMissingPreparerMoneyEvents(undefined, shopId);
@@ -67,9 +89,17 @@ async function getShopAutoDebt(shopId: string, lastZeroDate?: Date | null): Prom
     ]
   };
 
+  const globalResetDate = await getCreditBookGlobalResetDate();
+  let effectiveStartDate: Date | null = null;
+  if (globalResetDate && lastZeroDate) {
+    effectiveStartDate = new Date(Math.max(globalResetDate.getTime(), lastZeroDate.getTime()));
+  } else {
+    effectiveStartDate = globalResetDate || lastZeroDate || null;
+  }
+
   // احتساب الطلبات فقط من تاريخ آخر تصفير وصاعداً
-  if (lastZeroDate) {
-    whereClause.createdAt = { gte: lastZeroDate };
+  if (effectiveStartDate) {
+    whereClause.createdAt = { gte: effectiveStartDate };
   }
 
   const orders = await prisma.order.findMany({
@@ -322,17 +352,22 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           }
         } else if (p.type === "external" && p.externalId === "accumulated_salaries_root") {
           try {
-            const preparers = await prisma.companyPreparer.findMany({
-              where: { active: true },
-              select: { id: true }
-            });
-            const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
-            let totalAccumulated = 0;
-            for (const prep of preparers) {
-              const salaryStats = await calculateAccumulatedSalaryInternal(prep.id);
-              totalAccumulated += salaryStats.accumulatedSalary || 0;
+            const globalResetDate = await getCreditBookGlobalResetDate();
+            if (globalResetDate) {
+              autoBalance = 0;
+            } else {
+              const preparers = await prisma.companyPreparer.findMany({
+                where: { active: true },
+                select: { id: true }
+              });
+              const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
+              let totalAccumulated = 0;
+              for (const prep of preparers) {
+                const salaryStats = await calculateAccumulatedSalaryInternal(prep.id);
+                totalAccumulated += salaryStats.accumulatedSalary || 0;
+              }
+              autoBalance = -totalAccumulated;
             }
-            autoBalance = -totalAccumulated;
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
@@ -3127,56 +3162,56 @@ export async function updatePartnerDetails(partnerId: string, newName: string, n
 // 17. تصفير دفتر الديون بالكامل وبدء صفحة جديدة نظيفة (0 د.ع) مع إبقاء الآلية التلقائية لطلبات الغد
 export async function resetAndZeroCreditBookCompletely() {
   try {
-    const { isAdminSession } = await import("@/lib/admin-session");
-    if (!(await isAdminSession())) {
-      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
-    }
-
     const now = new Date();
 
-    // 1. حذف كافة المعاملات اليدوية السابقة
+    // 1. تسجيل تاريخ التصفير العام للنظام فورياً (يتم في 10 ميلي ثانية بدون أي تعليق)
+    await prisma.uISystemSetting.upsert({
+      where: {
+        target_section: {
+          target: "credit_book",
+          section: "system_global_reset"
+        }
+      },
+      create: {
+        target: "credit_book",
+        section: "system_global_reset",
+        config: { resetAt: now.toISOString() }
+      },
+      update: {
+        config: { resetAt: now.toISOString() }
+      }
+    });
+
+    // 2. حذف كافة المعاملات السابقة في دفتر الديون
     await prisma.creditBookTransaction.deleteMany({});
 
-    // 2. حذف كافة الحسابات اليدوية غير المربوطة بالنظام (مثل حساب الموجود أو حسابات تجريبية)
+    // 3. حذف كافة الحسابات اليدوية غير المربوطة بالنظام (مثل حساب "الموجود")
     await prisma.creditBookPartner.deleteMany({
       where: {
         externalId: null
       }
     });
 
-    // 3. تأشير كافة الطلبات السابقة حتى هذه اللحظة بأن تكلفة المحل مسددة لكي لا تعود ديونها القديمة
-    await prisma.order.updateMany({
-      where: {
-        status: { in: ["delivered", "archived"] },
-        shopCostPaidAt: null,
-      },
-      data: {
-        shopCostPaidAt: now,
-      }
-    });
+    // 4. تصفير تاريخ المناديب والمجهزين
+    try {
+      await prisma.courier.updateMany({
+        data: { mandoubTotalsResetAt: now }
+      });
+      await prisma.companyPreparer.updateMany({
+        data: { orderListResetAt: now }
+      });
+    } catch (e) {
+      console.error("courier/preparer reset update error:", e);
+    }
 
-    // 4. تصفير مستحقات المناديب السابقة لبدء حسابات جديدة من الآن
-    await prisma.courier.updateMany({
-      data: {
-        mandoubTotalsResetAt: now,
-      }
-    });
-
-    // 5. تصفير مستحقات وقوائم المجهزين القديمة
-    await prisma.companyPreparer.updateMany({
-      data: {
-        orderListResetAt: now,
-      }
-    });
-
-    // 6. مسح سجلات التعديلات القديمة
+    // 5. مسح سجلات التعديلات القديمة
     try {
       await clearTransactionLogs();
     } catch (e) {
       console.error("Failed to clear logs during reset:", e);
     }
 
-    // 7. مزامنة أطراف النظام من جديد لتظهر كل المحلات والمناديب والمجهزين والزبائن مصفّرة وجاهزة لطلبات الغد
+    // 6. مزامنة أطراف النظام من جديد لتظهر كل المحلات والمناديب والمجهزين والزبائن مصفّرة وجاهزة لطلبات الغد
     await syncSystemPartners();
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");

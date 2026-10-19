@@ -260,12 +260,16 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
       return;
     }
     startTransition(async () => {
-      const res = await resetAndZeroCreditBookCompletely();
-      if (res.success) {
-        alert("✅ تم تصفير دفتر الديون بالكامل بنجاح!\nالدفتر الآن مصفّر ونظيف (0 د.ع)، والآلية التلقائية جاهزة وشغالة لطلبات الغد.");
-        refreshList();
-      } else {
-        alert(res.error || "فشل تصفير الدفتر");
+      try {
+        const res = await resetAndZeroCreditBookCompletely();
+        if (res && res.success) {
+          alert("✅ تم تصفير دفتر الديون بالكامل بنجاح!\nالدفتر الآن مصفّر ونظيف (0 د.ع)، والآلية التلقائية جاهزة وشغالة لطلبات الغد.");
+          window.location.reload();
+        } else {
+          alert(res?.error || "فشل تصفير الدفتر");
+        }
+      } catch (err: any) {
+        alert(err?.message || "حدث خطأ أثناء الاتصال بالخادم");
       }
     });
   };
