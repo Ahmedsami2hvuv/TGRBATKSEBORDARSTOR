@@ -603,11 +603,21 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     setEditDetailsError("");
                     setShowEditDetailsModal(true);
                   }}
-                  className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-indigo-605 hover:bg-slate-100 rounded-xl transition"
+                  className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition"
                   title="تعديل الاسم ورقم الهاتف"
                 >
                   ✏️
                 </button>
+
+                {Boolean(partner.phone && partner.phone.trim()) && (
+                  <a
+                    href={`tel:${partner.phone}`}
+                    className="inline-flex items-center justify-center p-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition shadow-xs text-xs"
+                    title={`رقم الهاتف متوفر: ${partner.phone} (اضغط للاتصال)`}
+                  >
+                    📞
+                  </a>
+                )}
 
                 {showQuickRename && (
                   <button
@@ -625,26 +635,24 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
               </>
             )}
           </h2>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-row items-center gap-2 mt-2.5 w-full max-w-sm">
             {getProfileLink(partner.type, partner.externalId) && (
               <Link
                 href={getProfileLink(partner.type, partner.externalId)!}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition border border-blue-200/60 shadow-sm"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition border border-blue-200/60 shadow-sm text-center whitespace-nowrap"
                 title="فتح بوابة الشخص بالنظام"
               >
-                👤 فتح بوابة الحساب بالنظام
+                👤 فتح بوابة الحساب
               </Link>
             )}
             <button
               onClick={handleShareWhatsApp}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200/60 shadow-sm"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200/60 shadow-sm text-center whitespace-nowrap"
               title="مشاركة كشف الحساب عبر الواتساب"
             >
-              💬 مشاركة عبر الواتساب
+              💬 مشاركة واتساب
             </button>
           </div>
-          <p className="text-sm text-slate-500 font-bold mt-1.5">رقم الهاتف: {partner.phone || "غير متوفر"}</p>
-          <p className="text-xs text-slate-400 font-medium mt-1">تاريخ الإنشاء: {new Date(partner.createdAt).toLocaleDateString("ar-EG")}</p>
         </div>
 
         <div className="flex flex-col gap-3 w-full md:w-auto">
@@ -1976,6 +1984,16 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 text-right"
                     placeholder="أدخل رقم الهاتف..."
                   />
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <span>📅</span>
+                    <span>تاريخ إنشاء الحساب:</span>
+                  </span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    {partner.createdAt ? new Date(partner.createdAt).toLocaleDateString("ar-EG") : "غير محدد"}
+                  </span>
                 </div>
               </div>
               
