@@ -292,7 +292,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
         }
       }
 
-      const totalBuyDinar = totalBuyAlf * 1000;
+      const totalBuyAmount = totalBuyAlf;
 
       // Check if this supplier has a credit book partner account, if not, create one!
       let cbPartner = await db.creditBookPartner.findUnique({
@@ -343,12 +343,12 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           }
         } else if (!exists) {
           // Record automatic transaction: kind is "took" (أخذت - يطلبنا) because supplier prepared the goods, so we owe them.
-          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyAmount} ألف | المندوب: ${courierName}`;
           
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyDinar,
+              amount: totalBuyAmount,
               kind: "took",
               note: noteText,
             }
@@ -369,11 +369,11 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           });
         } else {
           // تحديث المعاملة الحالية بالقيم والأسعار والملاحظات الجديدة
-          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+          const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyAmount} ألف | المندوب: ${courierName}`;
           await db.creditBookTransaction.update({
             where: { id: exists.id },
             data: {
-              amount: totalBuyDinar,
+              amount: totalBuyAmount,
               note: noteText,
             }
           });
@@ -568,7 +568,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           }
         }
 
-        const totalBuyDinar = totalBuyAlf * 1000;
+        const totalBuyAmount = totalBuyAlf;
         const regionName = order.customerRegion?.name || "غير محدد";
         const orderNumber = order.orderNumber;
         const productsText = productLines.join("، ");
@@ -583,7 +583,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           }
         });
 
-        const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
+        const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyAmount} ألف | المندوب: ${courierName}`;
 
         // لا تُنشأ/تُبقى معاملة مورد بسعر صفر.
         if (totalBuyAlf <= 0) {
@@ -594,7 +594,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyDinar,
+              amount: totalBuyAmount,
               kind: "took",
               note: noteText,
               createdAt: order.createdAt,
@@ -608,11 +608,11 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
             console.error("Failed to log transaction creator as System:", logErr);
           }
         } else {
-          if (exists.note !== noteText || Number(exists.amount) !== totalBuyDinar) {
+          if (exists.note !== noteText || Number(exists.amount) !== totalBuyAmount) {
             await db.creditBookTransaction.update({
               where: { id: exists.id },
               data: {
-                amount: totalBuyDinar,
+                amount: totalBuyAmount,
                 note: noteText,
               }
             });

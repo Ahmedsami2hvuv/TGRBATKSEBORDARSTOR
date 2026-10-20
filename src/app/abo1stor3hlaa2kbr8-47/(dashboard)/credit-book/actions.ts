@@ -400,14 +400,14 @@ async function getSupplierAutoDebt(supplierId: string, sinceDate?: Date | null):
       productLines.push(p.line || "منتج");
     }
 
-    const orderBuyDinar = orderBuyAlf * 1000;
-    if (orderBuyDinar <= 0) continue;
+    const orderBuyAmount = orderBuyAlf;
+    if (orderBuyAmount <= 0) continue;
 
     const isPaid = Boolean(json.supplierPaid);
 
     autoTransactions.push({
       id: `auto-supplier-order-${o.id}`,
-      amount: orderBuyDinar,
+      amount: orderBuyAmount,
       kind: "took",
       note: `طلب رقم: #${o.orderNumber} | مسواق بضاعة مورد | المنطقة: ${o.customerRegion?.name || "—"} | المنتجات: ${productLines.join("، ")} | المندوب: ${o.courier?.name || "—"}${isPaid ? " [مسددة ✅]" : ""}`,
       createdAt: o.createdAt,
@@ -418,11 +418,11 @@ async function getSupplierAutoDebt(supplierId: string, sinceDate?: Date | null):
     });
 
     if (!isPaid) {
-      totalDue += orderBuyDinar;
+      totalDue += orderBuyAmount;
     } else {
       autoTransactions.push({
         id: `auto-supplier-paid-${o.id}`,
-        amount: orderBuyDinar,
+        amount: orderBuyAmount,
         kind: "gave",
         note: `تسديد قيمة بضاعة الطلب #${o.orderNumber} للمورد`,
         createdAt: json.supplierPaidAt ? new Date(json.supplierPaidAt) : o.createdAt,
@@ -586,8 +586,9 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         p.transactions.forEach((t) => {
           let amt = Number(t.amount);
-          if (p.type === "supplier" && amt > 0 && amt < 500) {
-            amt = amt * 1000;
+          // تصحيح: النظام يتعامل بالألف، وتصحيح أي معاملة سابقة كانت قد ضُربت خطأ بـ 1000
+          if (p.type === "supplier" && amt >= 1000 && t.note && t.note.includes("طلب رقم:")) {
+            amt = amt / 1000;
           }
           const isExp = t.kind === "expense" || (t.note && t.note.includes("[مصروفات]"));
           if (isExp) {
@@ -1493,8 +1494,9 @@ export async function getPartnerDetails(partnerId: string) {
     // حساب المعاملات اليدوية بالدفتر
     const manualTransactions = partner.transactions.map((t) => {
       let amt = Number(t.amount);
-      if (partner.type === "supplier" && amt > 0 && amt < 500) {
-        amt = amt * 1000;
+      // تصحيح: النظام يتعامل بالألف، وتصحيح أي معاملة قديمة كانت قد ضُربت خطأ بـ 1000
+      if (partner.type === "supplier" && amt >= 1000 && t.note && t.note.includes("طلب رقم:")) {
+        amt = amt / 1000;
         prisma.creditBookTransaction.update({
           where: { id: t.id },
           data: { amount: new Decimal(amt) }
