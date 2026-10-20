@@ -585,7 +585,10 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         let latestActivity = new Date(p.updatedAt).getTime();
 
         p.transactions.forEach((t) => {
-          const amt = Number(t.amount);
+          let amt = Number(t.amount);
+          if (p.type === "supplier" && amt > 0 && amt < 500) {
+            amt = amt * 1000;
+          }
           const isExp = t.kind === "expense" || (t.note && t.note.includes("[مصروفات]"));
           if (isExp) {
             // للمحلات والمجهزين والموردين: المصروفات مستحقة لهم علينا (يطلبونا إياها وتزيد ما يطلبونه)
@@ -1489,7 +1492,14 @@ export async function getPartnerDetails(partnerId: string) {
 
     // حساب المعاملات اليدوية بالدفتر
     const manualTransactions = partner.transactions.map((t) => {
-      const amt = Number(t.amount);
+      let amt = Number(t.amount);
+      if (partner.type === "supplier" && amt > 0 && amt < 500) {
+        amt = amt * 1000;
+        prisma.creditBookTransaction.update({
+          where: { id: t.id },
+          data: { amount: new Decimal(amt) }
+        }).catch(() => {});
+      }
       const isExp = t.kind === "expense" || (t.note && t.note.includes("[مصروفات]"));
       if (isExp) {
         // للمحلات والمجهزين والموردين: المصروفات مستحقة لهم علينا (يطلبونا إياها)

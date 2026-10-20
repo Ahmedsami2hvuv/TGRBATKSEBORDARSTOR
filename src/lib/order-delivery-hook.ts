@@ -348,7 +348,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyAlf,
+              amount: totalBuyDinar,
               kind: "took",
               note: noteText,
             }
@@ -373,7 +373,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           await db.creditBookTransaction.update({
             where: { id: exists.id },
             data: {
-              amount: totalBuyAlf,
+              amount: totalBuyDinar,
               note: noteText,
             }
           });
@@ -594,7 +594,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyAlf,
+              amount: totalBuyDinar,
               kind: "took",
               note: noteText,
               createdAt: order.createdAt,
@@ -608,11 +608,11 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
             console.error("Failed to log transaction creator as System:", logErr);
           }
         } else {
-          if (exists.note !== noteText || Number(exists.amount) !== totalBuyAlf) {
+          if (exists.note !== noteText || Number(exists.amount) !== totalBuyDinar) {
             await db.creditBookTransaction.update({
               where: { id: exists.id },
               data: {
-                amount: totalBuyAlf,
+                amount: totalBuyDinar,
                 note: noteText,
               }
             });
