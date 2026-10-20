@@ -5,7 +5,6 @@ import { useActionState, useMemo, useRef, useState, useTransition, useEffect, us
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, reportUnavailableProductsAction, type PreparerActionState } from "@/app/preparer/actions";
-import { suggestFixedPrices } from "@/lib/fixed-prices";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { calculateAutoSellPrice, isMeatProduct, parseQuantityFromLine, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 import { preparerPath } from "@/lib/preparer-portal-nav";
@@ -773,26 +772,6 @@ export function PreparerShoppingDraftEditClient({
     setActualBuyText("");
   }
 
-  function handleAutoPriceMeat(idx: number) {
-    const p = products[idx];
-    if (!p) return;
-    const fixed = suggestFixedPrices(p.line);
-    if (fixed) {
-        const nextProducts = [...products];
-        nextProducts[idx] = { ...p, buyAlf: fixed.buyAlf, sellAlf: fixed.sellAlf, pricedBy: "تسعير تلقائي (لحم)", pricedById: "auto" };
-        setProducts(nextProducts);
-        const nextJson = JSON.stringify(nextProducts.map(pp => ({
-            line: pp.line,
-            buyAlf: pp.buyAlf === "" ? null : pp.buyAlf,
-            sellAlf: pp.sellAlf === "" ? null : pp.sellAlf,
-            pricedBy: pp.pricedBy,
-            pricedById: pp.pricedById,
-            assignedPreparerId: pp.assignedPreparerId,
-            assignedPreparerName: pp.assignedPreparerName,
-        })));
-    }
-  }
-
   function handleSelectPlacesCountAndSubmit(n: number) {
     if (submitPending) return;
     setPlacesCount(n);
@@ -994,10 +973,6 @@ export function PreparerShoppingDraftEditClient({
               key={`${i}-${p.line}`}
               onClick={() => {
                 if (deleteMode) { toggleDeleteProductByIndex(i); return; }
-                if (isMeat) {
-                  if (!priced) handleAutoPriceMeat(i);
-                  return;
-                }
                 if (isAssignedToOther || isPricedByOther) return;
                 setSelectedPriceIndex(i);
                 setPricingLinesText(priced ? `${p.buyAlf}` : "");

@@ -167,10 +167,9 @@ export function calculateAutoSellPrice(
   let profitPerUnit = 0;
 
   // فحص اللحم أو السمك - يضاف 0.5 على كل كيلو/وحدة كحد أدنى للربح
-  const isMeat = isMeatProduct(text);
   const isFish = isFishProduct(text);
 
-  if (isMeat || isFish) {
+  if (isFish) {
     profitPerUnit = 0.5;
   } else {
     // قواعد التسعير العامة بناءً على سعر الوحدة

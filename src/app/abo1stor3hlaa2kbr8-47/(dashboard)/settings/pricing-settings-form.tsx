@@ -25,7 +25,7 @@ export function PricingSettingsForm() {
       .then((data) => {
         // إذا كانت الإعدادات فارغة، نضع القيم الافتراضية من الكود
         const defaultConfig: PricingConfig = {
-          meat_keywords: ["شرح", "مثروم", "عظم", "عضم", "باجه", "شحم", "عصفورة", "عصفوره", "فكاره", "فكارة", "ضلوع", "ريش", "عروق"],
+          meat_keywords: [],
           fish_keywords: [
             "سمك", "ابياح", "بنت السلطان", "بني", "بياح", "جش", "حيسون", "حمار", "حمر", "حمرة", "حمره",
             "خشرة", "خشره", "دوكان", "روبيان", "ربيان", "سمتي", "سمكة", "سلمون", "سلمونة", "سلمونه",
@@ -33,19 +33,13 @@ export function PricingSettingsForm() {
             "عندگ", "عروسة", "عروسه", "غريبة", "غريبه", "كطان", "مزلك", "مزلگ", "ملزك", "نگرور",
             "نكرور", "وحر", "هامور", "سمك حامض", "سمك مشوي", "فاسكر", "ضلع"
           ],
-          meat_prices: {
-            "شرح": { buy: 14.0, sell: 18.0 },
-            "مثروم": { buy: 14.0, sell: 18.0 },
-            "عظم": { buy: 13.0, sell: 16.0 },
-            "فكارة": { buy: 13.0, sell: 16.0 },
-            "عصفورة": { buy: 13.0, sell: 16.0 },
-          },
+          meat_prices: {},
           no_profit_keywords: ["خبز", "خضرة", "خضره", "خظره", "خظرة"]
         };
         setConfig({
-            meat_keywords: data.meat_keywords || defaultConfig.meat_keywords,
+            meat_keywords: Array.isArray(data.meat_keywords) ? data.meat_keywords : defaultConfig.meat_keywords,
             fish_keywords: data.fish_keywords || defaultConfig.fish_keywords,
-            meat_prices: data.meat_prices || defaultConfig.meat_prices,
+            meat_prices: (data.meat_prices && typeof data.meat_prices === "object") ? data.meat_prices : defaultConfig.meat_prices,
             no_profit_keywords: data.no_profit_keywords || defaultConfig.no_profit_keywords,
             store_general_profit: data.store_general_profit !== undefined ? data.store_general_profit : defaultConfig.store_general_profit || 0,
         });

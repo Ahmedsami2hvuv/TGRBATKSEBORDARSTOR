@@ -42,41 +42,7 @@ export function parseQuantityKg(text: string): number | null {
     return null;
 }
 
-export function suggestFixedPrices(text: string) {
-    const t = normalizeText(text).toLowerCase();
-    if (!t) return null;
-    
-    let base = "";
-    if (t.includes("مثروم") || t.includes("مفروم")) base = "مثروم";
-    else if (t.includes("شرح") || t.includes("شرائح")) base = "شرح";
-    else if (t.includes("عظم")) base = "عظم";
-    else if (t.includes("عصفور")) base = "عصفورة";
-    else if (t.includes("فكار")) base = "فكارة";
-    else if (t.includes("باجه") || t.includes("باجة")) base = "باجة";
-    else if (t.includes("شحم")) base = "شحم";
-    else if (t.includes("لحم")) base = "شرح"; // الافتراضي للحم هو شرح إذا لم يحدد
-    else return null;
-
-    // الأسعار الجديدة حسب طلبك
-    const DEFAULT_MEAT_PRICES_PER_KG = {
-        "شرح": { buy: 14.0, sell: 18.0 },
-        "مثروم": { buy: 14.0, sell: 18.0 },
-        "عظم": { buy: 13.0, sell: 16.0 },
-        "فكارة": { buy: 13.0, sell: 16.0 },
-        "عصفورة": { buy: 13.0, sell: 16.0 },
-        "شحم": { buy: 0, sell: 0 }, // سيتم تحديثها لاحقاً
-        "باجة": { buy: 0, sell: 0 }, // سيتم تحديثها لاحقاً
-    };
-
-    const table = DEFAULT_MEAT_PRICES_PER_KG[base as keyof typeof DEFAULT_MEAT_PRICES_PER_KG];
-    if (!table) return null;
-
-    const qty = parseQuantityKg(text) ?? 1.0;
-    
-    return {
-        base,
-        qty_kg: qty,
-        buyAlf: table.buy * qty,
-        sellAlf: table.sell * qty,
-    };
+export function suggestFixedPrices(_text: string) {
+    // تم إلغاء نظام التسعير التلقائي الثابت للحوم بناءً على طلب صاحب المشروع
+    return null;
 }
