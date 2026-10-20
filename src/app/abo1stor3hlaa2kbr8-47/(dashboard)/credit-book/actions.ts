@@ -311,27 +311,129 @@ async function computePreparerMoneyTotalsSince(
 
   const wid = preparer.walletEmployeeId;
   if (wid) {
-    const [miscTake, miscGive, pOut] = await Promise.all([
-      prisma.courierWalletMiscEntry.aggregate({
+    const [miscTake, miscGive, pOut, acceptedTransfers] = await Promise.all([
+      prisma.employeeWalletMiscEntry.aggregate({
         where: { employeeId: wid, deletedAt: null, createdAt: { gte: sinceDate }, direction: CourierWalletMiscDirection.take },
         _sum: { amountDinar: true }
       }),
-      prisma.courierWalletMiscEntry.aggregate({
+      prisma.employeeWalletMiscEntry.aggregate({
         where: { employeeId: wid, deletedAt: null, createdAt: { gte: sinceDate }, direction: CourierWalletMiscDirection.give },
         _sum: { amountDinar: true }
       }),
       prisma.walletPeerTransfer.aggregate({
         where: { fromEmployeeId: wid, status: "pending", createdAt: { gte: sinceDate } },
         _sum: { amountDinar: true }
+      }),
+      prisma.walletPeerTransfer.aggregate({
+        where: { fromEmployeeId: wid, toKind: WalletPeerPartyKind.admin, status: "accepted", createdAt: { gte: sinceDate } },
+        _sum: { amountDinar: true }
       })
     ]);
 
     ward = ward.plus(miscTake._sum.amountDinar ?? new Decimal(0));
-    sader = sader.plus(miscGive._sum.amountDinar ?? new Decimal(0));
+    sader = sader.plus(miscGive._sum.amountDinar ?? new Decimal(0)).plus(acceptedTransfers._sum.amountDinar ?? new Decimal(0));
     pendingOutgoing = pOut._sum.amountDinar ?? new Decimal(0);
   }
 
   return ward.minus(sader).minus(pendingOutgoing).toNumber();
+}
+
+// دالة مساعدة لحساب معاملات وديون المورد التلقائية من مسواق المجهز
+async function getSupplierAutoDebt(supplierId: string, sinceDate?: Date | null): Promise<{ autoDebt: number; orderCount: number; orders: any[]; transactions: any[] }> {
+  const globalResetDate = await getCreditBookGlobalResetDate();
+  let effectiveStartDate: Date | null = null;
+  if (globalResetDate && sinceDate) {
+    effectiveStartDate = new Date(Math.max(globalResetDate.getTime(), sinceDate.getTime()));
+  } else {
+    effectiveStartDate = globalResetDate || sinceDate || null;
+  }
+
+  const whereClause: any = {
+    status: { notIn: ["cancelled"] },
+    preparerShoppingJson: { not: null }
+  };
+
+  if (effectiveStartDate) {
+    whereClause.createdAt = { gte: effectiveStartDate };
+  }
+
+  const orders = await prisma.order.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      orderNumber: true,
+      createdAt: true,
+      status: true,
+      customerRegion: { select: { name: true } },
+      courier: { select: { name: true } },
+      preparerShoppingJson: true
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  let totalDue = 0;
+  const autoTransactions: any[] = [];
+  let orderCount = 0;
+
+  for (const o of orders) {
+    let json: any = {};
+    try {
+      json = typeof o.preparerShoppingJson === "string" ? JSON.parse(o.preparerShoppingJson) : o.preparerShoppingJson || {};
+    } catch {
+      continue;
+    }
+
+    const products = Array.isArray(json.products) ? json.products : [];
+    const supplierProducts = products.filter((p: any) => p && typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId);
+    if (supplierProducts.length === 0) continue;
+
+    orderCount++;
+
+    let orderBuyAlf = 0;
+    const productLines: string[] = [];
+
+    for (const p of supplierProducts) {
+      const effectiveCost = (p.actualBuyAlf != null && !isNaN(Number(p.actualBuyAlf)) && Number(p.actualBuyAlf) >= 0)
+        ? Number(p.actualBuyAlf)
+        : Number(p.buyAlf || 0);
+      orderBuyAlf += effectiveCost;
+      productLines.push(p.line || "منتج");
+    }
+
+    const orderBuyDinar = orderBuyAlf * 1000;
+    if (orderBuyDinar <= 0) continue;
+
+    const isPaid = Boolean(json.supplierPaid);
+
+    autoTransactions.push({
+      id: `auto-supplier-order-${o.id}`,
+      amount: orderBuyDinar,
+      kind: "took",
+      note: `طلب رقم: #${o.orderNumber} | مسواق بضاعة مورد | المنطقة: ${o.customerRegion?.name || "—"} | المنتجات: ${productLines.join("، ")} | المندوب: ${o.courier?.name || "—"}${isPaid ? " [مسددة ✅]" : ""}`,
+      createdAt: o.createdAt,
+      updatedAt: o.createdAt,
+      isAuto: true,
+      orderId: o.id,
+      isPaid
+    });
+
+    if (!isPaid) {
+      totalDue += orderBuyDinar;
+    } else {
+      autoTransactions.push({
+        id: `auto-supplier-paid-${o.id}`,
+        amount: orderBuyDinar,
+        kind: "gave",
+        note: `تسديد قيمة بضاعة الطلب #${o.orderNumber} للمورد`,
+        createdAt: json.supplierPaidAt ? new Date(json.supplierPaidAt) : o.createdAt,
+        updatedAt: json.supplierPaidAt ? new Date(json.supplierPaidAt) : o.createdAt,
+        isAuto: true,
+        orderId: o.id
+      });
+    }
+  }
+
+  return { autoDebt: totalDue, orderCount, orders, transactions: autoTransactions };
 }
 
 // دالة لتطهير الحسابات التالفة بسبب تكرار بادئات الحذف
@@ -580,7 +682,16 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           } catch (e) {
             console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
-        } else if (p.type === "shop" || p.type === "deleted_shop" || p.externalId || p.name) {
+        } else if (p.type === "supplier" && p.externalId) {
+          try {
+            const lastZero = getPartnerLastZeroDate(p.transactions);
+            const { autoDebt, orderCount } = await getSupplierAutoDebt(p.externalId, lastZero);
+            autoBalance = -autoDebt;
+            shopOrderCount = orderCount;
+          } catch (e) {
+            console.error(`Failed to get supplier auto debt for ${p.name}:`, e);
+          }
+        } else if ((p.type === "shop" || p.type === "deleted_shop") || (!["courier", "preparer", "supplier", "external"].includes(p.type) && (p.externalId || p.name))) {
           try {
             let targetShopId = p.externalId;
             const cleanName = p.name.replace(/\s*\([^)]*\)\s*$/, "").replace(/[\(\)\[\]]/g, "").trim();
@@ -1020,8 +1131,10 @@ export async function getPartnerDetails(partnerId: string) {
           if (shopIds.length > 0) {
             const prepOrderWhere: any = {
               deletedAt: null,
-              recordedByCompanyPreparerId: partner.externalId,
-              order: { shopId: { in: shopIds } }
+              OR: [
+                { recordedByCompanyPreparerId: partner.externalId },
+                { order: { shopId: { in: shopIds } } }
+              ]
             };
             if (effectiveDate) {
               prepOrderWhere.createdAt = { gte: effectiveDate };
@@ -1188,7 +1301,7 @@ export async function getPartnerDetails(partnerId: string) {
         const prepBaselineDate = new Date(prepEarliestDate - 60000);
 
         const prepDiff = autoBalance - prepAutoSum;
-        if (Math.abs(prepDiff) > 0.001) {
+        if (!effectiveDate && Math.abs(prepDiff) > 0.001) {
           autoTransactions.push({
             id: `auto-preparer-adjust-${partner.id}`,
             partnerId: partner.id,
@@ -1202,6 +1315,15 @@ export async function getPartnerDetails(partnerId: string) {
         }
       } catch (e) {
         console.error("Error fetching preparer auto transactions:", e);
+      }
+    } else if (partner.type === "supplier" && partner.externalId) {
+      try {
+        const lastZero = getPartnerLastZeroDate(partner.transactions);
+        const { autoDebt, orderCount, transactions: suppTransactions } = await getSupplierAutoDebt(partner.externalId, lastZero);
+        autoBalance = -autoDebt;
+        autoTransactions.push(...suppTransactions);
+      } catch (e) {
+        console.error(`Failed to get supplier auto transactions for ${partner.name}:`, e);
       }
     } else if (partner.type === "external" && partner.externalId === "accumulated_salaries_root") {
       try {
@@ -1232,7 +1354,7 @@ export async function getPartnerDetails(partnerId: string) {
       } catch (e) {
         console.error("Error compiling accumulated salaries for root partner:", e);
       }
-    } else if (partner.type === "shop" || partner.type === "deleted_shop" || partner.externalId || partner.name) {
+    } else if ((partner.type === "shop" || partner.type === "deleted_shop") || (!["courier", "preparer", "supplier", "external"].includes(partner.type) && (partner.externalId || partner.name))) {
       try {
         let targetShopId = partner.externalId;
         const cleanName = partner.name
@@ -2478,7 +2600,9 @@ export async function zeroPartnerAccount(partnerId: string) {
           } catch {
             json = {};
           }
-          if (json.supplierId === partner.externalId && !json.supplierPaid) {
+          const products = Array.isArray(json.products) ? json.products : [];
+          const hasSupplierProducts = products.some((p: any) => p && typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === partner.externalId);
+          if ((hasSupplierProducts || json.supplierId === partner.externalId) && !json.supplierPaid) {
             json.supplierPaid = true;
             json.supplierPaidAt = now.toISOString();
             await prisma.order.update({
