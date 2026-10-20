@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import type { MandoubRow } from "./mandoub-order-table";
 import { formatDinarAsAlf } from "@/lib/money-alf";
+import { getBaghdadDayGroupInfo } from "@/lib/baghdad-time";
 
 type WasliThemeBoardProps = {
   rows: MandoubRow[];
@@ -107,6 +108,14 @@ function extractCardDisplayPrice(r: MandoubRow): string {
   }
 
   return "0";
+}
+
+// دالة لتنسيق عدد الطلبات باللغة العربية بأسلوب راقي
+function formatOrderCountArabic(count: number): string {
+  if (count === 1) return "طلب واحد";
+  if (count === 2) return "طلبان";
+  if (count >= 3 && count <= 10) return `${count} طلبات`;
+  return `${count} طلب`;
 }
 
 // دالة تحويل الرقم العراقي إلى صيغة واتساب الدولية المضمونة
@@ -287,6 +296,56 @@ export function WasliThemeBoard({
     if (activeFilter === "all") return rows;
     return rows.filter((r) => r.orderStatus === activeFilter);
   }, [rows, activeFilter]);
+
+  // تجميع الطلبات حسب الأيام بتوقيت بغداد (طلبات اليوم، طلبات أمس، طلبات الأيام السابقة)
+  const dayGroups = useMemo(() => {
+    type DayGroup = {
+      key: string;
+      title: string;
+      dateStr: string;
+      isToday: boolean;
+      isYesterday: boolean;
+      rows: MandoubRow[];
+    };
+
+    const map = new Map<string, DayGroup>();
+    const list: DayGroup[] = [];
+
+    for (const r of displayedRows) {
+      const rawDate = r.createdAt
+        ? typeof r.createdAt === "string"
+          ? new Date(r.createdAt)
+          : r.createdAt
+        : null;
+
+      const groupInfo = rawDate && !isNaN(rawDate.getTime())
+        ? getBaghdadDayGroupInfo(rawDate)
+        : {
+            key: r.dateLine || "other",
+            title: r.dateLine ? `طلبات ${r.dateLine}` : "طلبات أخرى",
+            dateStr: "",
+            isToday: false,
+            isYesterday: false,
+          };
+
+      let existing = map.get(groupInfo.key);
+      if (!existing) {
+        existing = {
+          key: groupInfo.key,
+          title: groupInfo.title,
+          dateStr: groupInfo.dateStr,
+          isToday: groupInfo.isToday,
+          isYesterday: groupInfo.isYesterday,
+          rows: [],
+        };
+        map.set(groupInfo.key, existing);
+        list.push(existing);
+      }
+      existing.rows.push(r);
+    }
+
+    return list;
+  }, [displayedRows]);
 
   // تاريخ اليوم العربي
   const todayArabic = useMemo(() => {
@@ -661,37 +720,105 @@ export function WasliThemeBoard({
           </div>
         )}
 
-        {/* شريط التاريخ وعدد الطلبات */}
-        <div className="mt-3 h-[40px] rounded-[14px] bg-[#0B2E8C] flex items-center justify-between px-3 shadow-[0_3px_10px_rgba(11,46,140,0.22)] relative overflow-hidden w-full">
-          <div className="absolute inset-0 bg-gradient-to-l from-[#1E4DB7]/30 to-transparent pointer-events-none" />
-          <div className="flex items-center gap-2 relative z-10">
-            <div className="w-5 h-5 rounded-full bg-[#FFC107] flex items-center justify-center shrink-0">
-              <Calendar className="w-3 h-3 text-[#0B2E8C]" strokeWidth={2.5} />
+        {displayedRows.length === 0 ? (
+          <div className="mt-3 rounded-[18px] bg-white border border-[#D0DDFB] p-8 text-center shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-[#F0F4FF] mx-auto flex items-center justify-center mb-2">
+              <Package className="w-6 h-6 text-[#1E4DB7]/60" />
             </div>
-            <span className="font-bold text-white text-[12px]">
-              {todayArabic}
-            </span>
-            <span className="bg-white/15 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-              ({displayedRows.length} طلب)
-            </span>
+            <p className="font-bold text-[14px] text-[#0B2E8C]">لا توجد طلبات في هذا العرض</p>
+            <p className="text-[12px] text-[#1E4DB7]/60 mt-1">تأكد من الفلترة أو التبويب الحالي</p>
           </div>
-          <div className="flex items-center gap-1 relative z-10 text-white/70">
-            <Clock className="w-3.5 h-3.5" />
-          </div>
-        </div>
+        ) : (
+          <div className="mt-3 space-y-5 w-full">
+            {dayGroups.map((group) => {
+              const isToday = group.isToday;
+              const isYesterday = group.isYesterday;
 
-        {/* قائمة بطاقات الطلبات بستايل وصلي */}
-        <div className="mt-2.5 space-y-2.5 w-full">
-          {displayedRows.length === 0 ? (
-            <div className="rounded-[18px] bg-white border border-[#D0DDFB] p-8 text-center shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-[#F0F4FF] mx-auto flex items-center justify-center mb-2">
-                <Package className="w-6 h-6 text-[#1E4DB7]/60" />
-              </div>
-              <p className="font-bold text-[14px] text-[#0B2E8C]">لا توجد طلبات في هذا العرض</p>
-              <p className="text-[12px] text-[#1E4DB7]/60 mt-1">تأكد من الفلترة أو التبويب الحالي</p>
-            </div>
-          ) : (
-            displayedRows.map((r) => {
+              return (
+                <section key={group.key} className="w-full">
+                  {/* شريط الفاصل الزمني لليوم بثيم وصلي الفاخر */}
+                  <div
+                    className={`h-[42px] rounded-[14px] flex items-center justify-between px-3 relative overflow-hidden w-full select-none ${
+                      isToday
+                        ? "bg-[#0B2E8C] shadow-[0_3px_10px_rgba(11,46,140,0.22)]"
+                        : isYesterday
+                        ? "bg-gradient-to-l from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB] shadow-[0_3px_10px_rgba(30,58,138,0.22)] border border-[#3B82F6]/30"
+                        : "bg-gradient-to-l from-[#0F172A] via-[#1E293B] to-[#334155] shadow-[0_3px_10px_rgba(15,23,42,0.2)] border border-slate-700/40"
+                    }`}
+                  >
+                    {/* لمعة وتأثير إضاءة متدرج */}
+                    <div className="absolute inset-0 bg-gradient-to-l from-white/10 to-transparent pointer-events-none" />
+
+                    {/* الطرف الأيمن: أيقونة التقويم + اسم اليوم وتاريخه + شارة عدد الطلبات */}
+                    <div className="flex items-center gap-2 relative z-10 min-w-0">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-2xs ${
+                          isToday
+                            ? "bg-[#FFC107] text-[#0B2E8C]"
+                            : isYesterday
+                            ? "bg-amber-400 text-[#0B2E8C]"
+                            : "bg-slate-200 text-slate-800"
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </div>
+
+                      {/* عنوان اليوم */}
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="font-extrabold text-white text-[13px] tracking-tight">
+                          {group.title}
+                        </span>
+
+                        {/* التاريخ التفصيلي إذا لم يكن متضمناً في العنوان */}
+                        {group.dateStr && (isToday || isYesterday) && (
+                          <span
+                            className={`text-[11px] font-medium hidden sm:inline-block ${
+                              isToday ? "text-white/80" : "text-amber-200/90"
+                            }`}
+                          >
+                            ({group.dateStr})
+                          </span>
+                        )}
+                      </div>
+
+                      {/* شارة عدد طلبات هذا اليوم */}
+                      <span
+                        className={`text-[11px] font-black px-2.5 py-0.5 rounded-full shrink-0 ${
+                          isToday
+                            ? "bg-white/20 text-white border border-white/25"
+                            : isYesterday
+                            ? "bg-amber-400/25 text-amber-100 border border-amber-300/30"
+                            : "bg-white/15 text-slate-100 border border-white/20"
+                        }`}
+                      >
+                        {formatOrderCountArabic(group.rows.length)}
+                      </span>
+                    </div>
+
+                    {/* الطرف الأيسر: شارة تمييز اليوم/أمس/سابق */}
+                    <div className="flex items-center gap-1.5 relative z-10 shrink-0">
+                      {isToday ? (
+                        <div className="flex items-center gap-1 text-white/80 text-[11px] font-bold">
+                          <Clock className="w-3.5 h-3.5 text-[#FFC107]" />
+                          <span className="hidden xs:inline">اليوم</span>
+                        </div>
+                      ) : isYesterday ? (
+                        <div className="flex items-center gap-1 text-amber-200 text-[11px] font-bold">
+                          <Clock className="w-3.5 h-3.5 text-amber-300" />
+                          <span>البارحة</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-slate-300 text-[11px] font-bold">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>سابق</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* قائمة بطاقات الطلبات لهذا اليوم بالتحديد */}
+                  <div className="mt-2.5 space-y-2.5 w-full">
+                    {group.rows.map((r) => {
               const isDelivering = r.orderStatus === "delivering";
               const isDelivered = r.orderStatus === "delivered";
               const isAssigned = r.orderStatus === "assigned";
@@ -1021,9 +1148,13 @@ export function WasliThemeBoard({
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        </section>
+      );
+    })}
+  </div>
+)}
       </main>
 
       {/* نافذة خيارات الإجراءات المنبثقة (اتصال، واتساب، لوكيشن، صور الباب) */}

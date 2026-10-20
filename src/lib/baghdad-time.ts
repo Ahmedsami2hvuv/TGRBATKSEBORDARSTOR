@@ -27,6 +27,89 @@ export function getBaghdadDateString(dateInput: Date | string | number): string 
   return date.toLocaleDateString("en-US", { timeZone: "Asia/Baghdad" });
 }
 
+export function getBaghdadDateKey(dateInput: Date | string | number): string {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Baghdad",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  const d = parts.find((p) => p.type === "day")?.value;
+  return `${y}-${m}-${d}`;
+}
+
+export function getTodayBaghdadKey(): string {
+  return getBaghdadDateKey(new Date());
+}
+
+export function getYesterdayBaghdadKey(): string {
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return getBaghdadDateKey(yesterday);
+}
+
+export function getBaghdadDayGroupInfo(dateInput: Date | string | number): {
+  key: string;
+  title: string;
+  dateStr: string;
+  isToday: boolean;
+  isYesterday: boolean;
+} {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      key: "unknown",
+      title: "طلبات أخرى",
+      dateStr: "",
+      isToday: false,
+      isYesterday: false,
+    };
+  }
+
+  const key = getBaghdadDateKey(date);
+  const todayKey = getTodayBaghdadKey();
+  const yesterdayKey = getYesterdayBaghdadKey();
+
+  const dateStr = date.toLocaleDateString("ar-IQ-u-nu-latn", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Baghdad",
+  });
+
+  if (key === todayKey) {
+    return {
+      key,
+      title: "طلبات اليوم",
+      dateStr,
+      isToday: true,
+      isYesterday: false,
+    };
+  }
+
+  if (key === yesterdayKey) {
+    return {
+      key,
+      title: "طلبات أمس",
+      dateStr,
+      isToday: false,
+      isYesterday: true,
+    };
+  }
+
+  return {
+    key,
+    title: `طلبات ${dateStr}`,
+    dateStr,
+    isToday: false,
+    isYesterday: false,
+  };
+}
+
 export function formatBaghdadDateFriendly(dateInput: Date | string | number): string {
   const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
   if (Number.isNaN(date.getTime())) return "";
