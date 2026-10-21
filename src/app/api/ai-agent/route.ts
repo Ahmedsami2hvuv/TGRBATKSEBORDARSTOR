@@ -18,13 +18,6 @@ import {
   type DatabaseAction,
 } from '@/lib/ai-database-agent'
 
-const GEMINI_KEYS = [
-  process.env.GEMINI_API_KEY,
-  process.env.GEMINI_API_KEY_2,
-  process.env.GEMINI_API_KEY_3,
-  process.env.NEXT_PUBLIC_GEMINI_KEY
-].filter(Boolean) as string[]
-
 // دالة مساعدة لجلب أو إنشاء منطقة
 async function getOrCreateRegion(regionName?: string) {
   if (regionName && regionName.trim()) {
@@ -639,16 +632,6 @@ async function legacyPost(req: Request) {
 }
 `
 
-    const dbKeys = await prisma.geminiApiKey.findMany({
-      where: { active: true },
-      orderBy: { updatedAt: 'desc' }
-    }).catch(() => [])
-
-    const activeKeys = [
-      ...dbKeys.map(k => k.key),
-      ...GEMINI_KEYS
-    ].filter(Boolean)
-
     let brain: {
       needs_ui?: boolean
       action_type?: string
@@ -663,30 +646,17 @@ async function legacyPost(req: Request) {
       response?: string
       thinking?: string
     } | null = null
-    const models = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
 
-    for (const key of activeKeys) {
-      if (!key) continue
-      for (const model of models) {
-        try {
-          const gemRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
-          })
-
-          if (!gemRes.ok) continue
-          const gemJson = await gemRes.json()
-          const raw = gemJson.candidates?.[0]?.content?.parts?.[0]?.text || ""
-          const firstBrace = raw.indexOf('{')
-          const lastBrace = raw.lastIndexOf('}')
-          if (firstBrace !== -1 && lastBrace !== -1) {
-            brain = JSON.parse(raw.substring(firstBrace, lastBrace + 1))
-            break
-          }
-        } catch {}
+    try {
+      const providers = await getAiProviders()
+      const raw = await generateWithProviders(providers, systemPrompt, prompt)
+      const firstBrace = raw.indexOf('{')
+      const lastBrace = raw.lastIndexOf('}')
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        brain = JSON.parse(raw.substring(firstBrace, lastBrace + 1))
       }
-      if (brain) break
+    } catch (error) {
+      console.error("[ai-agent] No non-Gemini provider could generate a plan")
     }
 
     if (!brain) {
@@ -827,10 +797,7 @@ function parseModelText(text: string): string {
 
 async function requestAiText(provider: AiProvider, system: string, prompt: string): Promise<string> {
   const name = provider.provider.toLowerCase()
-  const isGemini = name === "gemini"
-  const endpoint = isGemini
-    ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(provider.apiKey)}`
-    : name === "openai"
+  const endpoint = name === "openai"
       ? "https://api.openai.com/v1/chat/completions"
       : name === "deepseek"
         ? "https://api.deepseek.com/chat/completions"
@@ -839,13 +806,7 @@ async function requestAiText(provider: AiProvider, system: string, prompt: strin
           : null
 
   if (!endpoint) throw new Error(`مزود الذكاء "${name}" غير مدعوم.`)
-  const payload = isGemini
-    ? {
-        system_instruction: { parts: [{ text: system }] },
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json" },
-      }
-    : {
+  const payload = {
         model: name === "openai" ? "gpt-4o-mini" : name === "deepseek" ? "deepseek-chat" : "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: system },
@@ -857,7 +818,7 @@ async function requestAiText(provider: AiProvider, system: string, prompt: strin
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(isGemini ? {} : { Authorization: `Bearer ${provider.apiKey}` }),
+      Authorization: `Bearer ${provider.apiKey}`,
     },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(25000),
@@ -868,9 +829,7 @@ async function requestAiText(provider: AiProvider, system: string, prompt: strin
   }
 
   const result = await response.json()
-  const text = isGemini
-    ? result.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("")
-    : result.choices?.[0]?.message?.content
+  const text = result.choices?.[0]?.message?.content
   if (typeof text !== "string" || !text.trim()) {
     throw new Error("محرك الذكاء الاصطناعي لم يرجع إجابة.");
   }
@@ -948,25 +907,6 @@ async function getAiProviders(): Promise<AiProvider[]> {
     .filter((config) => Boolean(config.apiKey))
     .map((config) => ({ id: config.id, provider: config.provider, apiKey: config.apiKey }))
 
-  const geminiKeys = await prisma.geminiApiKey.findMany({
-    where: { active: true },
-    orderBy: { updatedAt: "desc" },
-    select: { key: true },
-  })
-  const usedKeys = new Set(
-    providers.filter((provider) => provider.provider.toLowerCase() === "gemini").map((provider) => provider.apiKey),
-  )
-  for (const key of [
-    ...geminiKeys.map((item) => item.key),
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-  ]) {
-    if (key && !usedKeys.has(key)) {
-      providers.push({ provider: "gemini", apiKey: key })
-      usedKeys.add(key)
-    }
-  }
   return providers
 }
 
