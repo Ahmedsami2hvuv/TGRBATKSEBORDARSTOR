@@ -11,6 +11,7 @@ import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client"
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { syncOrderCourierMoneyExpectations } from "@/lib/order-courier-money-sync";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 
 export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external" | "supplier";
 
@@ -3589,6 +3590,99 @@ export async function resetAndZeroCreditBookCompletely() {
   } catch (error: any) {
     console.error("Error in resetAndZeroCreditBookCompletely:", error);
     return { success: false, error: error.message || "حدث خطأ أثناء تصفير دفتر الديون" };
+  }
+}
+
+/**
+ * مزامنة رصيد المجهز (أو المندوب) في دفتر الديون مع رصيد محفظته الشخصية الفعلي
+ */
+export async function syncPreparerWithWalletBalance(partnerId: string) {
+  try {
+    const partner = await prisma.creditBookPartner.findUnique({
+      where: { id: partnerId },
+    });
+
+    if (!partner) {
+      return { success: false, error: "لم يتم العثور على حساب الشريك" };
+    }
+
+    if (partner.type !== "preparer" && partner.type !== "courier") {
+      return { success: false, error: "المزامنة مع المحفظة متاحة فقط لحسابات المجهزين والمناديب" };
+    }
+
+    if (!partner.externalId) {
+      return { success: false, error: "هذا الحساب غير مربوط بحساب مجهز في النظام" };
+    }
+
+    let targetWalletBalance = 0;
+
+    if (partner.type === "preparer") {
+      const walletTotals = await getPreparerMoneyTotals(partner.externalId);
+      if (!walletTotals) {
+        return { success: false, error: "تعذر جلب بيانات محفظة المجهز من النظام" };
+      }
+      targetWalletBalance = walletTotals.remain.toNumber();
+    } else if (partner.type === "courier") {
+      targetWalletBalance = await computeMandoubWalletRemainAllTimeDinar(partner.externalId);
+    }
+
+    // جلب الرصيد الإجمالي الحالي للشريك في دفتر الديون
+    const currentDetails = await getPartnerDetails(partnerId);
+    if (!currentDetails) {
+      return { success: false, error: "تعذر احتساب الرصيد الحالي للشريك" };
+    }
+
+    const currentBalance = currentDetails.balance;
+    const diff = targetWalletBalance - currentBalance;
+
+    if (Math.abs(diff) < 1) {
+      return {
+        success: true,
+        alreadySynced: true,
+        message: `الرصيد في دفتر الديون مطابق بالفعل لرصيد المحفظة الفعلي (${formatDinarAsAlfWithUnit(Math.abs(targetWalletBalance))})`,
+        targetBalance: targetWalletBalance,
+      };
+    }
+
+    const adjustAmount = Math.round(Math.abs(diff));
+    const kind = diff > 0 ? "gave" : "took";
+    const noteText = `🔄 تسوية ومزامنة تلقائية مع رصيد المحفظة الفعلي (رصيد المحفظة: ${formatDinarAsAlfWithUnit(Math.abs(targetWalletBalance))})`;
+
+    const tx = await prisma.creditBookTransaction.create({
+      data: {
+        partnerId,
+        amount: adjustAmount,
+        kind,
+        note: noteText,
+        createdAt: new Date(),
+      },
+    });
+
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(tx.id, "create");
+    } catch (logErr) {
+      console.error("Failed to log transaction creator for sync:", logErr);
+    }
+
+    await prisma.creditBookPartner.update({
+      where: { id: partnerId },
+      data: { updatedAt: new Date() },
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
+
+    return {
+      success: true,
+      alreadySynced: false,
+      message: `تمت مزامنة الرصيد بنجاح ومطابقته مع المحفظة (${formatDinarAsAlfWithUnit(Math.abs(targetWalletBalance))})`,
+      targetBalance: targetWalletBalance,
+      adjustmentAmount: adjustAmount,
+    };
+  } catch (error: any) {
+    console.error("Error in syncPreparerWithWalletBalance:", error);
+    return { success: false, error: error.message || "حدث خطأ أثناء مزامنة الرصيد" };
   }
 }
 

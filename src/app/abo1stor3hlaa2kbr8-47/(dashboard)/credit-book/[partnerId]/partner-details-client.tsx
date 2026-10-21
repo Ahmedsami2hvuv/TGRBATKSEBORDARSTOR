@@ -19,6 +19,7 @@ import {
   getUnaddedSystemPartners,
   updatePartnerName,
   updatePartnerDetails,
+  syncPreparerWithWalletBalance,
   type PartnerType
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -474,6 +475,27 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   };
 
   // تصفير وتصفية حساب الشريك
+  
+  const [isSyncingWallet, setIsSyncingWallet] = useState(false);
+
+  // مزامنة رصيد المجهز في دفتر الديون مع رصيد محفظته الفعلي
+  const handleSyncWallet = async () => {
+    if (!confirm(`هل أنت متأكد من رغبتك في مزامنة رصيد "${partner.name}" بدفتر الديون مع رصيد محفظته الفعلي الآن؟`)) {
+      return;
+    }
+
+    setIsSyncingWallet(true);
+    const res = await syncPreparerWithWalletBalance(partner.id);
+    setIsSyncingWallet(false);
+
+    if (res.success) {
+      alert(res.message || "تمت المزامنة بنجاح!");
+      refreshPartnerData();
+    } else {
+      alert(res.error || "حدث خطأ أثناء المزامنة مع المحفظة");
+    }
+  };
+
   const handleZeroAccount = async () => {
     if (partner.balance === 0) {
       alert("الحساب مصفّر بالفعل!");
@@ -689,6 +711,17 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                 className="flex-1 py-2 px-3 text-xs font-black text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
               >
                 🧹 تصفير الحساب
+              </button>
+            )}
+                        {/* زر مزامنة مع المحفظة للمجهز والمناديب */}
+            {(partner.type === "preparer" || partner.type === "courier") && (
+              <button
+                onClick={handleSyncWallet}
+                disabled={isSyncingWallet}
+                className="flex-1 py-2 px-3 text-xs font-black text-cyan-900 bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                title="مزامنة وتطابق رصيد دفتر الديون مع رصيد المحفظة الفعلي"
+              >
+                {isSyncingWallet ? "⏳ جاري المزامنة..." : "🔄 مزامنة مع المحفظة"}
               </button>
             )}
             {/* زر كشف الأخطاء والتسويات المخفية */}
