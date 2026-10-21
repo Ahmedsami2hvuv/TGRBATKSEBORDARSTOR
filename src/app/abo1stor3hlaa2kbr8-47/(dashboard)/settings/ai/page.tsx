@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { GeminiKeysForm } from "../gemini-keys-form";
 import { AiProvidersForm } from "./ai-providers-form";
 import { Sparkles, ArrowRight, KeyRound, ShieldCheck } from "lucide-react";
 
@@ -10,17 +9,14 @@ export const metadata = {
 };
 
 export default async function AiSettingsPage() {
-  const [keys, providerKeys] = await Promise.all([
-    prisma.geminiApiKey.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.aIConfig.findMany({
-      where: { provider: { in: ["gemini", "openai", "deepseek", "groq"] } },
+  const providerKeys = await prisma.aIConfig.findMany({
+      where: { provider: { in: ["openai", "deepseek", "groq"] } },
       orderBy: { createdAt: "desc" },
       select: { id: true, provider: true, apiKey: true, label: true, isActive: true },
-    }),
-  ]);
+    });
   const aiAgentProviders = providerKeys.map((item) => ({
     id: item.id,
-    provider: item.provider as "gemini" | "openai" | "deepseek" | "groq",
+    provider: item.provider as "openai" | "deepseek" | "groq",
     label: item.label,
     maskedKey: item.apiKey.length > 8
       ? `${item.apiKey.slice(0, 4)}...${item.apiKey.slice(-4)}`
@@ -82,10 +78,6 @@ export default async function AiSettingsPage() {
         </p>
       </div>
 
-      <h2 className="text-sm font-black text-slate-900">مفاتيح Gemini الاحتياطية</h2>
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <GeminiKeysForm initialKeys={keys} />
-      </div>
     </div>
   );
 }
