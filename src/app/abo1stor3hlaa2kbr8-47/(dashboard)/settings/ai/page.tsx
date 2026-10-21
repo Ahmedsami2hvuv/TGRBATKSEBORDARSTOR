@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AiProvidersForm } from "./ai-providers-form";
-import { Sparkles, ArrowRight, KeyRound, ShieldCheck } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
 
 export const metadata = {
   title: "إعدادات الذكاء الاصطناعي — وصلي",
@@ -58,25 +58,6 @@ export default async function AiSettingsPage() {
         <AiProvidersForm initialProviders={aiAgentProviders} />
       </div>
 
-      {/* تنبيه وشرح سريع */}
-      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs sm:text-sm leading-relaxed space-y-1">
-        <p className="font-bold flex items-center gap-1.5">
-          <KeyRound className="w-4 h-4 text-amber-600" />
-          كيف تحصل على المفاتيح؟
-        </p>
-        <p className="text-amber-800 text-xs">
-          تستطيع الحصول على مفاتيح مجانية وسريعة من موقع{" "}
-          <a
-            href="https://aistudio.google.com/app/apikey"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold underline text-indigo-700 hover:text-indigo-900"
-          >
-            Google AI Studio (اضغط هنا للفتح)
-          </a>
-          . يمكنك إضافة مفتاح واحد أو عدة مفاتيح، وسيقوم النظام بتدويرها تلقائياً لضمان عدم توقف الذكاء الاصطناعي نهائياً!
-        </p>
-      </div>
 
     </div>
   );
