@@ -449,7 +449,6 @@ ${adminExecutionContext}
     for (const config of activeConfigs) {
       try {
         const provider = String(config.provider || "").toLowerCase();
-        const isGemini = false;
         const url =
           provider === "openai"
               ? "https://api.openai.com/v1/chat/completions"
@@ -466,27 +465,19 @@ ${adminExecutionContext}
             parts: undefined
           }));
 
-        const body = isGemini
-          ? {
-              system_instruction: { parts: [{ text: agentSystemPrompt + "\n\nسياق البوابة الحالي: " + JSON.stringify(context) }] },
-              contents: [
-                ...chatHistory.map(h => ({ role: h.role, parts: h.parts })),
-                { role: "user", parts: [{ text: prompt }] }
-              ],
-            }
-          : {
-              model:
-                provider === "openai"
-                  ? "gpt-4o-mini"
-                  : provider === "deepseek"
-                    ? "deepseek-chat"
-                    : "llama-3.3-70b-versatile",
-              messages: [
-                { role: "system", content: agentSystemPrompt + "\n\nسياق البوابة الحالي: " + JSON.stringify(context) },
-                ...chatHistory.map(h => ({ role: h.role, content: h.content })),
-                { role: "user", content: prompt },
-              ],
-            };
+        const body = {
+          model:
+            provider === "openai"
+              ? "gpt-4o-mini"
+              : provider === "deepseek"
+                ? "deepseek-chat"
+                : "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: agentSystemPrompt + "\n\nسياق البوابة الحالي: " + JSON.stringify(context) },
+            ...chatHistory.map(h => ({ role: h.role, content: h.content })),
+            { role: "user", content: prompt },
+          ],
+        };
 
         const response = await fetch(url, {
           method: "POST",
