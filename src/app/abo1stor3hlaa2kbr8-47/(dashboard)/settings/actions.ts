@@ -556,7 +556,7 @@ export async function deleteGeminiApiKeyAction(id: string) {
   }
 }
 
-const AI_AGENT_PROVIDERS = ["gemini", "openai", "deepseek", "groq"] as const;
+const AI_AGENT_PROVIDERS = ["openai", "deepseek", "groq"] as const;
 type AiAgentProvider = (typeof AI_AGENT_PROVIDERS)[number];
 
 export async function addAiAgentProviderAction(
