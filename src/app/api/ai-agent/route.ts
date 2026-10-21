@@ -899,7 +899,7 @@ async function generateDatabasePlan(
 
 async function getAiProviders(): Promise<AiProvider[]> {
   const configs = await prisma.aIConfig.findMany({
-    where: { isActive: true, provider: { not: "removebg" } },
+    where: { isActive: true, provider: { notIn: ["removebg", "gemini"] } },
     orderBy: { usedToday: "asc" },
     select: { id: true, provider: true, apiKey: true },
   })
