@@ -347,7 +347,7 @@ export async function POST(req: Request) {
     const activeConfigs = await prisma.aIConfig.findMany({
       where: {
         isActive: true,
-        provider: { not: "removebg" }
+        provider: { notIn: ["removebg", "gemini"] }
       },
       orderBy: { usedToday: 'asc' }
     });
