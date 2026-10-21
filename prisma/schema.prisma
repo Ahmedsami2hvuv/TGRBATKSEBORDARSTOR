@@ -1015,19 +1015,7 @@ model CreditBookTransaction {
   @@index([partnerId])
 }
 
-model SystemBackground {
-  id        String   @id @default(cuid())
-  name      String   @default("")
-  imageUrl  String
-  active    Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
 
-model UserBackgroundSelection {
-  userKey   String   @id
-  imageUrl  String
-  updatedAt DateTime @updatedAt
-}
 
 
 
