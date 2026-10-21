@@ -78,12 +78,6 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
 
   const baseAuth = { p: p!, exp: exp || "", s: s! };
 
-  const userKey = `preparer_${preparer.id}`;
-  const dbBg = await prisma.userBackgroundSelection.findUnique({
-    where: { userKey }
-  });
-  const userBgUrl = dbBg?.imageUrl || null;
-
   return (
     <PreparerSettingsClient
       preparerName={preparer.name}
@@ -92,8 +86,6 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
       hasPinCode={!!preparer.salaryPinCode}
       pinDisabled={preparer.salaryPinDisabled}
       telegramLink={telegramLink}
-      userKey={userKey}
-      userBgUrl={userBgUrl}
     />
   );
 }
