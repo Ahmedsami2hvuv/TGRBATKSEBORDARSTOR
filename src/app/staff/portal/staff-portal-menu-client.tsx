@@ -8,11 +8,9 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export function StaffPortalMenuClient({
   emp,
   authQ,
-  userKey,
 }: {
   emp: any;
   authQ: string;
-  userKey?: string;
 }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [scale, setScale] = useState(1);
