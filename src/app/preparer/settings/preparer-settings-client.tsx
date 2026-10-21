@@ -16,7 +16,6 @@ type Props = {
   hasPinCode: boolean;
   pinDisabled: boolean;
   telegramLink?: string | null;
-  userKey?: string;
 };
 
 export default function PreparerSettingsClient({
@@ -26,7 +25,6 @@ export default function PreparerSettingsClient({
   hasPinCode,
   pinDisabled,
   telegramLink,
-  userKey,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
