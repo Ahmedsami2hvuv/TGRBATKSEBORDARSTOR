@@ -11,8 +11,6 @@ const excludedModels = new Set([
   "TelegramAdmin",
   "WebPushSubscription",
   "UISystemSetting",
-  "SystemBackground",
-  "UserBackgroundSelection",
   "SchemaPlaceholder",
 ]);
 const secretNamePattern =
@@ -26,8 +24,6 @@ const blockedWriteModels = new Set([
   "TelegramBotSession",
   "TelegramAdmin",
   "WebPushSubscription",
-  "SystemBackground",
-  "UserBackgroundSelection",
 ]);
 const blockedWriteFields = new Set(["id", "createdAt", "updatedAt"]);
 const allowedFilterOperators = new Set([
