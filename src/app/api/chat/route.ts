@@ -449,11 +449,9 @@ ${adminExecutionContext}
     for (const config of activeConfigs) {
       try {
         const provider = String(config.provider || "").toLowerCase();
-        const isGemini = provider === "gemini";
+        const isGemini = false;
         const url =
-          provider === "gemini"
-            ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`
-            : provider === "openai"
+          provider === "openai"
               ? "https://api.openai.com/v1/chat/completions"
               : provider === "deepseek"
                 ? "https://api.deepseek.com/chat/completions"
@@ -463,9 +461,9 @@ ${adminExecutionContext}
         const chatHistory = (Array.isArray(history) ? history : [])
           .filter((h: any) => h.content && typeof h.content === "string")
           .map((h: any) => ({
-            role: h.role === "assistant" ? (isGemini ? "model" : "assistant") : "user",
+            role: h.role === "assistant" ? "assistant" : "user",
             content: h.content,
-            parts: isGemini ? [{ text: h.content }] : undefined
+            parts: undefined
           }));
 
         const body = isGemini
@@ -492,12 +490,12 @@ ${adminExecutionContext}
 
         const response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...(isGemini ? {} : { "Authorization": `Bearer ${config.apiKey}` }) },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
           body: JSON.stringify(body)
         });
 
         const data = await response.json();
-        const fullText = isGemini ? data.candidates?.[0]?.content?.parts?.[0]?.text : data.choices?.[0]?.message?.content;
+        const fullText = data.choices?.[0]?.message?.content;
 
         if (fullText) {
           // استخراج كافة الأوامر من النص (قد يرسل الذكاء أكثر من أمر)
