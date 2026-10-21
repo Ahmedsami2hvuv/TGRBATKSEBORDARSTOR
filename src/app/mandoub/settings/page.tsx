@@ -140,14 +140,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       }
       telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
     }
-    const userKey = `courier_${courier.id}`;
-    const [dbBg, designerConfig] = await Promise.all([
-      prisma.userBackgroundSelection.findUnique({
-        where: { userKey },
-      }),
-      getOrderCardsDesignerConfig("mandoub").catch(() => null),
-    ]);
-    const userBgUrl = dbBg?.imageUrl || null;
+    const designerConfig = await getOrderCardsDesignerConfig("mandoub").catch(() => null);
     const initialLuxuryEnabled = designerConfig?.enabledPortals?.mandoub !== false;
 
     return (
@@ -158,8 +151,6 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         auth={auth}
         availableForAssignment={courier.availableForAssignment}
         telegramLink={telegramLink}
-        userKey={userKey}
-        userBgUrl={userBgUrl}
         initialLuxuryEnabled={initialLuxuryEnabled}
       />
     );
