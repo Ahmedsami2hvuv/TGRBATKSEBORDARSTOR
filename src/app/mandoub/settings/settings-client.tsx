@@ -31,7 +31,6 @@ type Props = {
   auth: { c: string; exp: string; s: string };
   availableForAssignment: boolean;
   telegramLink: string | null;
-  userKey?: string;
   initialLuxuryEnabled?: boolean;
 };
 
@@ -42,7 +41,6 @@ export default function CourierSettingsClient({
   auth,
   availableForAssignment,
   telegramLink,
-  userKey,
 }: Props) {
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
