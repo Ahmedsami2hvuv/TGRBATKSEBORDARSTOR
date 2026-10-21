@@ -8,7 +8,7 @@ import {
   toggleAiAgentProviderAction,
 } from "../actions";
 
-type Provider = "gemini" | "openai" | "deepseek" | "groq";
+type Provider = "openai" | "deepseek" | "groq";
 
 type ProviderKey = {
   id: string;
@@ -19,7 +19,6 @@ type ProviderKey = {
 };
 
 const PROVIDER_LABELS: Record<Provider, string> = {
-  gemini: "Gemini",
   openai: "OpenAI",
   deepseek: "DeepSeek",
   groq: "Groq",
@@ -76,7 +75,7 @@ export function AiProvidersForm({ initialProviders }: { initialProviders: Provid
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-xs leading-6 text-indigo-950">
-        أضف مفتاح مزود ذكاء آخر إذا كانت إجابات Gemini لا تناسبك. الوكيل يجرب المفاتيح الفعالة،
+        أضف مفتاح مزود ذكاء. الوكيل يجرب المفاتيح الفعالة،
         وإذا تعذر أحدها ينتقل إلى مزود آخر. تُحفظ المفاتيح في الخادم ولا تظهر كاملة في هذه الصفحة.
         عند السؤال، تُرسل للمزود الحقول والسجلات اللازمة للإجابة فقط، وليس نسخة كاملة من قاعدة البيانات.
       </div>
@@ -131,7 +130,7 @@ export function AiProvidersForm({ initialProviders }: { initialProviders: Provid
         </h3>
         {initialProviders.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-300 py-5 text-center text-xs text-slate-400">
-            ماكو مفاتيح مزودات إضافية. تقدر تستمر باستخدام مفاتيح Gemini الموجودة بالأسفل.
+            ماكو مفاتيح مزودات ذكاء مضافة حالياً.
           </p>
         ) : (
           initialProviders.map((item) => (
