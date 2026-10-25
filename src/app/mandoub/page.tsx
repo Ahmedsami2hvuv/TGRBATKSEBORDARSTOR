@@ -951,6 +951,8 @@ export default async function MandoubPage({ searchParams }: Props) {
       routeMode: o.routeMode as any,
       submissionSource: o.submissionSource,
 
+      customerRegionName: o.customerRegion?.name?.trim() || null,
+      firstCustomerRegionName: o.customerRegion?.name?.trim() || null,
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
       secondCustomerLandmark: secondLandmarkLine,
       shopRegionName: o.shop?.region?.name || null,

@@ -353,7 +353,12 @@ export function WasliOrderDetailView({
     ? rawCustomerName
     : "";
 
-  const customerRegion = order.customerRegion?.name || "";
+  const customerRegion =
+    (order as any).customerRegionName ||
+    (order as any).firstCustomerRegionName ||
+    order.customerRegion?.name ||
+    ((isDoubleRoute && shopName.startsWith("من ")) ? shopName.replace(/^من\s+/, "").trim() : "") ||
+    "";
   const customerPhone = order.customerPhone || "";
 
   // المبالغ المالية

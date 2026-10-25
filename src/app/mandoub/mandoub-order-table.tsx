@@ -129,6 +129,8 @@ export type MandoubRow = {
   secondCustomerDoorPhotoUrl?: string | null;
   routeMode?: "single" | "double";
   customerRegionId?: string | null;
+  customerRegionName?: string | null;
+  firstCustomerRegionName?: string | null;
   secondCustomerRegionName?: string | null;
   secondCustomerRegionId?: string | null;
   secondCustomerLandmark?: string | null;
@@ -886,8 +888,10 @@ function MandoubFullBlockCardGrid({
 
                 const isDoubleRouteOrder = o.routeMode === "double" || !!o.secondCustomerPhone || !!o.secondCustomerRegionName;
 
+                const senderReg = (o.customerRegionName || o.firstCustomerRegionName || (o.shopName?.startsWith("من ") ? o.shopName.replace(/^من\s+/, "").trim() : o.regionLine) || "المرسل").trim();
+                const recipientReg = (o.secondCustomerRegionName || "المستلم").trim();
                 const headerTextStr = isDoubleRouteOrder
-                  ? `${o.regionLine || "المرسل"} إلى ${o.secondCustomerRegionName || "المستلم"}`
+                  ? `من ${senderReg} إلى ${recipientReg}`
                   : `${o.shopName || "المحل"} إلى ${o.regionLine || "المنطقة"}`;
 
                 const isPrepaid = Boolean(o.prepaidAll || displayTotal === "كل شي واصل" || displayTotal === "واصل");
@@ -2074,7 +2078,12 @@ export function MandoubOrderTable({
                      ownerName: activeOrderData.submitterName,
                      employees: activeOrderData.shopEmployees || [],
                   } as any,
-                  customerRegion: { name: activeOrderData.regionLine } as any,
+                  customerRegion: {
+                    id: activeOrderData.customerRegionId,
+                    name: (activeOrderData.routeMode === "double" || !!activeOrderData.secondCustomerPhone)
+                      ? (activeOrderData.customerRegionName || activeOrderData.firstCustomerRegionName || (activeOrderData.shopName?.startsWith("من ") ? activeOrderData.shopName.replace(/^من\s+/, "").trim() : activeOrderData.regionLine))
+                      : (activeOrderData.customerRegionName || activeOrderData.regionLine),
+                  } as any,
                   secondCustomerRegion: { name: activeOrderData.secondCustomerRegionName || "—" } as any,
                   customer: {
                      name: activeOrderData.customerName,
