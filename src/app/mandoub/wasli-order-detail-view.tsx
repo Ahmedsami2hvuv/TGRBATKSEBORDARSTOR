@@ -858,7 +858,7 @@ https://aboakbr.com/welcome`;
 
     return `السلام عليكم 
 لديكم طلبية ${oType} 
- يجب ان نستلمها لكم 
+ يجب ان نسلمها لكم 
 الى ${rRegion}
 من ${sRegion}
 المبلغ ${amountStr}
