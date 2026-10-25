@@ -530,8 +530,8 @@ export function WasliOrderDetailView({
 
       // كحل أخير احتياطي فقط إذا كانت قاعدة البيانات فارغة تماماً من أي زر
       return {
-        label: isUserAdmin ? "طلب لوكيشن" : "طلب لكيشن",
-        templateText: isUserAdmin
+        label: isAdminUser ? "طلب لوكيشن" : "طلب لكيشن",
+        templateText: isAdminUser
           ? "السلام عليكم، نود تزويدنا بموقعكم (اللوكيشن) لتوصيل طلبكم رقم #{order_number}."
           : "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍",
       };
@@ -570,7 +570,7 @@ export function WasliOrderDetailView({
 
       return {
         label: "تبليغ الزبون",
-        templateText: isUserAdmin
+        templateText: isAdminUser
           ? "مرحباً، تم تجهيز طلبكم رقم #{order_number} وسيتم توصيله لكم قريباً."
           : "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.",
       };
@@ -757,6 +757,121 @@ export function WasliOrderDetailView({
     const text = applyMandoubWaTemplate(chosenTemplate, vars);
     const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const url = isMobile ? whatsappAppUrl(p1, text) : whatsappMeUrl(p1, text);
+    if (url && url !== "#") {
+      openUrlFromUserGesture(url);
+    } else {
+      showToast("تعذر فتح الواتساب");
+    }
+  };
+
+
+  // حساب مبلغ البيع للبائع في طلب ذو وجهتين بدقة متناهية (مبلغ البائع بعد خصم التوصيل والربح)
+  const getDoubleRouteSellerAmount = () => {
+    const prepJson = (order as any).preparerShoppingJson;
+    const staffProfit = (prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+    if (staffProfit > 0) {
+      return Math.max(0, totalAmount - deliveryPrice - staffProfit);
+    }
+    if (order.orderSubtotal != null && Number(order.orderSubtotal) > 0) {
+      return Number(order.orderSubtotal);
+    }
+    return Math.max(0, totalAmount - deliveryPrice);
+  };
+
+  // نص رسالة طلب لكيشن للمرسل (الزبون الأول) في طلب ذو الوجهتين
+  const buildDoubleRouteSenderMessage = () => {
+    const oType = (order.orderType || "").trim() || "توصيل";
+    const sRegion = customerRegion || "—";
+    const rRegion = (order as any).secondCustomerRegion?.name || (order as any).secondCustomerRegionName || "—";
+    const sellerPriceVal = getDoubleRouteSellerAmount();
+    const sellerPriceFormatted = formatDinarAsAlf(sellerPriceVal);
+    const amountStr = sellerPriceFormatted !== "—" ? `${sellerPriceFormatted} الف` : "—";
+    const cName = courierName || (order as any).courier?.name || (order as any).courierName || "المندوب";
+
+    return `السلام عليكم 
+لديكم طلبية ${oType} 
+ يجب ان نستلمها منكم 
+من ${sRegion}
+الى ${rRegion}
+المبلغ ${amountStr}
+ارجو ارسال الموقع باسرع وقت 
+
+كابتن ${cName}
+من خدمة وصلي 
+https://aboakbr.com/welcome`;
+  };
+
+  // نص رسالة طلب لكيشن للمستلم (الزبون الثاني) في طلب ذو الوجهتين
+  const buildDoubleRouteRecipientMessage = () => {
+    const oType = (order.orderType || "").trim() || "توصيل";
+    const sRegion = customerRegion || "—";
+    const rRegion = (order as any).secondCustomerRegion?.name || (order as any).secondCustomerRegionName || "—";
+    const buyerPriceFormatted = formatDinarAsAlf(totalAmount);
+    const amountStr = buyerPriceFormatted !== "—" ? `${buyerPriceFormatted} الف` : "—";
+    const cName = courierName || (order as any).courier?.name || (order as any).courierName || "المندوب";
+
+    return `السلام عليكم 
+لديكم طلبية ${oType} 
+ يجب ان نسلمها لكم 
+
+الى ${rRegion}
+من ${sRegion}
+
+المبلغ ${amountStr}
+ارجو ارسال الموقع باسرع وقت 
+
+كابتن ${cName}
+من خدمة وصلي 
+https://aboakbr.com/welcome`;
+  };
+
+  // إرسال رسالة الواتساب للمرسل في الطلب ذو الوجهتين
+  const handleSendDoubleRouteSenderWa = () => {
+    const p1 = customerPhone || "";
+    const p2 = order.customerPhone2 || order.alternatePhone || "";
+    if (!p1 && !p2) {
+      showToast("لا يوجد رقم هاتف للمرسل!");
+      return;
+    }
+    const text = buildDoubleRouteSenderMessage();
+    if (p1 && p2 && p1.trim() !== p2.trim()) {
+      setActivePhoneModal({
+        phone1: p1,
+        phone2: p2,
+        messageText: text,
+      });
+      return;
+    }
+    const targetPhone = p1 || p2;
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile ? whatsappAppUrl(targetPhone, text) : whatsappMeUrl(targetPhone, text);
+    if (url && url !== "#") {
+      openUrlFromUserGesture(url);
+    } else {
+      showToast("تعذر فتح الواتساب");
+    }
+  };
+
+  // إرسال رسالة الواتساب للمستلم في الطلب ذو الوجهتين
+  const handleSendDoubleRouteRecipientWa = () => {
+    const p1 = String((order as any).secondCustomerPhone || "");
+    const p2 = String((order as any).secondCustomerAlternatePhone || "");
+    if (!p1 && !p2) {
+      showToast("لا يوجد رقم هاتف للمستلم!");
+      return;
+    }
+    const text = buildDoubleRouteRecipientMessage();
+    if (p1 && p2 && p1.trim() !== p2.trim()) {
+      setActivePhoneModal({
+        phone1: p1,
+        phone2: p2,
+        messageText: text,
+      });
+      return;
+    }
+    const targetPhone = p1 || p2;
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile ? whatsappAppUrl(targetPhone, text) : whatsappMeUrl(targetPhone, text);
     if (url && url !== "#") {
       openUrlFromUserGesture(url);
     } else {
@@ -1300,13 +1415,19 @@ export function WasliOrderDetailView({
 
                   <button
                     type="button"
-                    onClick={() => handleSendCustomerWa(notifyCustomerBtn.templateText, "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.")}
+                    onClick={() => {
+                      if (isDoubleRoute) {
+                        handleSendDoubleRouteSenderWa();
+                      } else {
+                        handleSendCustomerWa(notifyCustomerBtn.templateText, "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.");
+                      }
+                    }}
                     className="flex h-[46px] w-[124px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer px-2"
                   >
                     <svg className="w-3.5 h-3.5 text-[#0B2E8C] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                     </svg>
-                    <span className="truncate">{notifyCustomerBtn.label || "تبليغ الزبون"}</span>
+                    <span className="truncate">{isDoubleRoute ? "طلب لكيشن" : (notifyCustomerBtn.label || "تبليغ الزبون")}</span>
                   </button>
                 </div>
               ) : (
@@ -1346,16 +1467,22 @@ export function WasliOrderDetailView({
                     <span className="truncate">لصق لوكيشن</span>
                   </button>
 
-                  {/* الزر 3: طلب لكيشن على اليسار (من أزرار الواتساب) */}
+                  {/* الزر 3: طلب لكيشن على اليسار */}
                   <button
                     type="button"
-                    onClick={() => handleSendCustomerWa(requestLocationBtn.templateText, "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍")}
+                    onClick={() => {
+                      if (isDoubleRoute) {
+                        handleSendDoubleRouteSenderWa();
+                      } else {
+                        handleSendCustomerWa(requestLocationBtn.templateText, "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍");
+                      }
+                    }}
                     className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FFC107] text-[12px] font-extrabold text-[#0B2E8C] shadow-[0_4px_12px_rgba(255,193,7,0.35)] transition hover:bg-[#ffcd38] active:scale-[0.98] cursor-pointer px-1 min-w-0"
                   >
                     <svg className="w-3.5 h-3.5 text-[#0B2E8C] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                     </svg>
-                    <span className="truncate">{requestLocationBtn.label || "طلب لكيشن"}</span>
+                    <span className="truncate">{isDoubleRoute ? "طلب لكيشن" : (requestLocationBtn.label || "طلب لكيشن")}</span>
                   </button>
                 </div>
               )}
@@ -1625,13 +1752,13 @@ export function WasliOrderDetailView({
 
                     <button
                       type="button"
-                      onClick={() => handleSendSecondCustomerWa(notifyCustomerBtn.templateText, "السلام عليكم، نود تبليغكم بتجهيز طلبكم رقم #{order_number} وسيصلكم قريباً بإذن الله.")}
+                      onClick={() => handleSendDoubleRouteRecipientWa()}
                       className="flex h-[46px] w-[124px] shrink-0 items-center justify-center gap-1.5 rounded-[16px] bg-[#FDE047] text-[12px] font-extrabold text-[#0369A1] shadow-[0_4px_12px_rgba(253,224,71,0.35)] transition hover:bg-[#facc15] active:scale-[0.98] cursor-pointer px-2"
                     >
                       <svg className="w-3.5 h-3.5 text-[#0369A1] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                       </svg>
-                      <span className="truncate">{notifyCustomerBtn.label || "تبليغ الزبون"}</span>
+                      <span className="truncate">طلب لكيشن</span>
                     </button>
                   </div>
                 ) : (
@@ -1671,16 +1798,16 @@ export function WasliOrderDetailView({
                       <span className="truncate">لصق لوكيشن</span>
                     </button>
 
-                    {/* الزر 3: طلب لكيشن على اليسار (من أزرار الواتساب المعتمدة) */}
+                    {/* الزر 3: طلب لكيشن على اليسار */}
                     <button
                       type="button"
-                      onClick={() => handleSendSecondCustomerWa(requestLocationBtn.templateText, "السلام عليكم، يرجى إرسال موقعك (اللوكيشن) لتوصيل طلبك رقم #{order_number} 📍")}
+                      onClick={() => handleSendDoubleRouteRecipientWa()}
                       className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FDE047] text-[12px] font-extrabold text-[#0369A1] shadow-[0_4px_12px_rgba(253,224,71,0.35)] transition hover:bg-[#facc15] active:scale-[0.98] cursor-pointer px-1 min-w-0"
                     >
                       <svg className="w-3.5 h-3.5 text-[#0369A1] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                       </svg>
-                      <span className="truncate">{requestLocationBtn.label || "طلب لكيشن"}</span>
+                      <span className="truncate">طلب لكيشن</span>
                     </button>
                   </div>
                 )}
