@@ -56,6 +56,8 @@ model CustomerPhoneProfile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   landmark       String   @default("")
+  landmarkUploadedByName String?
+  landmarkHistory Json?
   alternatePhone String?
   isBlocked      Boolean  @default(false)
   region         Region   @relation(fields: [regionId], references: [id])
@@ -244,6 +246,8 @@ model Customer {
   customerRegionId     String?
   customerLocationUrl  String                @default("")
   customerLandmark     String                @default("")
+  customerLandmarkUploadedByName String?
+  customerLandmarkHistory Json?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   alternatePhone       String?
@@ -562,6 +566,8 @@ model Order {
   orderNumber                           Int                      @unique @default(autoincrement())
   customerLocationUrl                   String                   @default("")
   customerLandmark                      String                   @default("")
+  customerLandmarkUploadedByName        String?
+  customerLandmarkHistory               Json?
   customerDoorPhotoUrl                  String?
   customerId                            String?
   shopCostPaidAt                        DateTime?
@@ -576,6 +582,8 @@ model Order {
   secondCustomerRegionId                String?
   secondCustomerLocationUrl             String                   @default("")
   secondCustomerLandmark                String                   @default("")
+  secondCustomerLandmarkUploadedByName  String?
+  secondCustomerLandmarkHistory         Json?
   secondCustomerDoorPhotoUrl            String?
   customerLocationSetByCourierAt        DateTime?
   orderImageUploadedByName              String?

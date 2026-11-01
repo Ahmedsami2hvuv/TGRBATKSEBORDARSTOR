@@ -27,6 +27,7 @@ import {
   syncPhoneProfileFromOrder,
   syncSecondPhoneProfileFromOrder,
 } from "@/lib/customer-phone-profile-sync";
+import { buildUpdatedLandmarkHistory, parseLandmarkHistory } from "@/lib/landmark-history";
 import { prisma } from "@/lib/prisma";
 import { safeMandoubReturn } from "@/lib/mandoub-loc-flash-url";
 import { digitsOnly, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
@@ -398,13 +399,53 @@ export async function updateMandoubCustomerDetails(
     statusPatch = { status: statusRaw };
   }
 
+  const courierUploader = await courierUploaderLabel(v.courierId);
+  const oldLandmark = (order.customerLandmark || "").trim();
+  const landmarkChanged = oldLandmark !== customerLandmarkMerged;
+  const landmarkHistoryPatch = landmarkChanged && oldLandmark
+    ? {
+        customerLandmarkUploadedByName: courierUploader,
+        customerLandmarkHistory: buildUpdatedLandmarkHistory(
+          (order as any).customerLandmarkHistory,
+          oldLandmark,
+          (order as any).customerLandmarkUploadedByName,
+          order.updatedAt
+        ),
+      }
+    : landmarkChanged
+    ? {
+        customerLandmarkUploadedByName: courierUploader,
+        customerLandmarkHistory: parseLandmarkHistory((order as any).customerLandmarkHistory),
+      }
+    : {};
+
   let secondCustomerPatch: any = {};
   if (isDoubleRoute) {
+    const oldSecondLandmark = ((order as any).secondCustomerLandmark || "").trim();
+    const secondChanged = oldSecondLandmark !== secondCustomerLandmark;
+    const secondHistoryPatch = secondChanged && oldSecondLandmark
+      ? {
+          secondCustomerLandmarkUploadedByName: courierUploader,
+          secondCustomerLandmarkHistory: buildUpdatedLandmarkHistory(
+            (order as any).secondCustomerLandmarkHistory,
+            oldSecondLandmark,
+            (order as any).secondCustomerLandmarkUploadedByName,
+            order.updatedAt
+          ),
+        }
+      : secondChanged
+      ? {
+          secondCustomerLandmarkUploadedByName: courierUploader,
+          secondCustomerLandmarkHistory: parseLandmarkHistory((order as any).secondCustomerLandmarkHistory),
+        }
+      : {};
+
     secondCustomerPatch = {
       secondCustomerPhone: secondPhone,
       secondCustomerLocationUrl: secondCustomerLocationUrl,
       secondCustomerLandmark: secondCustomerLandmark,
       secondCustomerAlternatePhone: secondAlternateDigits,
+      ...secondHistoryPatch,
     };
   }
 
@@ -416,6 +457,7 @@ export async function updateMandoubCustomerDetails(
         customerLandmark: customerLandmarkMerged,
         customerLocationUrl: customerLocationUrlMerged,
         alternatePhone: alternateDigits,
+        ...landmarkHistoryPatch,
       },
     });
   } else {
@@ -430,6 +472,7 @@ export async function updateMandoubCustomerDetails(
           customerLandmark: customerLandmarkMerged,
           customerLocationUrl: customerLocationUrlMerged,
           alternatePhone: alternateDigits,
+          ...landmarkHistoryPatch,
         },
       });
       await updateOrderWithMandoubStatusReconcile(orderId, order.status, {
@@ -441,6 +484,7 @@ export async function updateMandoubCustomerDetails(
         ...statusPatch,
         ...clearCourierGpsFlag,
         ...secondCustomerPatch,
+        ...landmarkHistoryPatch,
       });
       await syncPhoneProfileFromOrder(orderId);
       if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
@@ -457,6 +501,7 @@ export async function updateMandoubCustomerDetails(
         customerLandmark: customerLandmarkMerged,
         alternatePhone: alternateDigits,
         customerDoorPhotoUrl: null,
+        ...landmarkHistoryPatch,
       },
     });
     await updateOrderWithMandoubStatusReconcile(orderId, order.status, {
@@ -468,6 +513,7 @@ export async function updateMandoubCustomerDetails(
       ...statusPatch,
       ...clearCourierGpsFlag,
       ...secondCustomerPatch,
+      ...landmarkHistoryPatch,
     });
     await syncPhoneProfileFromOrder(orderId);
     if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
@@ -483,6 +529,7 @@ export async function updateMandoubCustomerDetails(
     ...statusPatch,
     ...clearCourierGpsFlag,
     ...secondCustomerPatch,
+    ...landmarkHistoryPatch,
   });
 
   await syncPhoneProfileFromOrder(orderId);

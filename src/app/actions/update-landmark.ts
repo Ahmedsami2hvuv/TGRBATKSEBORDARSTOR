@@ -2,17 +2,19 @@
 
 import { prisma } from "@/lib/prisma";
 import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
+import { buildUpdatedLandmarkHistory, parseLandmarkHistory } from "@/lib/landmark-history";
 import { revalidatePath } from "next/cache";
 
 export async function updateOrderLandmarkAction(
   orderId: string,
   newLandmark: string,
-  isSecondDestination: boolean = false
+  isSecondDestination: boolean = false,
+  updaterName?: string | null
 ) {
   try {
     const trimmedLandmark = newLandmark.trim();
 
-    // 1. Fetch the order details
+    // 1. Fetch current order details including existing landmark and history
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       select: {
@@ -23,7 +25,18 @@ export async function updateOrderLandmarkAction(
         routeMode: true,
         customerRegionId: true,
         secondCustomerRegionId: true,
-        secondCustomerPhone: true
+        secondCustomerPhone: true,
+        customerLandmark: true,
+        customerLandmarkUploadedByName: true,
+        customerLandmarkHistory: true,
+        secondCustomerLandmark: true,
+        secondCustomerLandmarkUploadedByName: true,
+        secondCustomerLandmarkHistory: true,
+        updatedAt: true,
+        assignedCourierId: true,
+        courier: {
+          select: { name: true }
+        }
       }
     });
 
@@ -31,30 +44,74 @@ export async function updateOrderLandmarkAction(
       return { error: "الطلب غير موجود" };
     }
 
+    // Determine default updater name if not provided
+    const resolvedUpdaterName =
+      updaterName?.trim() ||
+      (order.courier?.name ? `المندوب ${order.courier.name.trim()}` : "المندوب");
+
     if (isSecondDestination) {
-      // Update the second destination landmark
+      const oldLandmark = order.secondCustomerLandmark?.trim() || "";
+      const isChanged = oldLandmark !== trimmedLandmark;
+
+      let historyToSave = parseLandmarkHistory(order.secondCustomerLandmarkHistory);
+      if (isChanged && oldLandmark) {
+        historyToSave = buildUpdatedLandmarkHistory(
+          order.secondCustomerLandmarkHistory,
+          oldLandmark,
+          order.secondCustomerLandmarkUploadedByName,
+          order.updatedAt
+        );
+      }
+
       await prisma.order.update({
         where: { id: orderId },
-        data: { secondCustomerLandmark: trimmedLandmark }
+        data: {
+          secondCustomerLandmark: trimmedLandmark,
+          secondCustomerLandmarkUploadedByName: resolvedUpdaterName,
+          secondCustomerLandmarkHistory: historyToSave,
+        }
       });
 
       // Synchronize the profile for the second destination
       await syncSecondPhoneProfileFromOrder(orderId);
     } else {
-      // Update the primary customer landmark
+      const oldLandmark = order.customerLandmark?.trim() || "";
+      const isChanged = oldLandmark !== trimmedLandmark;
+
+      let historyToSave = parseLandmarkHistory(order.customerLandmarkHistory);
+      if (isChanged && oldLandmark) {
+        historyToSave = buildUpdatedLandmarkHistory(
+          order.customerLandmarkHistory,
+          oldLandmark,
+          order.customerLandmarkUploadedByName,
+          order.updatedAt
+        );
+      }
+
       await prisma.order.update({
         where: { id: orderId },
-        data: { customerLandmark: trimmedLandmark }
+        data: {
+          customerLandmark: trimmedLandmark,
+          customerLandmarkUploadedByName: resolvedUpdaterName,
+          customerLandmarkHistory: historyToSave,
+        }
       });
 
       // Update the customer record if exists
       if (order.customerId) {
-        await prisma.customer.update({
-          where: { id: order.customerId },
-          data: { customerLandmark: trimmedLandmark }
-        });
+        try {
+          await prisma.customer.update({
+            where: { id: order.customerId },
+            data: {
+              customerLandmark: trimmedLandmark,
+              customerLandmarkUploadedByName: resolvedUpdaterName,
+              customerLandmarkHistory: historyToSave,
+            }
+          });
+        } catch (e) {
+          console.error("Non-critical customer update error:", e);
+        }
       } else if (order.customerPhone) {
-        // Find if there is an existing customer profile with this phone and shopId to update
         const existingCustomer = await prisma.customer.findFirst({
           where: {
             shopId: order.shopId,
@@ -62,10 +119,18 @@ export async function updateOrderLandmarkAction(
           }
         });
         if (existingCustomer) {
-          await prisma.customer.update({
-            where: { id: existingCustomer.id },
-            data: { customerLandmark: trimmedLandmark }
-          });
+          try {
+            await prisma.customer.update({
+              where: { id: existingCustomer.id },
+              data: {
+                customerLandmark: trimmedLandmark,
+                customerLandmarkUploadedByName: resolvedUpdaterName,
+                customerLandmarkHistory: historyToSave,
+              }
+            });
+          } catch (e) {
+            console.error("Non-critical customer update error:", e);
+          }
         }
       }
 

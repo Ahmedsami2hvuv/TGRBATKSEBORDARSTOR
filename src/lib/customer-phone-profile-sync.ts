@@ -132,6 +132,12 @@ export async function syncPhoneProfileFromOrder(
     }
     if (!o.customerLandmark?.trim() && existingProfile.landmark?.trim() && !options?.forceClearLandmark) {
       patch.customerLandmark = existingProfile.landmark.trim();
+      if ((existingProfile as any).landmarkUploadedByName) {
+        patch.customerLandmarkUploadedByName = (existingProfile as any).landmarkUploadedByName;
+      }
+      if ((existingProfile as any).landmarkHistory) {
+        patch.customerLandmarkHistory = (existingProfile as any).landmarkHistory;
+      }
     }
     if (!o.alternatePhone?.trim() && existingProfile.alternatePhone?.trim()) {
       patch.alternatePhone = existingProfile.alternatePhone.trim();
@@ -161,6 +167,8 @@ export async function syncPhoneProfileFromOrder(
     regionId: o.customerRegionId,
     locationUrl: loc,
     landmark: lm,
+    landmarkUploadedByName: (o as any).customerLandmarkUploadedByName ?? null,
+    landmarkHistory: (o as any).customerLandmarkHistory ?? null,
     doorPhotoUrl: door,
     alternatePhone: alt,
     forceClearLocation: options?.forceClearLocation,
@@ -203,6 +211,12 @@ export async function syncSecondPhoneProfileFromOrder(
     }
     if (!o.secondCustomerLandmark?.trim() && existingProfile.landmark?.trim() && !options?.forceClearLandmark) {
       patch.secondCustomerLandmark = existingProfile.landmark.trim();
+      if ((existingProfile as any).landmarkUploadedByName) {
+        patch.secondCustomerLandmarkUploadedByName = (existingProfile as any).landmarkUploadedByName;
+      }
+      if ((existingProfile as any).landmarkHistory) {
+        patch.secondCustomerLandmarkHistory = (existingProfile as any).landmarkHistory;
+      }
     }
     if (!o.secondCustomerAlternatePhone?.trim() && existingProfile.alternatePhone?.trim()) {
       patch.secondCustomerAlternatePhone = existingProfile.alternatePhone.trim();
@@ -225,6 +239,8 @@ export async function syncSecondPhoneProfileFromOrder(
     regionId: o.secondCustomerRegionId,
     locationUrl: o.secondCustomerLocationUrl?.trim() ?? "",
     landmark: o.secondCustomerLandmark?.trim() ?? "",
+    landmarkUploadedByName: (o as any).secondCustomerLandmarkUploadedByName ?? null,
+    landmarkHistory: (o as any).secondCustomerLandmarkHistory ?? null,
     doorPhotoUrl: o.secondCustomerDoorPhotoUrl?.trim() ?? "",
     alternatePhone: null,
     forceClearLocation: options?.forceClearLocation,
@@ -253,6 +269,8 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
   landmark: string;
   doorPhotoUrl: string;
   alternatePhone: string | null;
+  landmarkUploadedByName?: string | null;
+  landmarkHistory?: any;
   forceClearLocation?: boolean;
   forceClearLandmark?: boolean;
 }): Promise<void> {
@@ -272,6 +290,8 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
     ? ""
     : input.landmark.trim() || existing?.landmark?.trim() || "";
   const nextAlt = input.alternatePhone ?? existing?.alternatePhone ?? null;
+  const nextUploadedByName = input.landmarkUploadedByName ?? (existing as any)?.landmarkUploadedByName ?? null;
+  const nextHistory = input.landmarkHistory ?? (existing as any)?.landmarkHistory ?? null;
 
   await prisma.customerPhoneProfile.upsert({
     where: { phone_regionId: { phone, regionId } },
@@ -280,6 +300,8 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
       regionId,
       locationUrl: nextLoc,
       landmark: nextLandmark,
+      landmarkUploadedByName: nextUploadedByName,
+      landmarkHistory: nextHistory,
       photoUrl: nextDoor,
       alternatePhone: nextAlt,
       notes: "",
@@ -287,6 +309,8 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
     update: {
       locationUrl: nextLoc,
       landmark: nextLandmark,
+      ...(nextUploadedByName !== undefined ? { landmarkUploadedByName: nextUploadedByName } : {}),
+      ...(nextHistory !== undefined ? { landmarkHistory: nextHistory } : {}),
       ...(nextDoor ? { photoUrl: nextDoor } : {}),
       alternatePhone: nextAlt,
     },
