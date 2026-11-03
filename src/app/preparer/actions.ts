@@ -33,6 +33,11 @@ import {
   ensurePreparerWorkLogShiftNameColumnIfMissing
 } from "@/lib/db-self-heal-employee-location";
 import { getIraqTime } from "@/lib/baghdad-time";
+import {
+  buildPreparerShiftSalaryLabel,
+  parsePreparerShiftSalaryLabel,
+  type PreparerPendingShiftSalary,
+} from "@/lib/preparer-shift";
 
 export type PreparerActionState = {
   error?: string;
@@ -2151,30 +2156,6 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
   }
   return "";
 }
-
-/** تسمية قيد المحفظة لراتب شفت واحد */
-export function buildPreparerShiftSalaryLabel(kind: "morning" | "evening", dateKey: string): string {
-  const name = kind === "morning" ? "راتب الصبح" : "راتب العصر";
-  return `[راتب] ${name} ${dateKey}`;
-}
-
-function parsePreparerShiftSalaryLabel(label: string): { kind: "morning" | "evening"; dateKey: string } | null {
-  const m = String(label || "").match(/\[راتب\]\s*(راتب الصبح|راتب العصر)\s+(\d{4}-\d{1,2}-\d{1,2})/);
-  if (!m) return null;
-  return {
-    kind: m[1] === "راتب الصبح" ? "morning" : "evening",
-    dateKey: m[2],
-  };
-}
-
-export type PreparerPendingShiftSalary = {
-  date: string;
-  kind: "morning" | "evening";
-  shiftLabel: string;
-  walletLabel: string;
-  amount: number;
-  isToday: boolean;
-};
 
 // دالة احتساب الشفتات المستحقة (نصف الراتب لكل شفت: صبح / عصر)
 export async function calculateAccumulatedSalaryInternal(preparerId: string) {

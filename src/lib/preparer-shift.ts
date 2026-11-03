@@ -12,6 +12,32 @@ export type PreparerShiftStatus = {
   alreadyRecorded: boolean;
 };
 
+export type PreparerPendingShiftSalary = {
+  date: string;
+  kind: "morning" | "evening";
+  shiftLabel: string;
+  walletLabel: string;
+  amount: number;
+  isToday: boolean;
+};
+
+/** تسمية قيد المحفظة لراتب شفت واحد */
+export function buildPreparerShiftSalaryLabel(kind: "morning" | "evening", dateKey: string): string {
+  const name = kind === "morning" ? "راتب الصبح" : "راتب العصر";
+  return `[راتب] ${name} ${dateKey}`;
+}
+
+export function parsePreparerShiftSalaryLabel(
+  label: string
+): { kind: "morning" | "evening"; dateKey: string } | null {
+  const m = String(label || "").match(/\[راتب\]\s*(راتب الصبح|راتب العصر)\s+(\d{4}-\d{1,2}-\d{1,2})/);
+  if (!m) return null;
+  return {
+    kind: m[1] === "راتب الصبح" ? "morning" : "evening",
+    dateKey: m[2],
+  };
+}
+
 /**
  * تحويل نص الوقت إلى دقائق من بداية اليوم بدقة
  * يدعم نظام 24 ساعة ونظام 12 ساعة والشفت المسائي
