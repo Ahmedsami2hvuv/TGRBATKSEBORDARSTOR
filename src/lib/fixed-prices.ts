@@ -42,7 +42,10 @@ export function parseQuantityKg(text: string): number | null {
     return null;
 }
 
-export function suggestFixedPrices(_text: string) {
-    // تم إلغاء نظام التسعير التلقائي الثابت للحوم بناءً على طلب صاحب المشروع
+/**
+ * ملغى نهائياً: كان يقترح أسعار شراء/بيع ثابتة للحوم.
+ * يبقى موجوداً فقط حتى لا ينكسر أي استيراد قديم — دائماً يرجع فارغ.
+ */
+export function suggestFixedPrices(_text: string): null {
     return null;
 }

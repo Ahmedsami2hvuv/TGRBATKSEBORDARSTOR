@@ -17,8 +17,12 @@ export async function GET() {
       ? Array.from(new Set([...DEFAULT_NO_PROFIT_KEYWORDS, ...config.no_profit_keywords]))
       : DEFAULT_NO_PROFIT_KEYWORDS;
 
+    // لا نُرجع أسعار لحوم ثابتة أبداً — النظام ملغى
+    const { meat_prices: _ignoredMeatPrices, ...safeConfig } = config;
+
     return NextResponse.json({
-      ...config,
+      ...safeConfig,
+      meat_prices: {},
       no_profit_keywords,
     }, {
       headers: {

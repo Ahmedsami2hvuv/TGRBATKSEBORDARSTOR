@@ -570,7 +570,7 @@ export function SettingsBlocks({
     {
       id: "pricing-config",
       title: "التسعير والأنواع 💰",
-      subtitle: "اللحوم والأسماك والأسعار.",
+      subtitle: "الأسماك والتصنيف والأرباح — تسعير اللحوم يدوي.",
       tone: "amber",
       content: <PricingSettingsForm />
     },

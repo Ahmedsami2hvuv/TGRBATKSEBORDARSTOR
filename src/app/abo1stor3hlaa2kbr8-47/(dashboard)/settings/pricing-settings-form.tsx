@@ -11,6 +11,11 @@ type PricingConfig = {
   no_profit_keywords?: string[];
 };
 
+/** نظام الأسعار الثابتة للحوم ملغى نهائياً — نُفرّغها دائماً حتى لا تبقى في قاعدة البيانات */
+function clearedMeatPrices(): Record<string, { buy: number; sell: number }> {
+  return {};
+}
+
 export function PricingSettingsForm() {
   const [config, setConfig] = useState<PricingConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,13 +38,13 @@ export function PricingSettingsForm() {
             "عندگ", "عروسة", "عروسه", "غريبة", "غريبه", "كطان", "مزلك", "مزلگ", "ملزك", "نگرور",
             "نكرور", "وحر", "هامور", "سمك حامض", "سمك مشوي", "فاسكر", "ضلع"
           ],
-          meat_prices: {},
+          meat_prices: clearedMeatPrices(),
           no_profit_keywords: ["خبز", "خضرة", "خضره", "خظره", "خظرة"]
         };
         setConfig({
             meat_keywords: Array.isArray(data.meat_keywords) ? data.meat_keywords : defaultConfig.meat_keywords,
             fish_keywords: data.fish_keywords || defaultConfig.fish_keywords,
-            meat_prices: (data.meat_prices && typeof data.meat_prices === "object") ? data.meat_prices : defaultConfig.meat_prices,
+            meat_prices: clearedMeatPrices(),
             no_profit_keywords: data.no_profit_keywords || defaultConfig.no_profit_keywords,
             store_general_profit: data.store_general_profit !== undefined ? data.store_general_profit : defaultConfig.store_general_profit || 0,
         });
@@ -50,11 +55,16 @@ export function PricingSettingsForm() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const payload = {
+        ...config,
+        meat_prices: clearedMeatPrices(),
+      };
       await fetch(`/api${SECRET_ADMIN_PATH}/settings/pricing`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify(payload),
       });
+      setConfig(payload);
       alert("تم الحفظ بنجاح! ملاحظة: التغييرات ستطبق على الطلبات الجديدة.");
     } finally {
       setSaving(false);
@@ -159,59 +169,20 @@ export function PricingSettingsForm() {
 
       <div className="space-y-4 rounded-2xl border border-red-100 bg-red-50/30 p-4">
         <h3 className="flex items-center gap-2 font-black text-red-800">🥩 قسم اللحوم</h3>
+        <p className="text-xs text-slate-500 font-bold leading-relaxed">
+          الكلمات أدناه للتقارير والتصنيف فقط. تسعير اللحوم صار يدوياً بالكامل — لا يوجد تسعير تلقائي ولا أسعار ثابتة للحوم.
+        </p>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800 leading-relaxed">
+          تم إلغاء نظام الأسعار الثابتة/التلقائية للحوم نهائياً. أي أسعار قديمة محفوظة تُمسح عند الضغط على حفظ.
+        </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500">الكلمات المفتاحية للحوم (يفصل بينها بفاصلة)</label>
+          <label className="text-xs font-bold text-slate-500">الكلمات المفتاحية للحوم — للتقارير فقط (يفصل بينها بفاصلة)</label>
           <textarea
             className="w-full rounded-xl border border-red-200 p-3 text-sm font-bold outline-none focus:border-red-500"
             rows={3}
             value={config.meat_keywords.join(", ")}
             onChange={(e) => setConfig({ ...config, meat_keywords: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
           />
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500">أسعار اللحوم الثابتة (شراء - بيع) - بالآلاف</label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {Object.entries(config.meat_prices).map(([key, price]) => (
-              <div key={key} className="flex items-center gap-2 rounded-lg bg-white p-2 shadow-sm border border-red-100">
-                <span className="min-w-[60px] text-xs font-black">{key}</span>
-                <input
-                  type="number"
-                  placeholder="شراء"
-                  className="w-20 rounded-md border border-slate-200 p-1 text-center text-xs font-bold"
-                  value={price.buy}
-                  onChange={(e) => setConfig({
-                    ...config,
-                    meat_prices: { ...config.meat_prices, [key]: { ...price, buy: parseFloat(e.target.value) || 0 } }
-                  })}
-                />
-                <input
-                  type="number"
-                  placeholder="بيع"
-                  className="w-20 rounded-md border border-slate-200 p-1 text-center text-xs font-bold text-emerald-600"
-                  value={price.sell}
-                  onChange={(e) => setConfig({
-                    ...config,
-                    meat_prices: { ...config.meat_prices, [key]: { ...price, sell: parseFloat(e.target.value) || 0 } }
-                  })}
-                />
-                <button
-                   onClick={() => {
-                     const next = { ...config.meat_prices };
-                     delete next[key];
-                     setConfig({ ...config, meat_prices: next });
-                   }}
-                   className="text-red-400 hover:text-red-600 px-1"
-                >✕</button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => {
-                const name = prompt("أدخل اسم القطعية (مثلاً: ريش)");
-                if (name) setConfig({ ...config, meat_prices: { ...config.meat_prices, [name]: { buy: 0, sell: 0 } } });
-            }}
-            className="mt-2 text-[10px] font-black text-red-600 hover:underline"
-          >+ إضافة قطعية جديدة</button>
         </div>
       </div>
 
