@@ -291,14 +291,14 @@ function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
             <span className={ad.label}>الشفت الأول (بدء - انتهاء)</span>
             <div className="flex gap-2">
               <input name="shift1Start" type="time" defaultValue="08:00" className={ad.input} />
-              <input name="shift1End" type="time" defaultValue="13:00" className={ad.input} />
+              <input name="shift1End" type="time" defaultValue="12:00" className={ad.input} />
             </div>
           </label>
           <label className="flex flex-col gap-1">
             <span className={ad.label}>الشفت الثاني (بدء - انتهاء)</span>
             <div className="flex gap-2">
-              <input name="shift2Start" type="time" defaultValue="15:30" className={ad.input} />
-              <input name="shift2End" type="time" defaultValue="21:00" className={ad.input} />
+              <input name="shift2Start" type="time" defaultValue="16:00" className={ad.input} />
+              <input name="shift2End" type="time" defaultValue="20:00" className={ad.input} />
             </div>
           </label>
           <label className="flex flex-col gap-1">
@@ -315,8 +315,8 @@ function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
             />
           </label>
           <label className="flex items-center gap-2 sm:col-span-2 select-none cursor-pointer mt-1 bg-white/50 p-3 rounded-xl border border-slate-100">
-            <input name="bypassWithdrawalTime" type="checkbox" className="h-5 w-5 rounded border-2 border-slate-300" />
-            <span className="text-sm font-black text-slate-800">إلغاء قيود وقت استلام الراتب (يستطيع سحب راتبه في أي لحظة للتجربة)</span>
+            <input name="bypassWithdrawalTime" type="checkbox" defaultChecked className="h-5 w-5 rounded border-2 border-slate-300" />
+            <span className="text-sm font-black text-slate-800">السماح باستلام الراتب فوراً بعد تسجيل الحضور (بدون انتظار وقت مسائي)</span>
           </label>
         </div>
         {state?.error ? <p className={ad.error}>{state.error}</p> : null}

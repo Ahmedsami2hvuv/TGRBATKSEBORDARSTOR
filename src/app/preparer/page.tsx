@@ -18,7 +18,6 @@ import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 import { calculateAccumulatedSalaryInternal, recordPreparerWorkLog } from "./actions";
-import { getIraqTime } from "@/lib/baghdad-time";
 import { getPendingPreparationOrdersCount } from "@/lib/preparer-pending-orders";
 import { getPreparerShiftStatus } from "@/lib/preparer-shift";
 import { PreparerShiftPresenceButton } from "./preparer-shift-presence-button";
@@ -144,15 +143,8 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
-  // حساب الراتب المتاح للسحب لكي يظهر من الخارج
-  const iraqNow = getIraqTime(new Date());
-  const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
-  const withdrawalStr = (preparer as any).salaryWithdrawalTime || "20:00";
-  const [wH, wM] = withdrawalStr.split(":").map(Number);
-  const withdrawalMinutes = wH * 60 + wM;
-
-  const isBeforeWithdrawalTime = (preparer as any).bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
-  const withdrawableSalary = isBeforeWithdrawalTime ? Math.max(0, stats.accumulatedSalary - stats.todaySalary) : stats.accumulatedSalary;
+  // الراتب المتاح فوراً بعد تسجيل الحضور (نصف الراتب لكل شفت)
+  const withdrawableSalary = stats.accumulatedSalary || 0;
   
   const { Decimal } = await import("@prisma/client/runtime/library");
   const withdrawableSalaryStr = formatDinarAsAlfWithUnit(new Decimal(withdrawableSalary));

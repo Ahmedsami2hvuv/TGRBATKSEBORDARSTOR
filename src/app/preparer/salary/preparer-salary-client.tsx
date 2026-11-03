@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPreparerSalaryStats, setPreparerSalaryPinCode, withdrawPreparerSalary, verifyPreparerSalaryPinCode } from "../actions";
+import { getPreparerSalaryStats, withdrawPreparerSalary, verifyPreparerSalaryPinCode } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+
+type PendingShift = {
+  date: string;
+  kind: "morning" | "evening";
+  shiftLabel: string;
+  walletLabel: string;
+  amount: number;
+  isToday: boolean;
+};
 
 type Props = {
   auth: { p: string; exp: string; s: string };
@@ -20,26 +29,16 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     todaySalary: number;
     accumulatedSalary: number;
     withdrawableSalary: number;
-    isBeforeEightPM: boolean;
     hasPinCode: boolean;
     pinDisabled: boolean;
     unwithdrawnDays?: Array<{ date: string; morning: boolean; evening: boolean; amount: number; isToday?: boolean }>;
+    pendingShifts?: PendingShift[];
     rawAccumulatedSalary?: number;
     alreadyWithdrawnAlf?: number;
   } | null>(null);
 
-  // حالة إلغاء قفل الصفحة
   const [isUnlocked, setIsUnlocked] = useState(false);
-
-  // لتعيين الرمز السري لأول مرة
-  const [newPin, setNewPin] = useState("");
-  const [confirmNewPin, setConfirmNewPin] = useState("");
-
-  // لإدخال الرمز السري عند الدخول والسحب
   const [pin, setPin] = useState("");
-
-  // قيمة السحب المخصصة
-  const [withdrawAmount, setWithdrawAmount] = useState<number>(0);
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("p", auth.p);
@@ -65,16 +64,14 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             todaySalary: res.todaySalary || 0,
             accumulatedSalary: res.accumulatedSalary || 0,
             withdrawableSalary: withdrawable,
-            isBeforeEightPM: !!res.isBeforeEightPM,
             hasPinCode: hasPin,
             pinDisabled: pinDis,
             unwithdrawnDays: res.unwithdrawnDays || [],
+            pendingShifts: (res.pendingShifts || []) as PendingShift[],
             rawAccumulatedSalary: res.rawAccumulatedSalary || 0,
             alreadyWithdrawnAlf: res.alreadyWithdrawnAlf || 0
           });
-          setWithdrawAmount(withdrawable);
 
-          // إذا لم يكن هناك رمز سري أصلاً، أو إذا كان الرمز موقفاً، نفتح الصفحة مباشرة
           if (!hasPin || pinDis) {
             setIsUnlocked(true);
           }
@@ -91,7 +88,6 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     loadStats();
   }, [auth]);
 
-  // التحقق من الرمز لفتح قفل الصفحة
   const handleVerifyUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pin.trim()) {
@@ -117,64 +113,30 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     }
   };
 
-  // إعداد الرمز السري لأول مرة
-  const handleSetupPin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPin.trim()) {
-      toast.error("الرمز السري لا يمكن أن يكون فارغاً.");
-      return;
-    }
-    if (newPin !== confirmNewPin) {
-      toast.error("الرموز السرية غير متطابقة.");
-      return;
-    }
-
+  const runWithdraw = async (shift?: PendingShift) => {
     setSubmitting(true);
     const fd = new FormData();
     fd.set("p", auth.p);
     fd.set("exp", auth.exp);
     fd.set("s", auth.s);
-    fd.set("pinCode", newPin);
-
-    const res = await setPreparerSalaryPinCode(null, fd);
-    setSubmitting(false);
-
-    if (res.error) {
-      toast.error(res.error);
-    } else {
-      toast.success("تم تعيين الرمز السري بنجاح!");
-      loadStats();
+    fd.set("pinCode", pin);
+    if (shift) {
+      fd.set("shiftDate", shift.date);
+      fd.set("shiftKind", shift.kind);
     }
-  };
-
-  // معالجة طلب سحب الراتب الفعلي
-  const handleWithdraw = async () => {
-    if (withdrawAmount <= 0) {
-      toast.error("المبلغ يجب أن يكون أكبر من صفر.");
-      return;
-    }
-    if (stats && withdrawAmount > stats.withdrawableSalary) {
-      toast.error("المبلغ المطلوب يتجاوز الراتب المتاح للسحب.");
-      return;
-    }
-
-    setSubmitting(true);
-    const fd = new FormData();
-    fd.set("p", auth.p);
-    fd.set("exp", auth.exp);
-    fd.set("s", auth.s);
-    fd.set("pinCode", pin); // نمرر الرمز الذي تم استخدامه لفتح القفل
-    fd.set("amountAlf", String(withdrawAmount));
 
     const res = await withdrawPreparerSalary(null, fd);
     setSubmitting(false);
 
     if (res.error) {
       toast.error(res.error);
-    } else {
-      toast.success(`تم استلام مبلغ ${res.withdrawnAmount} الف وإضافته للمحفظة بنجاح!`);
-      window.location.href = `/preparer?${baseQuery.toString()}`;
+      return;
     }
+
+    const labels = res.withdrawnLabels?.join(" و ") || "الراتب";
+    toast.success(`تم تسجيل أعطيت ${res.withdrawnAmount} الف في المحفظة (${labels})`);
+    router.refresh();
+    window.location.href = `/preparer?${baseQuery.toString()}`;
   };
 
   if (loading) {
@@ -185,13 +147,12 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             <div className="absolute inset-0 rounded-full border-4 border-sky-500/30"></div>
             <div className="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm font-black text-slate-650 dark:text-slate-300">جارٍ جلب تفاصيل الراتب الفخمة…</p>
+          <p className="text-sm font-black text-slate-650 dark:text-slate-300">جارٍ جلب تفاصيل الراتب…</p>
         </div>
       </div>
     );
   }
 
-  // إذا كانت الصفحة مقفلة ويوجد رمز سري مفعل، نعرض شاشة التحقق الفخمة أولاً
   if (!isUnlocked && stats?.hasPinCode && !stats?.pinDisabled) {
     return (
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-855 dark:text-slate-100 flex items-center justify-center p-4">
@@ -242,11 +203,13 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     );
   }
 
+  const pendingShifts = stats?.pendingShifts || [];
+  const halfSalary = (stats?.dailySalary || 0) / 2;
+
   return (
     <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-855 dark:text-slate-100">
       <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">
         
-        {/* Header */}
         <header className="kse-glass-dark mb-8 flex items-center gap-4 border border-sky-200/40 dark:border-sky-800/20 px-4 py-4 shadow-xl rounded-[2rem] backdrop-blur-md">
           <Link
             href={`/preparer?${baseQuery.toString()}`}
@@ -258,18 +221,17 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             </svg>
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-black bg-gradient-to-l from-sky-600 to-indigo-500 dark:from-[#00f3ff] dark:to-cyan-400 bg-clip-text text-transparent">بوابة استلام الراتب</h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">المجهز الفني: {preparerName}</p>
+            <h1 className="text-xl font-black bg-gradient-to-l from-sky-600 to-indigo-500 dark:from-[#00f3ff] dark:to-cyan-400 bg-clip-text text-transparent">استلام راتب الشفت</h1>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">المجهز: {preparerName}</p>
           </div>
         </header>
 
-        {/* كارد الرصيد المالي الفاخر */}
-        <section className="relative overflow-hidden mb-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-indigo-950 p-8 text-white shadow-2xl border border-sky-500/20">
+        <section className="relative overflow-hidden mb-6 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-indigo-950 p-8 text-white shadow-2xl border border-sky-500/20">
           <div className="absolute -right-16 -top-16 size-48 rounded-full bg-sky-500/20 blur-3xl"></div>
           <div className="absolute -left-16 -bottom-16 size-48 rounded-full bg-purple-500/20 blur-3xl"></div>
 
           <div className="relative z-10 flex flex-col items-center text-center">
-            <span className="text-sm font-black text-sky-400 tracking-wider mb-2">الراتب المتاح للسحب</span>
+            <span className="text-sm font-black text-sky-400 tracking-wider mb-2">المتوفر للاستلام الآن</span>
             <div className="flex items-baseline gap-2 mb-6">
               <span className="text-5xl font-black bg-gradient-to-l from-white to-sky-100 bg-clip-text text-transparent tracking-tight tabular-nums">
                 {stats?.withdrawableSalary}
@@ -277,123 +239,82 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
               <span className="text-lg font-black text-sky-300">الف دينار</span>
             </div>
 
-            <div className="flex flex-col gap-4 w-full max-w-md border-t border-white/10 pt-6 mt-2">
-              <div className="flex justify-between items-center">
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">المتراكم الكلي للعمل:</span>
-                <span className="text-lg font-black text-white tabular-nums">
-                  {stats?.rawAccumulatedSalary} <span className="text-xs text-slate-450 font-bold">الف</span>
-                </span>
+            <div className="grid grid-cols-2 gap-3 w-full max-w-md border-t border-white/10 pt-6">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                <span className="block text-[10px] font-bold text-slate-400 mb-1">الراتب اليومي الكامل</span>
+                <span className="text-lg font-black tabular-nums">{stats?.dailySalary} <span className="text-xs">الف</span></span>
               </div>
-              {stats?.alreadyWithdrawnAlf ? (
-                <div className="flex justify-between items-center">
-                  <span className="block text-xs font-bold text-rose-400/80 uppercase tracking-widest">المسحوب سلفاً (جزئياً):</span>
-                  <span className="text-lg font-black text-rose-400/80 tabular-nums">
-                    - {stats.alreadyWithdrawnAlf} <span className="text-xs text-rose-500/80 font-bold">الف</span>
-                  </span>
-                </div>
-              ) : null}
-              <div className="flex justify-between items-center">
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">راتب اليوم الحالي:</span>
-                <span className="text-lg font-black text-sky-200 tabular-nums">
-                  {stats?.todaySalary} <span className="text-xs text-slate-450 font-bold">الف</span>
-                </span>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                <span className="block text-[10px] font-bold text-slate-400 mb-1">قيمة الشفت الواحد</span>
+                <span className="text-lg font-black tabular-nums text-emerald-300">{halfSalary} <span className="text-xs">الف</span></span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* التنبيهات وقسم السحب */}
-        <div className="kse-glass-dark border border-slate-200/50 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 shadow-lg">
-          
-          {stats?.isBeforeEightPM && stats.todaySalary > 0 && (
-            <div className="mb-6 flex gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
-              <span className="text-lg leading-none">⏳</span>
-              <div>
-                <p className="font-black text-sm mb-0.5">قيد توقيت السحب نشط</p>
-                <p className="font-medium text-slate-500 dark:text-slate-400">راتب اليوم الحالي سيتاح للسحب بعد الساعة 8 مساءً لتتمكن من استلام المستحقات بالكامل.</p>
-              </div>
-            </div>
-          )}
+        <div className="mb-6 rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200/60 dark:border-sky-800/40 p-4 text-right">
+          <p className="text-xs font-bold text-sky-800 dark:text-sky-200 leading-relaxed">
+            الراتب على شفتين: صبح ونص · عصر ونص. بعد تسجيل الحضور ينحسب الشفت فوراً. عند الضغط على الزر أدناه يتنزل للمحفظة كـ «أعطيت» مع كتابة راتب الصبح أو راتب العصر.
+          </p>
+        </div>
 
-          {stats?.withdrawableSalary === 0 ? (
+        <div className="kse-glass-dark border border-slate-200/50 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 shadow-lg space-y-4">
+          {pendingShifts.length === 0 ? (
             <div className="py-8 text-center">
-              <div className="size-16 rounded-full bg-amber-500/10 flex items-center justify-center text-3xl mx-auto mb-4">⚠️</div>
-              <p className="text-base font-black text-amber-600 dark:text-amber-400">لا يوجد راتب متاح للسحب حالياً</p>
+              <div className="size-16 rounded-full bg-amber-500/10 flex items-center justify-center text-3xl mx-auto mb-4">⏳</div>
+              <p className="text-base font-black text-amber-600 dark:text-amber-400">لا يوجد راتب جاهز للاستلام</p>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
-                {stats?.isBeforeEightPM && stats?.todaySalary > 0 
-                  ? "سيصبح راتب اليوم الحالي متاحاً للسحب فوراً بمجرد تجاوز الساعة 8 مساءً بتوقيت العراق."
-                  : "يرجى إتمام شفتات العمل الإضافية وحفظ عمليات الإسناد أو التسعير لتراكم الراتب."}
+                اضغط أولاً على زر تسجيل الحضور في وقت الشفت (الصبح أو العصر) حتى ينحسب لك نصف الراتب، ثم ارجع هنا لاستلامه.
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              
-              {/* شريط السحب ومربع الكتابة */}
-              <div className="space-y-4 rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200/50 dark:border-slate-800">
-                <label className="block text-right text-xs font-black text-slate-500 dark:text-slate-400">
-                  حدد المبلغ المراد سحبه (بالألف دينار)
-                </label>
-                
-                <div className="flex items-center gap-4">
-                  {/* شريط سحب منزلق */}
-                  <input
-                    type="range"
-                    min="0"
-                    max={stats?.withdrawableSalary || 0}
-                    step="0.5"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(Number(e.target.value))}
-                    className="flex-1 accent-emerald-500 cursor-pointer h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none"
-                  />
-                  
-                  {/* مربع إدخال رقمي يدوي */}
-                  <div className="relative w-28">
-                    <input
-                      type="number"
-                      min="0"
-                      max={stats?.withdrawableSalary || 0}
-                      step="0.5"
-                      value={withdrawAmount}
-                      onChange={(e) => {
-                        const val = Math.min(stats?.withdrawableSalary || 0, Math.max(0, Number(e.target.value)));
-                        setWithdrawAmount(val);
-                      }}
-                      className="w-full h-11 text-center font-black text-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-850 dark:text-white"
-                    />
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">
-                      ألف
-                    </span>
+            <>
+              {pendingShifts.map((shift) => (
+                <button
+                  key={`${shift.date}_${shift.kind}`}
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => runWithdraw(shift)}
+                  className="w-full rounded-3xl border border-emerald-200/70 dark:border-emerald-800/50 bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white p-5 shadow-xl transition transform active:scale-[0.98] disabled:opacity-50 text-right"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-base font-black">{shift.shiftLabel}</div>
+                      <div className="text-[11px] font-semibold text-emerald-100/90 mt-1">
+                        {new Date(shift.date).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                        {shift.isToday ? " · اليوم" : ""}
+                      </div>
+                      <div className="text-[10px] font-bold text-emerald-50/80 mt-1">يتسجل في المحفظة: أعطيت · {shift.shiftLabel}</div>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <div className="text-2xl font-black tabular-nums">{shift.amount}</div>
+                      <div className="text-[10px] font-bold text-emerald-100">الف دينار</div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </button>
+              ))}
 
-              {stats?.pinDisabled || !stats?.hasPinCode ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
-                  🔓 سيتم سحب المبلغ مباشرة دون طلب رمز أمان سري.
-                </div>
+              {pendingShifts.length > 1 ? (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => runWithdraw()}
+                  className="w-full h-14 rounded-3xl border-2 border-indigo-300 dark:border-indigo-700 bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg transition active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? "جاري التسجيل..." : `استلام الكل الآن (${stats?.withdrawableSalary} الف)`}
+                </button>
               ) : null}
-
-              <button
-                onClick={handleWithdraw}
-                disabled={submitting || withdrawAmount <= 0}
-                className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50"
-              >
-                {submitting ? "جاري سحب المبلغ..." : `تأكيد سحب ${withdrawAmount} الف دينار فوراً`}
-              </button>
-
-            </div>
+            </>
           )}
-
         </div>
 
-        {/* سجل الأيام غير المسحوبة */}
         {stats?.unwithdrawnDays && stats.unwithdrawnDays.length > 0 && (
           <section className="mt-8 kse-glass-dark border border-slate-200/50 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 shadow-lg">
             <h3 className="text-sm font-black text-slate-850 dark:text-slate-200 mb-4 text-right">
-              📅 سجل حضور وشفتات العمل غير المسحوبة
+              الشفتات المسجّلة وغير المستلمة بعد
             </h3>
             <div className="space-y-3">
-              {stats.unwithdrawnDays.map((day: any) => (
+              {stats.unwithdrawnDays.map((day) => (
                 <div key={day.date} className={`flex items-center justify-between p-3.5 rounded-2xl border ${day.isToday ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/60' : 'bg-orange-50/80 dark:bg-orange-950/30 border-orange-200/60 dark:border-orange-800/60'}`}>
                   <div className="text-right">
                     <span className={`block text-xs font-bold ${day.isToday ? 'text-emerald-800 dark:text-emerald-300' : 'text-orange-800 dark:text-orange-300'}`}>
@@ -403,12 +324,12 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
                     <span className="inline-flex gap-2 mt-1">
                       {day.morning && (
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg leading-none ${day.isToday ? 'bg-emerald-200/60 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-orange-200/60 text-orange-900 dark:bg-orange-900/50 dark:text-orange-200'}`}>
-                          الشفت الصباحي
+                          راتب الصبح
                         </span>
                       )}
                       {day.evening && (
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg leading-none ${day.isToday ? 'bg-emerald-200/60 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-orange-200/60 text-orange-900 dark:bg-orange-900/50 dark:text-orange-200'}`}>
-                          الشفت المسائي
+                          راتب العصر
                         </span>
                       )}
                     </span>

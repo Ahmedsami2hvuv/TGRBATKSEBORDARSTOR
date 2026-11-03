@@ -2137,9 +2137,9 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
   const logMinutes = logTime.hours * 60 + logTime.minutes;
 
   const s1Start = parseShiftTimeToMinutes(preparer?.shift1Start || "08:00", false);
-  const s1End = parseShiftTimeToMinutes(preparer?.shift1End || "13:00", false);
-  const s2Start = parseShiftTimeToMinutes(preparer?.shift2Start || "15:30", true);
-  const s2End = parseShiftTimeToMinutes(preparer?.shift2End || "23:59", true);
+  const s1End = parseShiftTimeToMinutes(preparer?.shift1End || "12:00", false);
+  const s2Start = parseShiftTimeToMinutes(preparer?.shift2Start || "16:00", true);
+  const s2End = parseShiftTimeToMinutes(preparer?.shift2End || "20:00", true);
 
   if (logMinutes >= s1Start && logMinutes <= s1End) {
     return "shift1";
@@ -2152,7 +2152,31 @@ async function determineShiftName(preparerId: string, time: Date): Promise<strin
   return "";
 }
 
-// دالة احتساب الشفتات المستحقة
+/** تسمية قيد المحفظة لراتب شفت واحد */
+export function buildPreparerShiftSalaryLabel(kind: "morning" | "evening", dateKey: string): string {
+  const name = kind === "morning" ? "راتب الصبح" : "راتب العصر";
+  return `[راتب] ${name} ${dateKey}`;
+}
+
+function parsePreparerShiftSalaryLabel(label: string): { kind: "morning" | "evening"; dateKey: string } | null {
+  const m = String(label || "").match(/\[راتب\]\s*(راتب الصبح|راتب العصر)\s+(\d{4}-\d{1,2}-\d{1,2})/);
+  if (!m) return null;
+  return {
+    kind: m[1] === "راتب الصبح" ? "morning" : "evening",
+    dateKey: m[2],
+  };
+}
+
+export type PreparerPendingShiftSalary = {
+  date: string;
+  kind: "morning" | "evening";
+  shiftLabel: string;
+  walletLabel: string;
+  amount: number;
+  isToday: boolean;
+};
+
+// دالة احتساب الشفتات المستحقة (نصف الراتب لكل شفت: صبح / عصر)
 export async function calculateAccumulatedSalaryInternal(preparerId: string) {
   await ensurePreparerSalaryConfigColumnsIfMissing();
   await ensurePreparerWorkLogShiftNameColumnIfMissing();
@@ -2173,14 +2197,34 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
     }
   });
 
-  if (!preparer) return { dailySalary: 0, todaySalary: 0, accumulatedSalary: 0 };
+  if (!preparer) {
+    return {
+      dailySalary: 0,
+      todaySalary: 0,
+      accumulatedSalary: 0,
+      unwithdrawnDays: [] as Array<{ date: string; morning: boolean; evening: boolean; amount: number; isToday?: boolean }>,
+      pendingShifts: [] as PreparerPendingShiftSalary[],
+      rawAccumulatedSalary: 0,
+      alreadyWithdrawnAlf: 0,
+    };
+  }
 
   const dailySalary = Number(preparer.dailySalary || 0);
-  if (dailySalary <= 0) return { dailySalary, todaySalary: 0, accumulatedSalary: 0 };
+  if (dailySalary <= 0) {
+    return {
+      dailySalary,
+      todaySalary: 0,
+      accumulatedSalary: 0,
+      unwithdrawnDays: [] as Array<{ date: string; morning: boolean; evening: boolean; amount: number; isToday?: boolean }>,
+      pendingShifts: [] as PreparerPendingShiftSalary[],
+      rawAccumulatedSalary: 0,
+      alreadyWithdrawnAlf: 0,
+    };
+  }
 
   const lastWithdrawal = preparer.lastSalaryWithdrawalAt || preparer.createdAt || new Date();
 
-  // جلب حركات العمل بعد تاريخ آخر سحب
+  // جلب حركات العمل بعد تاريخ آخر سحب كامل
   const workLogs = await prisma.companyPreparerWorkLog.findMany({
     where: {
       preparerId,
@@ -2193,9 +2237,6 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
   const todayKey = `${iraqNow.year}-${iraqNow.month}-${iraqNow.day}`;
 
   const shiftHalfValue = dailySalary / 2;
-  const uniqueShifts = new Set<string>();
-  let todaySalary = 0;
-
   const dayMap = new Map<string, { morning: boolean; evening: boolean }>();
 
   workLogs.forEach(log => {
@@ -2216,30 +2257,16 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
         dayMap.set(dayKey, { morning: false, evening: false });
       }
       const dayData = dayMap.get(dayKey)!;
-      if (isMorning) {
-        dayData.morning = true;
-        uniqueShifts.add(`${dayKey}_morning`);
-      }
-      if (isEvening) {
-        dayData.evening = true;
-        uniqueShifts.add(`${dayKey}_evening`);
-      }
+      if (isMorning) dayData.morning = true;
+      if (isEvening) dayData.evening = true;
     }
   });
 
-  if (dayMap.has(todayKey)) {
-    const todayData = dayMap.get(todayKey)!;
-    if (todayData.morning) todaySalary += shiftHalfValue;
-    if (todayData.evening) todaySalary += shiftHalfValue;
-  }
-
-  // التأكد من عدم تجاوز راتب اليوم القيمة الكلية لليوم
-  if (todaySalary > dailySalary) {
-    todaySalary = dailySalary;
-  }
-
-  // جلب السحوبات الجزئية التي تمت منذ آخر تصفير
+  // قيود الراتب المسجّلة في المحفظة منذ آخر تصفير
+  const withdrawnShiftKeys = new Set<string>();
+  let orphanWithdrawnAlf = 0;
   let alreadyWithdrawnAlf = 0;
+
   if (preparer.walletEmployeeId) {
     const miscEntries = await prisma.employeeWalletMiscEntry.findMany({
       where: {
@@ -2248,32 +2275,99 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
         label: { contains: "راتب" },
         direction: "give"
       },
-      select: { amountDinar: true }
+      select: { amountDinar: true, label: true }
     });
-    let sumWithdrawnDinar = 0;
+
     for (const entry of miscEntries) {
-      sumWithdrawnDinar += Number(entry.amountDinar) || 0;
+      const amt = Number(entry.amountDinar) || 0;
+      alreadyWithdrawnAlf += amt;
+      const parsed = parsePreparerShiftSalaryLabel(entry.label || "");
+      if (parsed) {
+        withdrawnShiftKeys.add(`${parsed.dateKey}_${parsed.kind}`);
+      } else {
+        orphanWithdrawnAlf += amt;
+      }
     }
-    alreadyWithdrawnAlf = sumWithdrawnDinar;
   }
 
-  const rawAccumulatedSalary = uniqueShifts.size * shiftHalfValue;
-  const accumulatedSalary = Math.max(0, rawAccumulatedSalary - alreadyWithdrawnAlf);
+  // بناء قائمة الشفتات المستحقة وغير المسحوبة بعد
+  const allEarnedShifts: PreparerPendingShiftSalary[] = [];
+  for (const [dayKey, data] of dayMap.entries()) {
+    if (data.morning) {
+      allEarnedShifts.push({
+        date: dayKey,
+        kind: "morning",
+        shiftLabel: "راتب الصبح",
+        walletLabel: buildPreparerShiftSalaryLabel("morning", dayKey),
+        amount: shiftHalfValue,
+        isToday: dayKey === todayKey,
+      });
+    }
+    if (data.evening) {
+      allEarnedShifts.push({
+        date: dayKey,
+        kind: "evening",
+        shiftLabel: "راتب العصر",
+        walletLabel: buildPreparerShiftSalaryLabel("evening", dayKey),
+        amount: shiftHalfValue,
+        isToday: dayKey === todayKey,
+      });
+    }
+  }
 
-  const unwithdrawnDays = Array.from(dayMap.entries()).map(([dayKey, data]) => {
-    let amount = 0;
-    if (data.morning) amount += shiftHalfValue;
-    if (data.evening) amount += shiftHalfValue;
-    return {
-      date: dayKey,
-      morning: data.morning,
-      evening: data.evening,
-      amount,
-      isToday: dayKey === todayKey
-    };
+  // الأقدم أولاً لمعالجة السحوبات القديمة العامة
+  allEarnedShifts.sort((a, b) => {
+    const byDate = a.date.localeCompare(b.date);
+    if (byDate !== 0) return byDate;
+    return a.kind === "morning" ? -1 : 1;
   });
 
-  // فرز الأيام تنازلياً بحيث يكون الأحدث (أو اليوم الحالي) في الأعلى
+  let orphanLeft = orphanWithdrawnAlf;
+  const pendingShifts: PreparerPendingShiftSalary[] = [];
+  for (const shift of allEarnedShifts) {
+    const key = `${shift.date}_${shift.kind}`;
+    if (withdrawnShiftKeys.has(key)) continue;
+    if (orphanLeft >= shift.amount - 0.001) {
+      orphanLeft -= shift.amount;
+      continue;
+    }
+    pendingShifts.push(shift);
+  }
+
+  // الأحدث أولاً للعرض
+  pendingShifts.sort((a, b) => {
+    const byDate = b.date.localeCompare(a.date);
+    if (byDate !== 0) return byDate;
+    return a.kind === "morning" ? -1 : 1;
+  });
+
+  let todaySalary = 0;
+  for (const shift of pendingShifts) {
+    if (shift.isToday) todaySalary += shift.amount;
+  }
+  if (todaySalary > dailySalary) todaySalary = dailySalary;
+
+  const rawAccumulatedSalary = allEarnedShifts.length * shiftHalfValue;
+  const accumulatedSalary = pendingShifts.reduce((sum, s) => sum + s.amount, 0);
+
+  const dayPendingMap = new Map<string, { morning: boolean; evening: boolean; amount: number; isToday: boolean }>();
+  for (const shift of pendingShifts) {
+    if (!dayPendingMap.has(shift.date)) {
+      dayPendingMap.set(shift.date, { morning: false, evening: false, amount: 0, isToday: shift.isToday });
+    }
+    const d = dayPendingMap.get(shift.date)!;
+    if (shift.kind === "morning") d.morning = true;
+    if (shift.kind === "evening") d.evening = true;
+    d.amount += shift.amount;
+  }
+
+  const unwithdrawnDays = Array.from(dayPendingMap.entries()).map(([dayKey, data]) => ({
+    date: dayKey,
+    morning: data.morning,
+    evening: data.evening,
+    amount: data.amount,
+    isToday: data.isToday,
+  }));
   unwithdrawnDays.sort((a, b) => b.date.localeCompare(a.date));
 
   return {
@@ -2281,6 +2375,7 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
     todaySalary,
     accumulatedSalary,
     unwithdrawnDays,
+    pendingShifts,
     rawAccumulatedSalary,
     alreadyWithdrawnAlf
   };
@@ -2298,6 +2393,7 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
   hasPinCode?: boolean;
   pinDisabled?: boolean;
   unwithdrawnDays?: any[];
+  pendingShifts?: PreparerPendingShiftSalary[];
   rawAccumulatedSalary?: number;
   alreadyWithdrawnAlf?: number;
 }> {
@@ -2320,15 +2416,9 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
     if (!preparer) return { error: "المجهز غير موجود." };
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
-    const iraqNow = getIraqTime(new Date());
-    
-    const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
-    const withdrawalStr = preparer.salaryWithdrawalTime || "20:00";
-    const [wH, wM] = withdrawalStr.split(":").map(Number);
-    const withdrawalMinutes = wH * 60 + wM;
 
-    const isBeforeEightPM = preparer.bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
-    const withdrawableSalary = isBeforeEightPM ? Math.max(0, stats.accumulatedSalary - stats.todaySalary) : stats.accumulatedSalary;
+    // الراتب ينزل فوراً بعد تسجيل الحضور — بدون انتظار ساعة السحب المسائية
+    const withdrawableSalary = stats.accumulatedSalary;
 
     return {
       ok: true,
@@ -2336,10 +2426,11 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
       todaySalary: stats.todaySalary,
       accumulatedSalary: stats.accumulatedSalary,
       withdrawableSalary,
-      isBeforeEightPM,
+      isBeforeEightPM: false,
       hasPinCode: !!preparer.salaryPinCode && !preparer.salaryPinDisabled,
       pinDisabled: preparer.salaryPinDisabled,
       unwithdrawnDays: stats.unwithdrawnDays,
+      pendingShifts: stats.pendingShifts,
       rawAccumulatedSalary: stats.rawAccumulatedSalary,
       alreadyWithdrawnAlf: stats.alreadyWithdrawnAlf
     };
@@ -2433,13 +2524,16 @@ export async function enablePreparerSalaryPinCode(_prev: any, formData: FormData
   }
 }
 
-// أكشن سحب واستلام الراتب
-export async function withdrawPreparerSalary(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string; withdrawnAmount?: number }> {
+// أكشن سحب واستلام الراتب — يسجّل «أعطيت» في المحفظة لكل شفت (راتب الصبح / راتب العصر)
+export async function withdrawPreparerSalary(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string; withdrawnAmount?: number; withdrawnLabels?: string[] }> {
   try {
     const v = readPortal(formData);
     if (!v.ok) return { error: "الرابط غير صالح." };
 
     const pinCode = String(formData.get("pinCode") ?? "").trim();
+    const shiftDate = String(formData.get("shiftDate") ?? "").trim();
+    const shiftKindRaw = String(formData.get("shiftKind") ?? "").trim();
+    const shiftKind = shiftKindRaw === "morning" || shiftKindRaw === "evening" ? shiftKindRaw : null;
 
     await ensurePreparerSalaryConfigColumnsIfMissing();
 
@@ -2469,59 +2563,40 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
     }
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
-    const iraqNow = getIraqTime(new Date());
-    
-    const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
-    const withdrawalStr = preparer.salaryWithdrawalTime || "20:00";
-    const [wH, wM] = withdrawalStr.split(":").map(Number);
-    const withdrawalMinutes = wH * 60 + wM;
+    let shiftsToWithdraw = stats.pendingShifts || [];
 
-    const isBeforeWithdrawalTime = preparer.bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
-
-    let withdrawableSalary = stats.accumulatedSalary;
-    if (isBeforeWithdrawalTime) {
-      withdrawableSalary = Math.max(0, stats.accumulatedSalary - stats.todaySalary);
+    // سحب شفت واحد محدد (صبح أو عصر)
+    if (shiftDate && shiftKind) {
+      shiftsToWithdraw = shiftsToWithdraw.filter((s) => s.date === shiftDate && s.kind === shiftKind);
+      if (shiftsToWithdraw.length === 0) {
+        return { error: "هذا الشفت غير متاح للسحب أو تم استلامه مسبقاً." };
+      }
     }
 
-    const customAmountStr = formData.get("amountAlf") ? String(formData.get("amountAlf")).trim() : "";
-    let amountToWithdraw = withdrawableSalary;
-
-    if (customAmountStr) {
-      const parsedVal = parseFloat(customAmountStr);
-      if (isNaN(parsedVal) || parsedVal <= 0) {
-        return { error: "المبلغ المراد سحبه غير صالح." };
-      }
-      if (parsedVal > withdrawableSalary) {
-        return { error: `المبلغ المطلوب (${parsedVal} الف) يتجاوز الراتب المتاح للسحب (${withdrawableSalary} الف).` };
-      }
-      amountToWithdraw = parsedVal;
+    if (shiftsToWithdraw.length === 0) {
+      return { error: "لا يوجد راتب متاح للاستلام حالياً. سجّل حضورك أولاً عبر زر تسجيل الحضور." };
     }
 
+    const amountToWithdraw = shiftsToWithdraw.reduce((sum, s) => sum + s.amount, 0);
     const amountDinar = new Decimal(amountToWithdraw);
+    const withdrawnLabels = shiftsToWithdraw.map((s) => s.shiftLabel);
 
-    if (amountDinar.lte(0)) {
-      if (isBeforeWithdrawalTime && stats.todaySalary > 0) {
-        return {
-          error: `راتبك اليوم ${stats.todaySalary} الف وراتبك التراكمي ${stats.accumulatedSalary} الف. الراتب المتاح للسحب حالياً هو ${withdrawableSalary} الف. انتظر لتصبح الساعة ${withdrawalStr} لكي تستلم التراكمي بأكمله.`
-        };
-      }
-      return { error: "لا يوجد راتب متراكم متاح للاستلام حالياً." };
-    }
-
-    // إجراء العملية في قاعدة البيانات
+    // إجراء العملية في قاعدة البيانات: قيد «أعطيت» منفصل لكل شفت
     await prisma.$transaction(async (tx) => {
-      // 1. تسجيل العملية المالية في محفظة الموظف كخصم (راتب مستلم) ببادئة مميزة [راتب] - تم تغييرها إلى give لخصم الرصيد بشكل صحيح
-      await tx.employeeWalletMiscEntry.create({
-        data: {
-          employeeId: preparer.walletEmployeeId!,
-          direction: CourierWalletMiscDirection.give,
-          amountDinar: amountDinar,
-          label: `[راتب] استلام راتب المجهز للشفتات المتراكمة`,
-        }
-      });
+      for (const shift of shiftsToWithdraw) {
+        await tx.employeeWalletMiscEntry.create({
+          data: {
+            employeeId: preparer.walletEmployeeId!,
+            direction: CourierWalletMiscDirection.give,
+            amountDinar: new Decimal(shift.amount),
+            label: shift.walletLabel,
+          }
+        });
+      }
 
-      // 2. تحديث تاريخ آخر عملية استلام للوقت الحالي فقط إذا تم سحب الراتب التراكمي الكلي بأكمله
-      if (amountToWithdraw >= stats.accumulatedSalary - 0.01) {
+      // إذا لم يتبقَّ شفتات مستحقة بعد هذا السحب، نحدّث نقطة التصفير
+      const remainingAfter = (stats.pendingShifts || []).length - shiftsToWithdraw.length;
+      if (remainingAfter <= 0) {
         await tx.companyPreparer.update({
           where: { id: v.preparerId },
           data: { lastSalaryWithdrawalAt: new Date() }
@@ -2533,6 +2608,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
     const totals = await getPreparerMoneyTotals(v.preparerId);
     const remainStr = totals ? formatDinarAsAlfWithUnit(totals.remain) : "0";
     const amountStr = formatDinarAsAlfWithUnit(amountDinar);
+    const labelsStr = withdrawnLabels.join(" + ");
 
     // إرسال الإشعارات لبوتات تليجرام
     try {
@@ -2540,6 +2616,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
         `💵 <b>سحب راتب مجهز</b>`,
         `👤 <b>المجهز:</b> ${escapeTelegramHtml(preparer.name)}`,
         `💰 <b>المبلغ المسحوب:</b> ${amountStr}`,
+        `🏷️ <b>التفاصيل:</b> ${escapeTelegramHtml(labelsStr)}`,
         `💼 <b>المتبقي بالمحفظة:</b> ${remainStr}`,
         `📅 <b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`
       ].join("\n");
@@ -2548,27 +2625,23 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
       const managementBotToken = await getBotTokenByPurpose("management");
       const preparerBotToken = await getBotTokenByPurpose("preparer");
 
-      // 1. إشعار جروب تليجرام (بوت الإشعارات)
       if (notificationBotToken) {
         await sendTelegramMessage(msg, { botToken: notificationBotToken });
       }
 
-      // 2. إشعار بوت الإدارة
       if (managementBotToken && managementBotToken !== notificationBotToken) {
         await sendTelegramMessage(msg, { botToken: managementBotToken });
       }
 
-      // 3. إشعار المجهز نفسه (بوت المجهزين)
       if (preparerBotToken && preparer.telegramUserId) {
         await sendTelegramHtmlToChat(preparer.telegramUserId, `✅ <b>تم استلام راتبك بنجاح!</b>\n\n${msg}`, preparerBotToken);
       }
 
-      // 4. إرسال إشعار OneSignal للأدمن كإشعار عائم منبثق على الهاتف
       try {
         const { sendOneSignalNotification } = await import("@/lib/onesignal-server");
         await sendOneSignalNotification({
           title: `💵 طلب تسوية حساب مجهز`,
-          body: `المجهز: ${preparer.name} قام بسحب ${amountStr}. المتبقي: ${remainStr}`,
+          body: `المجهز: ${preparer.name} قام بسحب ${amountStr} (${labelsStr}). المتبقي: ${remainStr}`,
           url: `https://aboakbr.com/abo1stor3hlaa2kbr8-47/credit-book`,
           externalIds: ["admin_global"],
           targetApp: "admin",
@@ -2577,6 +2650,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
             preparerName: preparer.name,
             amount: amountStr,
             remain: remainStr,
+            labels: labelsStr,
             time: new Date().toLocaleString("ar-IQ")
           }
         });
@@ -2590,7 +2664,8 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     revalidatePath("/preparer");
     revalidatePath("/preparer/wallet");
-    return { ok: true, withdrawnAmount: amountToWithdraw };
+    revalidatePath("/preparer/salary");
+    return { ok: true, withdrawnAmount: amountToWithdraw, withdrawnLabels };
   } catch (e) {
     console.error("withdrawPreparerSalary error:", e);
     return { error: "فشل استلام الراتب بسبب خطأ تقني." };

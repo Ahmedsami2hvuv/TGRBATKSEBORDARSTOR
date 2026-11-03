@@ -29,9 +29,9 @@ export async function createCompanyPreparer(_prev: PreparerFormState, formData: 
   const dailySalary = parseFloat(dailySalaryRaw) || 0;
 
   const shift1Start = String(formData.get("shift1Start") ?? "08:00").trim();
-  const shift1End = String(formData.get("shift1End") ?? "13:00").trim();
-  const shift2Start = String(formData.get("shift2Start") ?? "15:30").trim();
-  const shift2End = String(formData.get("shift2End") ?? "21:00").trim();
+  const shift1End = String(formData.get("shift1End") ?? "12:00").trim();
+  const shift2Start = String(formData.get("shift2Start") ?? "16:00").trim();
+  const shift2End = String(formData.get("shift2End") ?? "20:00").trim();
   const salaryWithdrawalTime = String(formData.get("salaryWithdrawalTime") ?? "20:00").trim();
   const bypassWithdrawalTime = formData.get("bypassWithdrawalTime") === "1" || formData.get("bypassWithdrawalTime") === "on";
 
@@ -182,9 +182,9 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
   const dailySalary = parseFloat(dailySalaryRaw) || 0;
 
   const shift1Start = String(formData.get("shift1Start") ?? "08:00").trim();
-  const shift1End = String(formData.get("shift1End") ?? "13:00").trim();
-  const shift2Start = String(formData.get("shift2Start") ?? "15:30").trim();
-  const shift2End = String(formData.get("shift2End") ?? "21:00").trim();
+  const shift1End = String(formData.get("shift1End") ?? "12:00").trim();
+  const shift2Start = String(formData.get("shift2Start") ?? "16:00").trim();
+  const shift2End = String(formData.get("shift2End") ?? "20:00").trim();
   const salaryWithdrawalTime = String(formData.get("salaryWithdrawalTime") ?? "20:00").trim();
   const bypassWithdrawalTime = formData.get("bypassWithdrawalTime") === "1" || formData.get("bypassWithdrawalTime") === "on";
 

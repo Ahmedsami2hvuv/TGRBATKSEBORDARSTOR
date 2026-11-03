@@ -69,17 +69,17 @@ export async function ensurePreparerSalaryConfigColumnsIfMissing(): Promise<void
     }
     if (!colNames.includes("shift1End")) {
       await prisma.$executeRawUnsafe(
-        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift1End" TEXT NOT NULL DEFAULT '13:00'`,
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift1End" TEXT NOT NULL DEFAULT '12:00'`,
       );
     }
     if (!colNames.includes("shift2Start")) {
       await prisma.$executeRawUnsafe(
-        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2Start" TEXT NOT NULL DEFAULT '15:30'`,
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2Start" TEXT NOT NULL DEFAULT '16:00'`,
       );
     }
     if (!colNames.includes("shift2End")) {
       await prisma.$executeRawUnsafe(
-        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2End" TEXT NOT NULL DEFAULT '21:00'`,
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2End" TEXT NOT NULL DEFAULT '20:00'`,
       );
     }
     if (!colNames.includes("salaryWithdrawalTime")) {

@@ -175,7 +175,7 @@ export function PreparerShiftPresenceButton({ auth, initialShow, shiftLabel }: P
             <svg className="h-6 w-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
-            <span>{shiftLabel ? `تم تسجيل الشفت ${shiftLabel} بنجاح` : "تم تسجيل الشفت بنجاح"}</span>
+            <span>{shiftLabel ? `تم تسجيل حضور ${shiftLabel} وحساب الراتب` : "تم تسجيل الحضور وحساب الراتب"}</span>
           </div>
         ) : (
           <button
@@ -199,7 +199,7 @@ export function PreparerShiftPresenceButton({ auth, initialShow, shiftLabel }: P
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                <span>جاري تسجيل الشفت...</span>
+                <span>جاري تسجيل الحضور...</span>
               </span>
             ) : (
               <>
@@ -208,7 +208,7 @@ export function PreparerShiftPresenceButton({ auth, initialShow, shiftLabel }: P
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </span>
-                <span className="text-lg tracking-wide">{shiftLabel ? `تسجيل الشفت ${shiftLabel}` : "تسجيل شفت"}</span>
+                <span className="text-lg tracking-wide">{shiftLabel ? `تسجيل حضور ${shiftLabel}` : "تسجيل حضور"}</span>
               </>
             )}
           </button>

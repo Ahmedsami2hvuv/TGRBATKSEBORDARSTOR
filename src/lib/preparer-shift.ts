@@ -71,9 +71,9 @@ export async function getPreparerShiftStatus(preparerId: string): Promise<Prepar
   const currentMinutes = iraq.hours * 60 + iraq.minutes;
 
   const s1Start = parseShiftTimeToMinutes(preparer.shift1Start || "08:00", false);
-  const s1End = parseShiftTimeToMinutes(preparer.shift1End || "13:00", false);
-  const s2Start = parseShiftTimeToMinutes(preparer.shift2Start || "15:30", true);
-  const s2End = parseShiftTimeToMinutes(preparer.shift2End || "23:59", true);
+  const s1End = parseShiftTimeToMinutes(preparer.shift1End || "12:00", false);
+  const s2Start = parseShiftTimeToMinutes(preparer.shift2Start || "16:00", true);
+  const s2End = parseShiftTimeToMinutes(preparer.shift2End || "20:00", true);
 
   let shiftKey: "shift1" | "shift2" | null = null;
   let shiftLabel = "";
