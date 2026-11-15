@@ -431,39 +431,41 @@ export function OrderViewContent({
             </div>
           </div>
 
-          {/* السطر الثاني: زر التعديل + زر تعديل التسعير + زر البصمة + التاريخ + الوقت */}
+          {/* السطر الثاني: تعديل الطلبية + تعديل التسعير جنباً إلى جنب، ثم البصمة والتاريخ والوقت */}
           <div className="flex items-center justify-center gap-[8px] w-full flex-wrap sm:flex-nowrap">
-            {/* زر تعديل الطلب */}
-            <Link
-              href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-              className="h-[34px] rounded-full bg-white border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#F0F9FF] transition"
-            >
-              <span className="text-[12px] font-black text-[#0369A1] leading-none whitespace-nowrap">تعديل</span>
-              <span
-                className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0284C7]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(2,132,199,0.2)] shrink-0"
-                style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}
+            {/* زوج أزرار التعديل: تعديل الطلبية | تعديل تسعير التجهيز */}
+            <div className="flex items-center gap-[6px] shrink-0">
+              <Link
+                href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+                className="h-[34px] rounded-full bg-white border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[5px] pl-[8px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.12),inset_0_1px_0_white] active:scale-[0.97] shrink-0 hover:bg-[#F0F9FF] transition"
+                title="تعديل بيانات الطلبية"
               >
-                <svg className="w-[10px] h-[10px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-              </span>
-            </Link>
-
-            {/* زر تعديل التسعير يظهر بجانب القلم ويفتح لوحة التسعير داخل الطلبية */}
-            {isPreparationOrder && (
-              <button
-                type="button"
-                onClick={() => setPricingOpen(true)}
-                className="h-[34px] rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
-                title="تعديل أسعار ومواد التجهيز داخل الطلبية"
-              >
-                <span className="text-[12px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل التسعير</span>
-                <span className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#38BDF8]/40 shrink-0" style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}>
-                  <span className="text-[11px] leading-none">🏷️</span>
+                <span className="text-[12px] font-black text-[#0369A1] leading-none whitespace-nowrap">تعديل الطلبية</span>
+                <span
+                  className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#0284C7]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_3px_rgba(2,132,199,0.2)] shrink-0"
+                  style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}
+                >
+                  <svg className="w-[10px] h-[10px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
                 </span>
-              </button>
-            )}
+              </Link>
+
+              {isPreparationOrder && (
+                <button
+                  type="button"
+                  onClick={() => setPricingOpen(true)}
+                  className="h-[34px] rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
+                  title="تعديل أسعار ومواد التجهيز من داخل الطلبية"
+                >
+                  <span className="text-[12px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل التسعير</span>
+                  <span className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#38BDF8]/40 shrink-0" style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}>
+                    <span className="text-[11px] leading-none">🏷️</span>
+                  </span>
+                </button>
+              )}
+            </div>
 
             {/* زر البصمة الدائري الأحمر المشع */}
             <div className="shrink-0">
@@ -1015,13 +1017,15 @@ export function OrderViewContent({
                 <span>قائمة المواد والملاحظات</span>
               </p>
               {isPreparationOrder && (
-                <Link
-                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
+                <button
+                  type="button"
+                  onClick={() => setPricingOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white border border-[#38BDF8] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
+                  title="تعديل أسعار ومواد التجهيز من داخل الطلبية"
                 >
                   <span>🏷️</span>
                   <span>تعديل التسعير والمواد</span>
-                </Link>
+                </button>
               )}
             </div>
 

@@ -971,12 +971,13 @@ export function PreparerOrderDetailSection({
           />
         </div>
 
-        {/* اليسار: زر تعديل + زر إغلاق */}
+        {/* اليسار: زر تعديل الطلبية + زر تعديل التسعير + زر إغلاق */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setEditPanelOpen(!editPanelOpen)}
             className="bg-white border border-[#D0DDFB] rounded-[10px] px-2.5 py-1 text-[#0B2E8C] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs hover:bg-[#EEF3FF] active:scale-95 transition-all"
+            title="تعديل بيانات الطلبية"
           >
             <div className="w-4 h-4 rounded-full bg-[#EEF3FF] border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C]">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -984,8 +985,21 @@ export function PreparerOrderDetailSection({
                 <path d="m15 5 4 4" />
               </svg>
             </div>
-            <span>تعديل</span>
+            <span>تعديل الطلبية</span>
           </button>
+
+          {canEditPricing && pricingEditHref ? (
+            <Link
+              href={pricingEditHref}
+              className="bg-gradient-to-r from-[#0B2E8C] to-[#1E4DB7] border border-[#0B2E8C] rounded-[10px] px-2.5 py-1 text-[#FFC107] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs hover:brightness-110 active:scale-95 transition-all"
+              title="تعديل تسعير مواد التجهيز"
+            >
+              <div className="w-4 h-4 rounded-full bg-white/15 border border-[#FFC107]/40 flex items-center justify-center">
+                <span className="text-[10px] leading-none">🏷️</span>
+              </div>
+              <span>تعديل التسعير</span>
+            </Link>
+          ) : null}
 
           {onCloseModal ? (
             <button
