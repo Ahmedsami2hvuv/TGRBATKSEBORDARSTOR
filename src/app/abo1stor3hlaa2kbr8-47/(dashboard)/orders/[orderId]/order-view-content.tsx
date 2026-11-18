@@ -36,12 +36,12 @@ import { AdminVoiceNoteSection } from "./edit/admin-voice-note-section";
 import { DeleteAdminVoiceNoteButton } from "./edit/delete-admin-voice-note-button";
 import { AdminCustomerOrderHistory, AdminCustomerPhoneInteractive } from "./admin-customer-order-history";
 import { ClickableNotesCard } from "@/components/clickable-notes-card";
-import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { AdminLuxuryShopCard } from "./admin-luxury-shop-card";
 import { AdminLuxuryCustomerCard } from "./admin-luxury-customer-card";
 import { AdminLuxuryOrderInfoCard } from "./admin-luxury-order-info-card";
 import { FloatingOrderActionButton } from "@/components/floating-order-action-button";
+import { hasValidPreparerShoppingList } from "@/lib/preparer-shopping-payload";
 
 const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-2xl border-2 border-slate-200 shadow-sm bg-slate-50 relative";
 const squarePhotoImg = "h-full w-full object-cover";
@@ -157,7 +157,6 @@ export function OrderViewContent({
 }) {
   const router = useRouter();
   const [designerConfigState, setDesignerConfigState] = useState(designerConfig);
-  const [pricingOpen, setPricingOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
   const [isShopCardExpanded, setIsShopCardExpanded] = useState(false);
@@ -241,15 +240,7 @@ export function OrderViewContent({
 
   const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
 
-  const isPreparationOrder = Boolean(
-    order.submittedByCompanyPreparer ||
-    order.submissionSource === "company_preparer" ||
-    order.submissionSource === "preparer" ||
-    order.submissionSource === "staff_portal" ||
-    order.orderType === "preparation" ||
-    order.orderType?.includes("تجهيز") ||
-    parsedShoppingJson
-  );
+  const isPreparationOrder = hasValidPreparerShoppingList(order.preparerShoppingJson);
 
   const isSmartHintValid = (s: string | null | undefined) => {
     if (!s) return false;
@@ -453,17 +444,16 @@ export function OrderViewContent({
               </Link>
 
               {isPreparationOrder && (
-                <button
-                  type="button"
-                  onClick={() => setPricingOpen(true)}
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
                   className="h-[34px] rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border-[1.5px] border-[#38BDF8] flex items-center justify-center gap-[6px] pl-[10px] pr-[12px] shadow-[0_2px_8px_rgba(2,132,199,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-[0.97] shrink-0 hover:brightness-110 transition"
-                  title="تعديل أسعار ومواد التجهيز من داخل الطلبية"
+                  title="تعديل تسعير المنتجات"
                 >
-                  <span className="text-[12px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل التسعير</span>
+                  <span className="text-[12px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل تسعير المنتجات</span>
                   <span className="w-[20px] h-[20px] rounded-full flex items-center justify-center border border-[#38BDF8]/40 shrink-0" style={{ background: "linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)" }}>
                     <span className="text-[11px] leading-none">🏷️</span>
                   </span>
-                </button>
+                </Link>
               )}
             </div>
 
@@ -1017,15 +1007,14 @@ export function OrderViewContent({
                 <span>قائمة المواد والملاحظات</span>
               </p>
               {isPreparationOrder && (
-                <button
-                  type="button"
-                  onClick={() => setPricingOpen(true)}
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white border border-[#38BDF8] text-xs font-black shadow-md hover:scale-105 active:scale-95 transition"
-                  title="تعديل أسعار ومواد التجهيز من داخل الطلبية"
+                  title="تعديل تسعير المنتجات"
                 >
                   <span>🏷️</span>
-                  <span>تعديل التسعير والمواد</span>
-                </button>
+                  <span>تعديل تسعير المنتجات</span>
+                </Link>
               )}
             </div>
 
@@ -1063,35 +1052,6 @@ export function OrderViewContent({
           </div>
         );
       })()}
-
-      {/* تعديل تسعير الطلب من داخل تفاصيل الطلب — يظهر بجانب زر التعديل */}
-      {pricingOpen && isPreparationOrder && (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 p-2 sm:p-4" dir="rtl">
-          <button type="button" aria-label="إغلاق نافذة التسعير" className="absolute inset-0 cursor-default" onClick={() => setPricingOpen(false)} />
-          <div className="relative z-10 flex h-[94vh] max-h-[900px] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl dark:bg-slate-950">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
-              <span className="text-sm font-black text-slate-900 dark:text-white">تعديل تسعير الطلب #{order.orderNumber}</span>
-              <button type="button" onClick={() => setPricingOpen(false)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">إغلاق ✕</button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-hidden p-2 sm:p-3">
-              <AdminPricingPanel
-                orderId={order.id}
-                initialData={parsedShoppingJson || {}}
-                preparers={preparers}
-                couriers={couriers}
-                isDraft={false}
-                storeProducts={storeProducts}
-                hideContainer={true}
-                onClose={() => setPricingOpen(false)}
-                onSuccess={() => {
-                  setPricingOpen(false);
-                  router.refresh();
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* مودال معاينة الصور التفاعلي الأنيق الداعم للتكبير بالإصبعين والسحب */}
       {previewImageUrl && (

@@ -21,6 +21,7 @@ import {
   submitAdminDeliveryMoney,
 } from "@/app/mandoub/cash-actions";
 import type { MandoubCashState } from "@/app/mandoub/types";
+import { hasValidPreparerShoppingList } from "@/lib/preparer-shopping-payload";
 import {
   moneySaderAmountInputClass,
   moneySaderRemainValueClass,
@@ -42,35 +43,6 @@ const STATUS_UI: Record<string, { ar: string; dot: string }> = {
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
-
-function hasValidPreparerShoppingList(raw: unknown): boolean {
-  if (raw == null) return false;
-  if (Array.isArray(raw)) return raw.length > 0;
-  if (typeof raw === "object") {
-    const obj = raw as Record<string, unknown>;
-    if (Array.isArray(obj.products)) return obj.products.length > 0;
-    if (Array.isArray(obj.items)) return obj.items.length > 0;
-    return Object.keys(obj).length > 0;
-  }
-  if (typeof raw === "string") {
-    const t = raw.trim();
-    if (!t || t === "{}" || t === "[]" || t === "null" || t.length <= 2) return false;
-    try {
-      const v = JSON.parse(t) as unknown;
-      if (Array.isArray(v)) return v.length > 0;
-      if (typeof v === "object" && v !== null) {
-        const obj = v as Record<string, unknown>;
-        if (Array.isArray(obj.products)) return obj.products.length > 0;
-        if (Array.isArray(obj.items)) return obj.items.length > 0;
-        return Object.keys(obj).length > 0;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
 
 const QUICK_STATUS_VALUES = [
   { value: "all", label: "أي حالة" },

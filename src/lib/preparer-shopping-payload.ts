@@ -24,3 +24,32 @@ export type PreparerShoppingPayloadV1 = {
   /** نص القائمة الأصلي (واتساب) للمراجعة */
   rawListText?: string;
 };
+
+/** الشرط المشترك لتمييز طلبات تجهيز التسوق في قوائم الإدارة وتفاصيل الطلب. */
+export function hasValidPreparerShoppingList(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (Array.isArray(raw)) return raw.length > 0;
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.products)) return obj.products.length > 0;
+    if (Array.isArray(obj.items)) return obj.items.length > 0;
+    return Object.keys(obj).length > 0;
+  }
+  if (typeof raw === "string") {
+    const text = raw.trim();
+    if (!text || text === "{}" || text === "[]" || text === "null" || text.length <= 2) return false;
+    try {
+      const value = JSON.parse(text) as unknown;
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === "object" && value !== null) {
+        const obj = value as Record<string, unknown>;
+        if (Array.isArray(obj.products)) return obj.products.length > 0;
+        if (Array.isArray(obj.items)) return obj.items.length > 0;
+        return Object.keys(obj).length > 0;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
