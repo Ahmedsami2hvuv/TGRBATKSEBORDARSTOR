@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { buildPortalManifestUrl } from "@/lib/pwa-manifest";
 
 const STORAGE_KEY = "ksebordarstor:last-pwa-path";
 const PORTAL_URL_KEY = "wasly_portal_last_url";
@@ -92,9 +93,7 @@ export function PwaRoutePreserver() {
 
       // تحديث المانيفيست ليكون رابط البدء مطابقاً للصفحة الحالية بالضبط
       const { name, shortName } = getPortalTitle(pathname);
-      const manifestUrl = `/api/manifest?start_url=${encodeURIComponent(
-        fullPath
-      )}&name=${encodeURIComponent(name)}&short_name=${encodeURIComponent(shortName)}`;
+      const manifestUrl = buildPortalManifestUrl(fullPath, name, shortName);
 
       try {
         let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;

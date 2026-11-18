@@ -44,13 +44,11 @@ import { filterLedgerByRecentDays } from "@/lib/money-entry-ui";
 import { LEDGER_KIND_TRANSFER_PENDING_IN, LEDGER_KIND_TRANSFER_PENDING_OUT, MISC_LEDGER_KIND_GIVE, MISC_LEDGER_KIND_TAKE, MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { getUISettings } from "@/lib/ui-settings";
 import type { MandoubWalletLedgerLine } from "./mandoub-wallet-client";
+import type { Metadata } from "next";
+import { buildPortalManifestUrl, buildPortalStartUrl } from "@/lib/pwa-manifest";
 
 // هذه الصفحة تعتمد على searchParams + cookies، لذلك يجب أن تكون ديناميكية دائماً.
 export const dynamic = "force-dynamic";
-
-export const metadata = {
-  title: "لوحة المندوب — وصلي",
-};
 
 /** حالات تظهر للمندوب في القائمة النشطة */
 const STATUS_AR: Record<string, string> = {
@@ -112,6 +110,20 @@ type Props = {
     activeOrderId?: string;
   }>;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams;
+  const title = "لوحة المندوب — وصلي";
+
+  return {
+    title,
+    manifest: buildPortalManifestUrl(
+      buildPortalStartUrl("/mandoub", params),
+      title,
+      "لوحة المندوب"
+    ),
+  };
+}
 
 export default async function MandoubPage({ searchParams }: Props) {
   try {

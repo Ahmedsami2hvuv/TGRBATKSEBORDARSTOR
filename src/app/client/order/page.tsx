@@ -10,12 +10,10 @@ import { randomBytes } from "crypto";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
+import type { Metadata } from "next";
+import { buildPortalManifestUrl, buildPortalStartUrl } from "@/lib/pwa-manifest";
 
 export const dynamic = "force-dynamic";
-
-export const metadata = {
-  title: "إدخال طلب — وصلي",
-};
 
 function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {
   switch (reason) {
@@ -32,8 +30,29 @@ function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {
 }
 
 type Props = {
-  searchParams: Promise<{ e?: string; exp?: string; s?: string; edit?: string; phone?: string }>;
+  searchParams: Promise<{
+    e?: string;
+    exp?: string;
+    s?: string;
+    edit?: string;
+    phone?: string;
+    force?: string;
+  }>;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams;
+  const title = "إدخال طلب — وصلي";
+
+  return {
+    title,
+    manifest: buildPortalManifestUrl(
+      buildPortalStartUrl("/client/order", params),
+      title,
+      "إدخال طلب"
+    ),
+  };
+}
 
 function PausedOverlay({
   title,

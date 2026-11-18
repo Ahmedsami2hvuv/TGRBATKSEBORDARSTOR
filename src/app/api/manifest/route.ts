@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(JSON.stringify(manifestData, null, 2), {
     headers: {
       "Content-Type": "application/manifest+json; charset=utf-8",
-      "Cache-Control": "public, max-age=60, stale-while-revalidate=600",
+      "Cache-Control": "private, no-store, max-age=0",
     },
   });
 }
