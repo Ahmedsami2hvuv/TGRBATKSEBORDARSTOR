@@ -986,6 +986,7 @@ https://aboakbr.com/welcome`;
             <div className="flex items-center gap-1.5">
               {/* زر تعديل الطلب (للإدارة يفتح صفحة تعديل الطلب الشاملة، وللمندوب يفتح نافذة التعديل السريع) */}
               {isAdminUser ? (
+                <>
                 <Link
                   href={adminEditHref || `/abo1stor3hlaa2kbr8-47/orders/${order.id}/edit`}
                   className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
@@ -993,6 +994,18 @@ https://aboakbr.com/welcome`;
                 >
                   <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
                 </Link>
+                  {/* زر تعديل تسعير المنتجات لطلبات تجهيز التسوق (للإدارة فقط) */}
+                  {hasValidPreparerShoppingList((order as any).preparerShoppingJson) && (
+                    <Link
+                      href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
+                      className="h-7 rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] flex items-center justify-center gap-1 px-2.5 shadow-xs active:scale-95 transition-transform hover:brightness-110 cursor-pointer shrink-0"
+                      title="تعديل تسعير المنتجات"
+                    >
+                      <span className="text-[11px] leading-none">🏷️</span>
+                      <span className="text-[11px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل تسعير المنتجات</span>
+                    </Link>
+                  )}
+                </>
               ) : (
                 <button
                   type="button"
