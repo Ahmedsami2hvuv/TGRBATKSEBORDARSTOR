@@ -8,6 +8,8 @@ import { ClientOrderForm } from "./client-order-form";
 import { getActiveBotByPurpose } from "@/lib/telegram-bots";
 import { randomBytes } from "crypto";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 
 export const dynamic = "force-dynamic";
 
@@ -94,39 +96,44 @@ function PausedOverlay({
 
 export default async function ClientOrderPage(props: Props) {
   const sp = await props.searchParams;
+  const cookieStore = await cookies();
 
-    // التحقق الأولي سريع جداً قبل جلب بيانات قاعدة البيانات
-    const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+  const e = sp.e || cookieStore.get("client_order_e")?.value;
+  const exp = sp.exp || cookieStore.get("client_order_exp")?.value;
+  const s = sp.s || cookieStore.get("client_order_s")?.value;
 
-    if (!v.ok) {
-      return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
-          <div className="kse-app-inner mx-auto max-w-md">
-            <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center shadow-sm">
-              <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة إدخال الطلب</p>
-              <p className="mt-2 text-sm text-slate-600">{invalidMessage(v.reason)}</p>
-            </div>
+  // التحقق الأولي سريع جداً قبل جلب بيانات قاعدة البيانات
+  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
+
+  if (!v.ok) {
+    return (
+      <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
+        <div className="kse-app-inner mx-auto max-w-md">
+          <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center shadow-sm">
+            <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة إدخال الطلب</p>
+            <p className="mt-2 text-sm text-slate-600">{invalidMessage(v.reason)}</p>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    // جلب الإعدادات العامة أولاً
-    const globalSettings = await prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null);
+  // جلب الإعدادات العامة أولاً
+  const globalSettings = await prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null);
 
-    const isPaused = globalSettings?.allOrdersPaused && 
-      (!globalSettings?.allOrdersPausedUntil || new Date() < new Date(globalSettings.allOrdersPausedUntil));
+  const isPaused = globalSettings?.allOrdersPaused &&
+    (!globalSettings?.allOrdersPausedUntil || new Date() < new Date(globalSettings.allOrdersPausedUntil));
 
-    if (isPaused && sp.force !== "true") {
-      return (
-        <PausedOverlay
-          title="توقف التوصيل حاليا"
-          message={globalSettings.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً في النظام بالكامل."}
-          color="rose"
-          params={sp}
-        />
-      );
-    }
+  if (isPaused && sp.force !== "true") {
+    return (
+      <PausedOverlay
+        title="توقف التوصيل حاليا"
+        message={globalSettings.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً في النظام بالكامل."}
+        color="rose"
+        params={{ e, exp, s }}
+      />
+    );
+  }
 
   try {
     let employee: any = null;
@@ -340,9 +347,9 @@ export default async function ClientOrderPage(props: Props) {
           photoUrl={shop.photoUrl}
           shopRegionName={shop.region?.name || "غير محددة"}
           shopDeliveryAlf={shopDeliveryAlf}
-          e={sp.e!}
-          exp={sp.exp!}
-          sig={sp.s!}
+          e={e!}
+          exp={exp!}
+          sig={s!}
           viewerName=""
           initialOrder={initialOrder}
           botUsername={botUsername}
@@ -353,6 +360,7 @@ export default async function ClientOrderPage(props: Props) {
           recentOrderTypes={recentOrderTypes}
           storeEnabled={storeEnabled}
         />
+        <PortalAuthCookieSetter auth={{ e, exp, s }} />
       </div>
     );
   } catch (error: any) {

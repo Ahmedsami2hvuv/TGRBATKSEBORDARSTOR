@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ensureShopStoreTablesIfMissing } from "@/lib/db-self-heal-shop-store";
 import { StoreManager } from "@/components/shop-manager/store-manager";
 import { ArrowRight, Store, AlertCircle } from "lucide-react";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +18,13 @@ type Props = {
 
 export default async function ClientShopStorePage(props: Props) {
   const sp = await props.searchParams;
+  const cookieStore = await cookies();
+  const e = sp.e || cookieStore.get("client_order_e")?.value;
+  const exp = sp.exp || cookieStore.get("client_order_exp")?.value;
+  const s = sp.s || cookieStore.get("client_order_s")?.value;
 
   // التحقق من صلاحية رابط بوابة العميل
-  const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
 
   if (!v.ok) {
     return (

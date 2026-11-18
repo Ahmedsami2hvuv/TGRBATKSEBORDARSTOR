@@ -5,6 +5,7 @@ import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link
 import { clientOrderFormPath } from "@/lib/client-order-portal-nav";
 import { prisma } from "@/lib/prisma";
 import { EmployeePreparationClient } from "./preparation-client";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,11 @@ function invalidMessage(reason: EmployeeOrderPortalVerifyReason): string {
 
 export default async function EmployeePreparationPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+  const cookieStore = await cookies();
+  const e = sp.e || cookieStore.get("client_order_e")?.value;
+  const exp = sp.exp || cookieStore.get("client_order_exp")?.value;
+  const s = sp.s || cookieStore.get("client_order_s")?.value;
+  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
   if (!v.ok) {
     return (
       <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">

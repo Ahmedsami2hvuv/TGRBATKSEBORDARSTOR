@@ -12,6 +12,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { formatBaghdadDateTime, getIraqTime } from "@/lib/baghdad-time";
 import { CancelOrderButton } from "./cancel-order-button";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,11 @@ type Props = {
 
 export default async function ClientOrderHistoryPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+  const cookieStore = await cookies();
+  const e = sp.e || cookieStore.get("client_order_e")?.value;
+  const exp = sp.exp || cookieStore.get("client_order_exp")?.value;
+  const s = sp.s || cookieStore.get("client_order_s")?.value;
+  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
 
   if (!v.ok) {
     return (
