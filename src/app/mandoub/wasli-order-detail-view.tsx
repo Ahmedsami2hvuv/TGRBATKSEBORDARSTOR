@@ -25,7 +25,10 @@ import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/ma
 import { PhoneActionModal } from "@/components/phone-action-modal";
 import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 import Link from "next/link";
-import { Pencil, X } from "lucide-react";
+import { Pencil, X, ShoppingBag, User, UserCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
+import { bulkUpdateOrdersStatus } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/bulk-actions";
 import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
 import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
 
@@ -75,6 +78,7 @@ type Props = {
   customWaButtons?: any[];
   isAdmin?: boolean;
   adminEditHref?: string;
+  couriers?: { id: string; name: string; phone?: string | null }[];
 };
 
 export function WasliOrderDetailView({
@@ -94,7 +98,10 @@ export function WasliOrderDetailView({
   customWaButtons,
   isAdmin = false,
   adminEditHref,
+  couriers = [],
 }: Props) {
+  const router = useRouter();
+  const [showAssignModal, setShowAssignModal] = useState(false);
   // حالة المودالات والمعاينة
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewUploadedByName, setPreviewUploadedByName] = useState<string | null>(null);
@@ -964,11 +971,39 @@ https://aboakbr.com/welcome`;
         </div>
       )}
 
+      {/* نافذة الإسناد السريع للمندوبين (نفس نافذة قائمة التتبع) */}
+      {isAdminUser && showAssignModal && (
+        <LuxuryAssignCourierModal
+          orderId={order.id}
+          orderNumber={order.orderNumber}
+          currentCourierId={order.assignedCourierId}
+          currentCourierName={order.courier?.name ?? null}
+          couriers={couriers}
+          onAssign={async (courierId, directReceipt) => {
+            const fd = new FormData();
+            fd.append("orderIds", order.id);
+            if (courierId) {
+              fd.append("targetStatus", directReceipt ? "delivering" : "assigned");
+              fd.append("courierId", courierId);
+              if (directReceipt) fd.append("directReceipt", "on");
+            } else {
+              fd.append("targetStatus", "pending");
+              fd.append("courierId", "");
+            }
+            setShowAssignModal(false);
+            const res = await bulkUpdateOrdersStatus({}, fd);
+            if (res.error) alert(res.error);
+            else router.refresh();
+          }}
+          onClose={() => setShowAssignModal(false)}
+        />
+      )}
+
       <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col">
         {/* محتوى الشاشة الرئيسي */}
         <main className="flex flex-col gap-3 px-3.5 pb-8 pt-3">
           {/* الشريط العلوي لرقم الطلب وحالته وزر التعديل */}
-          <div className="flex items-center justify-between rounded-[20px] border-[1.5px] border-[#D0DDFB] bg-white px-3 py-2.5 shadow-[0_2px_12px_rgba(11,46,140,0.05)]">
+          <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-[20px] border-[1.5px] border-[#D0DDFB] bg-white px-3 py-2.5 shadow-[0_2px_12px_rgba(11,46,140,0.05)]">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-3 py-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#1E4DB7] animate-pulse" />
@@ -994,16 +1029,52 @@ https://aboakbr.com/welcome`;
                 >
                   <Pencil className="w-3.5 h-3.5 text-[#0B2E8C]" />
                 </Link>
-                  {/* زر تعديل تسعير المنتجات لطلبات تجهيز التسوق (للإدارة فقط) */}
+                  {/* زر تعديل تسعير المنتجات لطلبات تجهيز التسوق (للإدارة فقط) - نفس زر القائمة */}
                   {hasValidPreparerShoppingList((order as any).preparerShoppingJson) && (
                     <Link
                       href={`/abo1stor3hlaa2kbr8-47/orders/${order.id}/price`}
-                      className="h-7 rounded-full bg-gradient-to-r from-[#0284C7] to-[#0369A1] border border-[#38BDF8] flex items-center justify-center gap-1 px-2.5 shadow-xs active:scale-95 transition-transform hover:brightness-110 cursor-pointer shrink-0"
+                      className="w-7 h-7 rounded-full bg-white border border-[#D0DDFB] flex items-center justify-center text-[#0B2E8C] shadow-xs active:scale-90 transition-transform hover:bg-[#F0F4FF] cursor-pointer shrink-0"
                       title="تعديل تسعير المنتجات"
+                      aria-label="تعديل تسعير المنتجات"
                     >
-                      <span className="text-[11px] leading-none">🏷️</span>
-                      <span className="text-[11px] font-black text-[#FDE047] leading-none whitespace-nowrap">تعديل تسعير المنتجات</span>
+                      <ShoppingBag className="w-3.5 h-3.5 text-[#0B2E8C]" />
                     </Link>
+                  )}
+                  {/* كبسولة المندوب وإسناد الطلب (نفس زر القائمة) */}
+                  {order.orderStatus !== "cancelled" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (couriers.length === 1 && !order.assignedCourierId) {
+                          const fd = new FormData();
+                          fd.append("orderIds", order.id);
+                          fd.append("targetStatus", "assigned");
+                          fd.append("courierId", couriers[0].id);
+                          bulkUpdateOrdersStatus({}, fd).then((res) => {
+                            if (res?.error) alert(res.error);
+                            else router.refresh();
+                          });
+                        } else {
+                          setShowAssignModal(true);
+                        }
+                      }}
+                      className="h-[28px] px-2.5 rounded-full bg-[#0B2E8C] border border-[#FFC107]/40 text-white flex items-center gap-1 shadow-xs active:scale-95 transition-transform cursor-pointer shrink-0"
+                      title={order.assignedCourierId && order.courier?.name ? `تغيير المندوب (${order.courier.name})` : "إسناد لمندوب"}
+                    >
+                      {order.assignedCourierId && order.courier?.name ? (
+                        <>
+                          <UserCheck className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                          <span className="text-[11px] font-black max-w-[65px] truncate text-[#FFF8E1]">
+                            {order.courier.name}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <User className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                          <span className="text-[11px] font-bold text-white/90">إسناد</span>
+                        </>
+                      )}
+                    </button>
                   )}
                 </>
               ) : (
