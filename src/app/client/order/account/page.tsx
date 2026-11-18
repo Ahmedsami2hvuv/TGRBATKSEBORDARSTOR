@@ -83,11 +83,9 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
     );
   }
 
-  const e = sp.e ?? "";
-  const exp = sp.exp ?? "";
-  const sig = sp.s ?? "";
-  const formHref = clientOrderFormPath(e, exp, sig);
-  const historyHref = clientOrderHistoryPath(e, exp, sig);
+  const sig = s ?? "";
+  const formHref = clientOrderFormPath(e ?? "", exp ?? "", sig);
+  const historyHref = clientOrderHistoryPath(e ?? "", exp ?? "", sig);
 
   const shopId = employee.shop.id;
 

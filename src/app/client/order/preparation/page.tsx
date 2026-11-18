@@ -66,7 +66,7 @@ export default async function EmployeePreparationPage({ searchParams }: Props) {
       <div className="kse-app-inner mx-auto max-w-2xl">
         <div className="mb-3 text-sm">
           <Link
-            href={clientOrderFormPath(sp.e ?? "", sp.exp ?? "", sp.s ?? "")}
+            href={clientOrderFormPath(e ?? "", exp ?? "", s ?? "")}
             className="font-bold text-sky-700 hover:underline"
           >
             ← الرجوع إلى صفحة إدخال الطلب
@@ -77,9 +77,9 @@ export default async function EmployeePreparationPage({ searchParams }: Props) {
           shopName={employee.shop.name}
           shopRegionName={employee.shop.region.name}
           shopDeliveryAlf={Number(employee.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR}
-          e={sp.e ?? ""}
-          exp={sp.exp ?? ""}
-          sig={sp.s ?? ""}
+          e={e ?? ""}
+          exp={exp ?? ""}
+          sig={s ?? ""}
         />
       </div>
     </div>

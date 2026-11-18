@@ -124,11 +124,9 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
     }
   });
 
-  const e = sp.e ?? "";
-  const exp = sp.exp ?? "";
-  const sig = sp.s ?? "";
-  const orderFormHref = clientOrderFormPath(e, exp, sig, viewer);
-  const accountHref = clientOrderAccountPath(e, exp, sig);
+  const sig = s ?? "";
+  const orderFormHref = clientOrderFormPath(e ?? "", exp ?? "", sig, viewer);
+  const accountHref = clientOrderAccountPath(e ?? "", exp ?? "", sig);
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-16 text-slate-800">

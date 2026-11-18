@@ -96,16 +96,14 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     );
   }
 
-  const e = sp.e ?? "";
-  const exp = sp.exp ?? "";
-  const sig = sp.s ?? "";
-  const authQuery = new URLSearchParams({ e, exp, s: sig });
+  const sig = s ?? "";
+  const authQuery = new URLSearchParams({ e: e ?? "", exp: exp ?? "", s: sig });
   const walletPathWithQuery = `/client/order/wallet?${authQuery.toString()}`;
-  const formHref = clientOrderFormPath(e, exp, sig);
-  const historyHref = clientOrderHistoryPath(e, exp, sig);
-  const accountHref = clientOrderAccountPath(e, exp, sig);
+  const formHref = clientOrderFormPath(e ?? "", exp ?? "", sig);
+  const historyHref = clientOrderHistoryPath(e ?? "", exp ?? "", sig);
+  const accountHref = clientOrderAccountPath(e ?? "", exp ?? "", sig);
 
-  const auth = { e, exp, s: sig };
+  const auth = { e: e ?? "", exp: exp ?? "", s: sig };
 
   const [miscRows, pendingTransferRows, transferTargetCouriers, transferTargetEmployees, pendingOutgoingSum] =
     await Promise.all([
