@@ -2,35 +2,56 @@ import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-let datasourceUrl = process.env.DATABASE_URL;
-
-if (datasourceUrl) {
+/**
+ * ضبط رابط قاعدة البيانات لمنع خطأ "Timed out fetching a new connection from the connection pool".
+ * - عند استخدام Supabase Pooler (Supavisor) نستخدم وضع المعاملات (بورت 6543) مع pgbouncer=true
+ *   ونرفع حد الاتصالات المحلي لأن الـ Pooler يوزع الاتصالات على قاعدة البيانات.
+ * - نفرض الحد الأدنى للاتصالات حتى لو كان الرابط في البيئة يحتوي connection_limit أقل (مثل 3).
+ * - يمكن التحكم بالقيم من المتغيرات PRISMA_CONNECTION_LIMIT و PRISMA_POOL_TIMEOUT.
+ */
+function buildDatasourceUrl(raw: string | undefined): string | undefined {
+  if (!raw) return raw;
   try {
-    const url = new URL(datasourceUrl);
-    const isPooler = url.port === "6543" || url.hostname.includes("pooler.supabase.com");
+    const url = new URL(raw);
+    const isSupavisorHost = url.hostname.includes("pooler.supabase.com");
 
-    // ضبط عدد الاتصالات بشكل متوازن لمنع استنفاذ الاتصالات
-    if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "10");
+    // وضع الجلسة (5432) على الـ Pooler يحجز اتصالاً لكل عميل؛ نحوله لوضع المعاملات (6543)
+    if (isSupavisorHost && (url.port === "" || url.port === "5432")) {
+      url.port = "6543";
     }
-    // مهلة انتظار مرنة تمنع فشل الطلبات في أوقات الذروة
-    if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "30");
+
+    const isTransactionPooler = url.port === "6543";
+
+    const envLimit = Number(process.env.PRISMA_CONNECTION_LIMIT);
+    const minLimit = Number.isFinite(envLimit) && envLimit > 0 ? envLimit : isTransactionPooler ? 10 : 5;
+    const currentLimit = Number(url.searchParams.get("connection_limit"));
+    if (!Number.isFinite(currentLimit) || currentLimit < minLimit) {
+      url.searchParams.set("connection_limit", String(minLimit));
     }
+
+    const envPoolTimeout = Number(process.env.PRISMA_POOL_TIMEOUT);
+    url.searchParams.set(
+      "pool_timeout",
+      String(Number.isFinite(envPoolTimeout) && envPoolTimeout > 0 ? envPoolTimeout : 20),
+    );
+
     if (!url.searchParams.has("connect_timeout")) {
       url.searchParams.set("connect_timeout", "15");
     }
 
-    // تفعيل وضع PgBouncer التلقائي عند استخدام وصلة Pooler بورت 6543
-    if (isPooler) {
+    // وضع المعاملات لا يدعم الـ prepared statements، لذلك pgbouncer=true إلزامي
+    if (isTransactionPooler) {
       url.searchParams.set("pgbouncer", "true");
     }
 
-    datasourceUrl = url.toString();
+    return url.toString();
   } catch (e) {
     console.error("[Prisma] Failed to parse DATABASE_URL query parameters", e);
+    return raw;
   }
 }
+
+const datasourceUrl = buildDatasourceUrl(process.env.DATABASE_URL);
 
 export const prisma =
   globalForPrisma.prisma ??
@@ -39,10 +60,5 @@ export const prisma =
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-} else {
-  // الحفاظ على العميل في بيئة الإنتاج أيضاً لتجنب تكرار الاتصالات
-  globalForPrisma.prisma = prisma;
-}
-
+// الحفاظ على عميل واحد لكل نسخة تشغيل لتجنب تكرار الاتصالات
+globalForPrisma.prisma = prisma;
