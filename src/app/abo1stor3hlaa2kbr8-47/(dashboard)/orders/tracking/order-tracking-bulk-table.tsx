@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { BulkOrdersState } from "../bulk-actions";
+import { getRouteBadgeStyle } from "@/lib/order-status-badge-style";
 import { bulkUpdateOrdersStatus } from "../bulk-actions";
 import type { TrackingTableRow } from "./order-tracking-table-body";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
@@ -523,25 +524,6 @@ import {
   ChevronUp,
   ShoppingBag,
 } from "lucide-react";
-
-// تلوين بلوك اسم المحل والمنطقة حسب الحالة مثل حساب المندوب
-const getRouteBadgeStyle = (status: string) => {
-  switch (status) {
-    case "new":
-    case "pending":
-      return "bg-gradient-to-l from-sky-500 to-sky-400 text-white shadow-[0_2px_8px_rgba(14,165,233,0.25)]";
-    case "assigned":
-      return "bg-gradient-to-l from-rose-600 to-red-500 text-white shadow-[0_2px_8px_rgba(225,29,72,0.25)]";
-    case "delivering":
-      return "bg-gradient-to-l from-[#FFC107] to-amber-400 text-[#0B2E8C] font-black shadow-[0_2px_8px_rgba(245,158,11,0.25)]";
-    case "delivered":
-      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
-    case "cancelled":
-      return "bg-gradient-to-l from-slate-600 to-slate-500 text-white shadow-[0_2px_8px_rgba(100,116,139,0.2)]";
-    default:
-      return "bg-gradient-to-l from-[#0B2E8C] to-[#1E4DB7] text-white shadow-[0_2px_8px_rgba(11,46,140,0.2)]";
-  }
-};
 
 function OrderSaderSideBadge({ o }: { o: TrackingTableRow }) {
   const pickup = o.pickupSumDinar ?? null;

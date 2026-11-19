@@ -28,6 +28,7 @@ import Link from "next/link";
 import { Pencil, X, ShoppingBag, User, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LuxuryAssignCourierModal } from "@/components/luxury-assign-courier-modal";
+import { getRouteBadgeStyle } from "@/lib/order-status-badge-style";
 import { bulkUpdateOrdersStatus } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/bulk-actions";
 import { compressImageForMandoubUpload } from "@/lib/client-image-compress";
 import { uploadOrderImageUniversal } from "@/app/actions/order-photo-actions";
@@ -1005,14 +1006,8 @@ https://aboakbr.com/welcome`;
           {/* الشريط العلوي لرقم الطلب وحالته وزر التعديل */}
           <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-[20px] border-[1.5px] border-[#D0DDFB] bg-white px-3 py-2.5 shadow-[0_2px_12px_rgba(11,46,140,0.05)]">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded-full bg-[#E8EEFF] px-3 py-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#1E4DB7] animate-pulse" />
-                <span className="text-[12px] font-extrabold text-[#0B2E8C]">
-                  {optimisticStatus === "delivered" ? "تم التسليم" : optimisticStatus === "delivering" ? "مستلم" : "بانتظار المندوب"}
-                </span>
-              </div>
-              <div className="flex h-8 items-center justify-center rounded-[12px] bg-[#0B2E8C] px-3 shadow-xs">
-                <span className="text-[16px] font-extrabold tracking-wide text-[#FFC107] font-mono">
+              <div className={`flex h-8 items-center justify-center rounded-[12px] px-3 ${getRouteBadgeStyle(String(optimisticStatus || "").toLowerCase().trim())}`}>
+                <span className="text-[16px] font-extrabold tracking-wide font-mono">
                   #{order.orderNumber || order.id}
                 </span>
               </div>
